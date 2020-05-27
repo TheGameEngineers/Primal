@@ -17,4 +17,11 @@
     <OutputPath>..\x64\Release\</OutputPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="ProjectTemplates\**" />
+    <EmbeddedResource Remove="ProjectTemplates\**" />
+    <None Remove="ProjectTemplates\**" />
+    <Page Remove="ProjectTemplates\**" />
+  </ItemGroup>
+
 </Project>
