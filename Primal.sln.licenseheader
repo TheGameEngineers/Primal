@@ -1,0 +1,16 @@
+﻿extensions: designer.cs generated.cs
+extensions: .cs .cpp .h .inc .hlsl
+// Copyright (c) Arash Khatami
+// Distributed under the MIT license. See the LICENSE file in the project root for more information.
+extensions: .aspx .ascx
+<%-- 
+ Copyright (c) Arash Khatami
+ Distributed under the MIT license. See the LICENSE file in the project root for more information.
+--%>
+extensions: .vb
+'Sample license text.
+extensions:  .xml .config .xsd .xaml
+<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
