@@ -1,0 +1,12 @@
+<Game z:Id="i1" xmlns="http://schemas.datacontract.org/2004/07/PrimalEditor.GameProject"
+      xmlns:i="http://www.w3.org/2001/XMLSchema-instance"
+	  xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
+	 <Name>{0}</Name>
+	 <Path>{1}</Path>
+	 <Scenes>
+		<Scene z:Id="i2">
+			<Name>Default Scene</Name>
+			<Project z:Ref="i1"/>
+		</Scene>
+	</Scenes>
+</Game>
