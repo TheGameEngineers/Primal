@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
-using PrimalEditor.GameProject;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,21 +16,16 @@ using System.Windows.Shapes;
 namespace PrimalEditor.Editors
 {
     /// <summary>
-    /// Interaction logic for WorldEditorView.xaml
+    /// Interaction logic for GameEntityView.xaml
     /// </summary>
-    public partial class WorldEditorView : UserControl
+    public partial class GameEntityView : UserControl
     {
-        public WorldEditorView()
+        public static GameEntityView Instance { get; private set; }
+        public GameEntityView()
         {
             InitializeComponent();
-            Loaded += OnWorldEditorViewLoaded;
-        }
-
-        private void OnWorldEditorViewLoaded(object sender, RoutedEventArgs e)
-        {
-            Loaded -= OnWorldEditorViewLoaded;
-            Focus();
-            ((INotifyCollectionChanged)Project.UndoRedo.UndoList).CollectionChanged += (s, e) => Focus();
+            DataContext = null;
+            Instance = this;
         }
     }
 }

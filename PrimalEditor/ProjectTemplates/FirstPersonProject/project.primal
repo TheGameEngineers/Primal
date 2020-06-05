@@ -5,6 +5,7 @@
 	 <Path>{1}</Path>
 	 <Scenes>
 		<Scene z:Id="i2">
+			<GameEntities xmlns:a="http://schemas.datacontract.org/2004/07/PrimalEditor.Components"/>
 			<IsActive>true</IsActive>
 			<Name>Default Scene</Name>
 			<Project z:Ref="i1"/>
