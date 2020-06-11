@@ -1,0 +1,17 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<ResourceDictionary x:Class="PrimalEditor.Dictionaries.ControlTemplates"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:PrimalEditor.Dictionaries">
+
+    <Style TargetType="{x:Type TextBox}" x:Key="TextBoxStyle">
+        <!-- TODO: define the visual look of textbox here -->
+    </Style>
+
+    <Style TargetType="{x:Type TextBox}" x:Key="{x:Type TextBox}" BasedOn="{StaticResource TextBoxStyle}">
+        <EventSetter Event="KeyDown" Handler="OnTextBox_KeyDown"/>
+    </Style>
+</ResourceDictionary>
