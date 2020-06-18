@@ -17,9 +17,14 @@
     <ClInclude Include="Components\ComponentsCommon.h" />
     <ClInclude Include="Components\Entity.h" />
     <ClInclude Include="Components\Transform.h" />
+    <ClInclude Include="EngineAPI\GameEntity.h" />
+    <ClInclude Include="EngineAPI\TransfromComponent.h" />
+    <ClInclude Include="Utilities\MathTypes.h" />
+    <ClInclude Include="Utilities\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
+    <ClCompile Include="Components\Transform.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
