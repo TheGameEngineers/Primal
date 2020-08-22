@@ -9,21 +9,100 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PrimalEditor.GameProject"
         mc:Ignorable="d" ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
-        Title="Project Browser" Height="600" Width="800">
+        Title="Project Browser" Height="600" Width="800"
+        Style="{StaticResource PrimalDialogStyle}">
+    <Window.Resources>
+        <Style TargetType="{x:Type ToggleButton}">
+            <Setter Property="FontSize" Value="32"/>
+            <Setter Property="FontFamily" Value="Bahnschrift condensed"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <TextBlock Text="{TemplateBinding Button.Content}" Style="{x:Null}">
+                            <TextBlock.Effect>
+                                <DropShadowEffect BlurRadius="2" ShadowDepth="1" Opacity="0.6"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsChecked" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition />
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
-            <ToggleButton Content="Open Project" x:Name="openProjectButton" FontSize="32"
+        <Canvas x:Name="canvas">
+            <Rectangle Width="{Binding Path=ActualWidth, ElementName=createProjectButton}"
+                       Height="{Binding Path=ActualHeight,ElementName=canvas}"
+                       x:Name="highlightRect" Canvas.Left="200" Opacity="0.3">
+                <Rectangle.Effect>
+                    <BlurEffect Radius="10" KernelType="Gaussian"/>
+                </Rectangle.Effect>
+                <Rectangle.Fill>
+                    <RadialGradientBrush GradientOrigin="0.5,1" Center="0.5,1" RadiusY="2">
+                        <RadialGradientBrush.GradientStops>
+                            <GradientStop Color="White" Offset="0"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </RadialGradientBrush.GradientStops>
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.OpacityMask>
+                    <RadialGradientBrush GradientOrigin="0.5,1" Center="0.5,1" RadiusY="0.5">
+                        <RadialGradientBrush.GradientStops>
+                            <GradientStop Color="White" Offset="0"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </RadialGradientBrush.GradientStops>
+                    </RadialGradientBrush>
+                </Rectangle.OpacityMask>
+                
+            </Rectangle>
+        </Canvas>
+        <Rectangle Height="2" VerticalAlignment="Bottom" Margin="40,0">
+            <Rectangle.Fill>
+                <LinearGradientBrush>
+                    <LinearGradientBrush.GradientStops>
+                        <GradientStop Color="Transparent" Offset="0"/>
+                        <GradientStop Color="{StaticResource Editor.Disabled.FontColor}" Offset="0.33"/>
+                        <GradientStop Color="{StaticResource Editor.Disabled.FontColor}" Offset="0.66"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </LinearGradientBrush.GradientStops>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <ToggleButton Content="OPEN PROJECT" x:Name="openProjectButton" Margin="10,20,0,20"
                           Click="OnToggleButton_Click" IsChecked="True"/>
-            <ToggleButton Content="Create Project" x:Name="createProjectButton" FontSize="32" Margin="30,0,0,0"
+            <ToggleButton Content="CREATE PROJECT" x:Name="createProjectButton" Margin="40,20,0,20"
                           Click="OnToggleButton_Click" IsChecked="False"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Grid.Row="1" x:Name="browserContent">
+            <StackPanel.Effect>
+                <DropShadowEffect Opacity="0.6" BlurRadius="15" ShadowDepth="2"/>
+            </StackPanel.Effect>
             <local:OpenProjectView x:Name="openProjectView" />
-            <local:NewProjectView x:Name="newProjectView"/>
+            <local:NewProjectView x:Name="newProjectView" Margin="800,0,0,0"/>
         </StackPanel>
     </Grid>
 </Window>

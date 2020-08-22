@@ -1,0 +1,36 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:PrimalEditor.Dictionaries">
+
+    <Color x:Key="Editor.Window.GrayColor1">#ff1f1f1f</Color>
+    <Color x:Key="Editor.Window.GrayColor2">#ff262626</Color>
+    <Color x:Key="Editor.Window.GrayColor3">#ff313131</Color>
+    <Color x:Key="Editor.Window.GrayColor4">#ff404040</Color>
+    <Color x:Key="Editor.Window.GrayColor5">#ff535353</Color>
+    <Color x:Key="Editor.Window.GrayColor6">#ff6a6a6a</Color>
+    <Color x:Key="Editor.Disabled.FontColor">#ff868686</Color>
+    <Color x:Key="Editor.FontColor">#ffdddddd</Color>
+    <Color x:Key="Editor.RedColor">#ffff5a6a</Color>
+    <Color x:Key="Editor.GreenColor">#ff90ee90</Color>
+    <Color x:Key="Editor.BlueColor">#ff80deff</Color>
+    <Color x:Key="Editor.OrangeColor">#ffffd067</Color>
+    <Color x:Key="Editor.Selected.BackgroundColor">#ff3c67b6</Color>
+
+    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor1}" x:Key="Editor.Window.GrayBrush1"/>
+    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor2}" x:Key="Editor.Window.GrayBrush2"/>
+    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor3}" x:Key="Editor.Window.GrayBrush3"/>
+    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor4}" x:Key="Editor.Window.GrayBrush4"/>
+    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor5}" x:Key="Editor.Window.GrayBrush5"/>
+    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor6}" x:Key="Editor.Window.GrayBrush6"/>
+    <SolidColorBrush Color="{StaticResource Editor.Disabled.FontColor}" x:Key="Editor.Disabled.FontBrush"/>
+    <SolidColorBrush Color="{StaticResource Editor.FontColor}" x:Key="Editor.FontBrush"/>
+    <SolidColorBrush Color="{StaticResource Editor.RedColor}" x:Key="Editor.RedBrush"/>
+    <SolidColorBrush Color="{StaticResource Editor.GreenColor}" x:Key="Editor.GreenBrush"/>
+    <SolidColorBrush Color="{StaticResource Editor.BlueColor}" x:Key="Editor.BlueBrush"/>
+    <SolidColorBrush Color="{StaticResource Editor.OrangeColor}" x:Key="Editor.OrangeBrush"/>
+    <SolidColorBrush Color="{StaticResource Editor.Selected.BackgroundColor}" x:Key="Editor.Selected.BackgroundBrush"/>
+</ResourceDictionary>

@@ -14,42 +14,46 @@
     <UserControl.DataContext>
         <local:NewProject />
     </UserControl.DataContext>
-    <StackPanel Background="White">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <ListBox Width="195" Height="250" ItemsSource="{Binding ProjectTemplates}" x:Name="templateListBox"
+    <Border CornerRadius="3" Background="{StaticResource Editor.Window.GrayBrush3}" Width="700"
+            HorizontalAlignment="Center" Margin="0,30">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+                <ListBox Width="195" Height="250" ItemsSource="{Binding ProjectTemplates}" x:Name="templateListBox"
                      SelectedIndex="0">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <Image Source="{Binding Icon}" Margin="0,0,5,0"/>
-                            <TextBlock Text="{Binding ProjectType}"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Border Width="400" Height="250" Margin="5,0,0,0">
-                <Border.Background>
-                    <ImageBrush ImageSource="{Binding Path=SelectedItem.Screenshot, ElementName=templateListBox}"/>
-                </Border.Background>
-            </Border>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="{Binding Icon}" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding ProjectType}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Border Width="400" Height="250" Margin="5,0,0,0">
+                    <Border.Background>
+                        <ImageBrush ImageSource="{Binding Path=SelectedItem.Screenshot, ElementName=templateListBox}"/>
+                    </Border.Background>
+                </Border>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
                     Margin="0,30,0,0">
-            <TextBlock Text="Name" Width="50"/>
-            <TextBox Width="550" Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                <TextBlock Text="Name" Width="50" Style="{StaticResource LightTextBlockStyle}"/>
+                <TextBox Width="550" Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
                     Margin="0,5,0,0">
-            <TextBlock Text="Path" Width="50"/>
-            <TextBox Width="500" Text="{Binding ProjectPath, UpdateSourceTrigger=PropertyChanged}"/>
-            <Button Content="Browse" Width="45" Margin="5,0,0,0"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                <TextBlock Text="Path" Width="50" Style="{StaticResource LightTextBlockStyle}"/>
+                <TextBox Width="500" Text="{Binding ProjectPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Content="Browse" Width="45" Margin="5,0,0,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
                     Margin="0,30,0,0">
-            <Button Content="Create" Width="96" IsDefault="True" IsEnabled="{Binding IsValid}"
+                <Button Content="Create" Width="96" IsDefault="True" IsEnabled="{Binding IsValid}"
                     Click="OnCreate_Button_Click"/>
-            <Button Content="Exit" Width="96" Margin="30,0,0,0" IsCancel="True"/>
+                <Button Content="Exit" Width="96" Margin="30,0,0,0" IsCancel="True"/>
+            </StackPanel>
+            <TextBlock Text="{Binding ErrorMsg}" Foreground="{StaticResource Editor.RedBrush}"
+                       Margin="0,10,0,0" HorizontalAlignment="Center"/>
         </StackPanel>
-        <TextBlock Text="{Binding ErrorMsg}" Margin="0,20,0,0" HorizontalAlignment="Center"/>
-    </StackPanel>
+    </Border>
 </UserControl>
