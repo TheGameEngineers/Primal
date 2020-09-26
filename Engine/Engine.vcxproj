@@ -16,15 +16,19 @@
     <ClInclude Include="Common\PrimitiveTypes.h" />
     <ClInclude Include="Components\ComponentsCommon.h" />
     <ClInclude Include="Components\Entity.h" />
+    <ClInclude Include="Components\Script.h" />
     <ClInclude Include="Components\Transform.h" />
     <ClInclude Include="EngineAPI\GameEntity.h" />
+    <ClInclude Include="EngineAPI\ScriptComponent.h" />
     <ClInclude Include="EngineAPI\TransfromComponent.h" />
     <ClInclude Include="Utilities\MathTypes.h" />
     <ClInclude Include="Utilities\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
+    <ClCompile Include="Components\Script.cpp" />
     <ClCompile Include="Components\Transform.cpp" />
+    <ClCompile Include="Core\Main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
