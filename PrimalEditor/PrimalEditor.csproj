@@ -24,4 +24,23 @@
     <Page Remove="ProjectTemplates\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <COMReference Include="EnvDTE80.dll">
+      <Guid>1a31287a-4d7d-413e-8e32-3b374931bd89</Guid>
+      <VersionMajor>8</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+    </COMReference>
+    <COMReference Include="EnvDTE.dll">
+      <Guid>80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2</Guid>
+      <VersionMajor>8</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+    </COMReference>
+  </ItemGroup>
+
 </Project>
