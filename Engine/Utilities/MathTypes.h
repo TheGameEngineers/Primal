@@ -6,7 +6,7 @@
 namespace primal::math {
 
 constexpr float pi = 3.1415926535897932384626433832795f;
-constexpr float epsilon = 0e-5f;
+constexpr float epsilon = 1e-5f;
 #if defined(_WIN64)
 using v2 = DirectX::XMFLOAT2;
 using v2a = DirectX::XMFLOAT2A;

@@ -4,6 +4,7 @@ using PrimalEditor.GameProject;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +16,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace PrimalEditor
 {
@@ -24,6 +24,8 @@ namespace PrimalEditor
     /// </summary>
     public partial class MainWindow : Window
     {
+        public static string PrimalPath { get; private set; } = @"z:\Primal";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -34,7 +36,30 @@ namespace PrimalEditor
         private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
         {
             Loaded -= OnMainWindowLoaded;
+            GetEnginePath();
             OpenProjectBrowserDialog();
+        }
+
+        private void GetEnginePath()
+        {
+            var primalPath = Environment.GetEnvironmentVariable("PRIMAL_ENGINE", EnvironmentVariableTarget.User);
+            if(primalPath == null || !Directory.Exists(Path.Combine(primalPath, @"Engine\EngineAPI")))
+            {
+                var dlg = new EnginePathDialog();
+                if (dlg.ShowDialog() == true)
+                {
+                    PrimalPath = dlg.PrimalPath;
+                    Environment.SetEnvironmentVariable("PRIMAL_ENGINE", PrimalPath.ToUpper(), EnvironmentVariableTarget.User);
+                }
+                else
+                {
+                    Application.Current.Shutdown();
+                }
+            }
+            else
+            {
+                PrimalPath = primalPath;
+            }
         }
 
         private void OnMainWindowClosing(object sender, CancelEventArgs e)

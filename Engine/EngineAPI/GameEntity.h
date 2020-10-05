@@ -54,7 +54,7 @@ script_ptr create_script(game_entity::entity entity)
 #define REGISTER_SCRIPT(TYPE)                                           \
         class TYPE;                                                     \
         namespace {                                                     \
-        const u8 _reg##TYPE                                             \
+        const u8 _reg_##TYPE                                            \
         { primal::script::detail::register_script(                      \
               primal::script::detail::string_hash()(#TYPE),             \
               &primal::script::detail::create_script<TYPE>) };          \
