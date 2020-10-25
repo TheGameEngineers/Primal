@@ -40,7 +40,7 @@ namespace PrimalEditor
             }
             else if(!Directory.Exists(Path.Combine(path, @"Engine\EngineAPI\")))
             {
-                messageTextBlock.Text = "Unable to fine the engine at the specified location.";
+                messageTextBlock.Text = "Unable to find the engine at the specified location.";
             }
 
             if(string.IsNullOrEmpty(messageTextBlock.Text))

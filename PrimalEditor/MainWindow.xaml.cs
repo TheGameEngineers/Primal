@@ -24,7 +24,7 @@ namespace PrimalEditor
     /// </summary>
     public partial class MainWindow : Window
     {
-        public static string PrimalPath { get; private set; } = @"z:\Primal";
+        public static string PrimalPath { get; private set; }
 
         public MainWindow()
         {
