@@ -339,3 +339,4 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 *.db
+/SyncToy_0a5cda31-bd74-4c68-bea4-73c6ca910d37.dat

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace PrimalEditor.GameDev
@@ -155,18 +156,19 @@ namespace PrimalEditor.GameDev
         public static bool IsDebugging()
         {
             bool result = false;
-
-            for (int i = 0; i < 3; ++i)
+            bool tryAgain = true;
+            for (int i = 0; i < 3 && tryAgain; ++i)
             {
                 try
                 {
                     result = _vsInstance != null &&
                         (_vsInstance.Debugger.CurrentProgram != null || _vsInstance.Debugger.CurrentMode == EnvDTE.dbgDebugMode.dbgRunMode);
+                    tryAgain = false;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
-                    if (!result) System.Threading.Thread.Sleep(1000);
+                    System.Threading.Thread.Sleep(1000);
                 }
             }
             return result;
@@ -184,7 +186,7 @@ namespace PrimalEditor.GameDev
             OpenVisualStudio(project.Solution);
             BuildDone = BuildSucceeded = false;
 
-            for (int i = 0; i < 3; ++i)
+            for (int i = 0; i < 3 && !BuildDone; ++i)
             {
                 try
                 {

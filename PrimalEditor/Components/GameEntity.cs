@@ -16,6 +16,7 @@ namespace PrimalEditor.Components
 {
     [DataContract]
     [KnownType(typeof(Transform))]
+    [KnownType(typeof(Script))]
     class GameEntity : ViewModelBase
     {
         private int _entityId = ID.INVALID_ID;
@@ -41,12 +42,12 @@ namespace PrimalEditor.Components
                 if (_isActive != value)
                 {
                     _isActive = value;
-                    if(_isActive)
+                    if (_isActive)
                     {
                         EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
                         Debug.Assert(ID.IsValid(_entityId));
                     }
-                    else if(ID.IsValid(EntityId))
+                    else if (ID.IsValid(EntityId))
                     {
                         EngineAPI.EntityAPI.RemoveGameEntity(this);
                         EntityId = ID.INVALID_ID;
@@ -56,7 +57,6 @@ namespace PrimalEditor.Components
                 }
             }
         }
-
 
         private bool _isEnabled = true;
         [DataMember]
@@ -98,10 +98,37 @@ namespace PrimalEditor.Components
         public Component GetComponent(Type type) => Components.FirstOrDefault(c => c.GetType() == type);
         public T GetComponent<T>() where T : Component => GetComponent(typeof(T)) as T;
 
+        public bool AddComponent(Component component)
+        {
+            Debug.Assert(component != null);
+            if (!Components.Any(x => x.GetType() == component.GetType()))
+            {
+                IsActive = false;
+                _components.Add(component);
+                IsActive = true;
+                return true;
+            }
+            Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component");
+            return false;
+        }
+
+        public void RemoveComponent(Component component)
+        {
+            Debug.Assert(component != null);
+            if (component is Transform) return; // Transform component can't be removed
+
+            if (_components.Contains(component))
+            {
+                IsActive = false;
+                _components.Remove(component);
+                IsActive = true;
+            }
+        }
+
         [OnDeserialized]
         void OnDeserialized(StreamingContext context)
         {
-            if(_components != null)
+            if (_components != null)
             {
                 Components = new ReadOnlyObservableCollection<Component>(_components);
                 OnPropertyChanged(nameof(Components));
@@ -168,7 +195,7 @@ namespace PrimalEditor.Components
             foreach (var component in firstEntity.Components)
             {
                 var type = component.GetType();
-                if(!SelectedEntities.Skip(1).Any(entity=>entity.GetComponent(type) == null))
+                if (!SelectedEntities.Skip(1).Any(entity => entity.GetComponent(type) == null))
                 {
                     Debug.Assert(Components.FirstOrDefault(x => x.GetType() == type) == null);
                     _components.Add(component.GetMultiselectionComponent(this));
@@ -225,7 +252,7 @@ namespace PrimalEditor.Components
             Debug.Assert(entities?.Any() == true);
             Components = new ReadOnlyObservableCollection<IMSComponent>(_components);
             SelectedEntities = entities;
-            PropertyChanged += (s, e) => { if(_enableUpdates) UpdateGameEntities(e.PropertyName); };
+            PropertyChanged += (s, e) => { if (_enableUpdates) UpdateGameEntities(e.PropertyName); };
         }
     }
 
