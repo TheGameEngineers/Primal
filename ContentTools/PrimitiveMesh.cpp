@@ -47,7 +47,7 @@ create_plane(const primitive_init_info& info,
     const u32 horizontal_count{ clamp(info.segments[horizontal_index], 1u, 10u) };
     const u32 vertical_count{ clamp(info.segments[vertical_index], 1u, 10u) };
     const f32 horizontal_step{ 1.f / horizontal_count };
-    const f32 vertical_step{ 1.f / horizontal_count };
+    const f32 vertical_step{ 1.f / vertical_count };
     const f32 u_step{ (u_range.y - u_range.x) / horizontal_count };
     const f32 v_step{ (v_range.y - v_range.x) / vertical_count };
 
@@ -98,6 +98,8 @@ create_plane(const primitive_init_info& info,
 
     const u32 num_indices{ 3 * 2 * horizontal_count * vertical_count };
     assert(m.raw_indices.size() == num_indices);
+
+    m.uv_sets.resize(1);
 
     for (u32 i{ 0 }; i < num_indices; ++i)
     {
