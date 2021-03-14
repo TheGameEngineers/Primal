@@ -1,0 +1,119 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<Window x:Class="PrimalEditor.Content.PrimitiveMeshDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PrimalEditor.Content"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:utl="clr-namespace:PrimalEditor.Utilities.Controls"
+        xmlns:ed="clr-namespace:PrimalEditor.Editors"
+        mc:Ignorable="d" ResizeMode="NoResize"
+        Foreground="{StaticResource Editor.FontBrush}"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True"
+        Title="Primitive Mesh" Height="600" Width="800"
+        Style="{StaticResource PrimalDialogStyle}">
+    <Window.DataContext>
+        <ed:GeometryEditor/>
+    </Window.DataContext>
+    <Window.Resources>
+        <ObjectDataProvider x:Key="dataFromEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="local:PrimitiveMeshType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </Window.Resources>
+    
+    <DockPanel Background="{StaticResource Editor.Window.GrayBrush2}">
+        <Border Background="{StaticResource Editor.Window.GrayBrush3}" Height="32" DockPanel.Dock="Top"
+                VerticalAlignment="Top" Margin="0,0,0,1">
+            <Border.Effect>
+                <DropShadowEffect Opacity="0.3" BlurRadius="10" ShadowDepth="0"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal" Margin="5,0">
+                <ComboBox SelectedIndex="0" Width="100" VerticalAlignment="Center"
+                          ItemsSource="{Binding Source={StaticResource dataFromEnum}}"
+                          x:Name="primTypeComboBox"
+                          SelectionChanged="OnPrimitiveType_ComboBox_SelectionChanged"/>
+                <CheckBox x:Name="textureCheckBox" Content="Show textured" VerticalAlignment="Center" Margin="5,0"
+                          IsChecked="True" Foreground="{StaticResource Editor.FontBrush}"
+                          Click="OnTexture_CheckBox_Click"/>
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition MinWidth="100" MaxWidth="200"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- PLANE SETTINGS-->
+            <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}"
+                                         Value="{x:Static local:PrimitiveMeshType.Plane}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" Margin="5">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Width" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Path=Value, ElementName=xSliderPlane}" Width="30" DockPanel.Dock="Right"/>
+                                <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" Interval="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="xSliderPlane" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Length" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Path=Value, ElementName=zSliderPlane}" Width="30" DockPanel.Dock="Right"/>
+                                <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" Interval="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="zSliderPlane" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Segments" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" Margin="5">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock Text="Width" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="widthScalarBoxPlane" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock Text="Length" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="lengthScalarBoxPlane" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Size" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Button Content="Save" Width="96" Margin="5,0"/>
+            </StackPanel>
+            <!-- CUBE SETTINGS-->
+            <!-- UVSPHERE SETTINGS-->
+            <!-- ICOSPHERE SETTINGS-->
+            <!-- CYLINDER SETTINGS-->
+            <!-- CAPSULE SETTINGS-->
+            <ed:GeometryView DataContext="{Binding MeshRenderer}" Grid.Column="1"/>
+            <StackPanel Grid.Column="1" Margin="5" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False">
+                <TextBlock Text="{Binding MeshRenderer.CameraPosition.X, StringFormat=G5}"/>
+                <TextBlock Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" Margin="10,0"/>
+                <TextBlock Text="{Binding MeshRenderer.CameraPosition.Z, StringFormat=G5}"/>
+            </StackPanel>
+        </Grid>
+        
+    </DockPanel>
+</Window>

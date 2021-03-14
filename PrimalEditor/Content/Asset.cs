@@ -14,7 +14,7 @@ namespace PrimalEditor.Content
         Audio,
         Material,
         Mesh,
-        Sleleton,
+        Skeleton,
         Texture,
     }
 

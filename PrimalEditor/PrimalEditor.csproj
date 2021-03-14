@@ -27,6 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Resources\PrimitiveMeshView\PlaneTexture.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <COMReference Include="EnvDTE80.dll">
       <Guid>1a31287a-4d7d-413e-8e32-3b374931bd89</Guid>
       <VersionMajor>8</VersionMajor>
@@ -43,6 +47,10 @@
       <Lcid>0</Lcid>
       <Isolated>false</Isolated>
     </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
   </ItemGroup>
 
 </Project>

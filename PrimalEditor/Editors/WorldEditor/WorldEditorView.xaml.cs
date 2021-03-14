@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using PrimalEditor.Content;
 using PrimalEditor.GameDev;
 using PrimalEditor.GameProject;
 using System;
@@ -38,6 +39,12 @@ namespace PrimalEditor.Editors
         private void OnNewScript_Button_Click(object sender, RoutedEventArgs e)
         {
             new NewScriptDialog().ShowDialog();
+        }
+
+        private void OnCreatePrimitiveMesh_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new PrimitiveMeshDialog();
+            dlg.ShowDialog();
         }
     }
 }
