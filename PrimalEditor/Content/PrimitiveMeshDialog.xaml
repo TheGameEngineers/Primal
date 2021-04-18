@@ -26,6 +26,10 @@
                 <x:Type TypeName="local:PrimitiveMeshType"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Margin" Value="5,5,0,0"/>
+            <Setter Property="FontSize" Value="9"/>
+        </Style>
     </Window.Resources>
     
     <DockPanel Background="{StaticResource Editor.Window.GrayBrush2}">
@@ -35,7 +39,7 @@
                 <DropShadowEffect Opacity="0.3" BlurRadius="10" ShadowDepth="0"/>
             </Border.Effect>
             <StackPanel Orientation="Horizontal" Margin="5,0">
-                <ComboBox SelectedIndex="0" Width="100" VerticalAlignment="Center"
+                <ComboBox SelectedIndex="2" Width="100" VerticalAlignment="Center"
                           ItemsSource="{Binding Source={StaticResource dataFromEnum}}"
                           x:Name="primTypeComboBox"
                           SelectionChanged="OnPrimitiveType_ComboBox_SelectionChanged"/>
@@ -65,7 +69,8 @@
                     </Style>
                 </StackPanel.Style>
                 <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" Margin="5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
                         <StackPanel Margin="5,15,5,5">
                             <DockPanel Margin="5">
                                 <TextBlock Text="Width" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
@@ -81,11 +86,13 @@
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Segments" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Segments" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Padding="5,0" 
+                           Foreground="{StaticResource Editor.FontBrush}"/>
                 </Grid>
                 <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" Margin="5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" 
+                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
                         <StackPanel Margin="5,15,5,5">
                             <DockPanel Margin="5,5,5,0">
                                 <TextBlock Text="Width" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
@@ -97,21 +104,100 @@
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Size" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Size" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Padding="5,0"
+                           Foreground="{StaticResource Editor.FontBrush}"/>
                 </Grid>
                 <Button Content="Save" Width="96" Margin="5,0"/>
             </StackPanel>
             <!-- CUBE SETTINGS-->
             <!-- UVSPHERE SETTINGS-->
+            <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}"
+                                         Value="{x:Static local:PrimitiveMeshType.UvSphere}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Lon." Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Path=Value, ElementName=xSliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
+                                <Slider Minimum="3" Maximum="64" Value="24" HorizontalAlignment="Stretch" Interval="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="xSliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Lat." Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Path=Value, ElementName=ySliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
+                                <Slider Minimum="2" Maximum="64" Value="12" HorizontalAlignment="Stretch" Interval="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="ySliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Segments" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Padding="5,0" 
+                           Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" 
+                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock Text="X" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="xScalarBoxUvSphere" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock Text="Y" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="yScalarBoxUvSphere" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock Text="Z" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="zScalarBoxUvSphere" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Size" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Padding="5,0"
+                           Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Angle" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Path=Value, ElementName=angleSliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
+                                <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" Interval="1" IsSnapToTickEnabled="True"
+                                        x:Name="angleSliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                    </Border>
+                    <Label Content="Segments" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Padding="5,0" 
+                           Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Button Content="Save" Width="96" Margin="5,0"/>
+            </StackPanel>
             <!-- ICOSPHERE SETTINGS-->
             <!-- CYLINDER SETTINGS-->
             <!-- CAPSULE SETTINGS-->
             <ed:GeometryView DataContext="{Binding MeshRenderer}" Grid.Column="1"/>
-            <StackPanel Grid.Column="1" Margin="5" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False">
-                <TextBlock Text="{Binding MeshRenderer.CameraPosition.X, StringFormat=G5}"/>
-                <TextBlock Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" Margin="10,0"/>
-                <TextBlock Text="{Binding MeshRenderer.CameraPosition.Z, StringFormat=G5}"/>
+            <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding MeshRenderer.CameraPosition.X, StringFormat=G5}" Foreground="{StaticResource Editor.RedBrush}"/>
+                    <TextBlock Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" Margin="10,0" Foreground="{StaticResource Editor.GreenBrush}"/>
+                    <TextBlock Text="{Binding MeshRenderer.CameraPosition.Z, StringFormat=G5}" Foreground="{StaticResource Editor.BlueBrush}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding MeshRenderer.Meshes[0].Positions.Count}" Foreground="{StaticResource Editor.OrangeBrush}"/>
+                    <TextBlock Text="{Binding MeshRenderer.Meshes[0].Indices.Count}" Margin="10,0" Foreground="{StaticResource Editor.OrangeBrush}"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
         

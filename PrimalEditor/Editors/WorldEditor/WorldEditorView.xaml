@@ -10,7 +10,9 @@
              xmlns:local="clr-namespace:PrimalEditor.Editors"
              xmlns:utl="clr-namespace:PrimalEditor.Utilities"
              xmlns:ctlr="clr-namespace:PrimalEditor.Utilities.Controls"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib" 
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:gameproject="clr-namespace:PrimalEditor.GameProject"
+             d:DataContext="{d:DesignInstance Type=gameproject:Project}"
              mc:Ignorable="d" Focusable="True"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>

@@ -10,7 +10,7 @@
              xmlns:local="clr-namespace:PrimalEditor.Editors"
              xmlns:proj ="clr-namespace:PrimalEditor.GameProject"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance Type=proj:Project, IsDesignTimeCreatable=True}"
+             d:DataContext="{d:DesignInstance Type=proj:Project}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.RowDefinitions>
