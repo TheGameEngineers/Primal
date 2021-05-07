@@ -108,7 +108,7 @@
                            HorizontalAlignment="Left" Padding="5,0"
                            Foreground="{StaticResource Editor.FontBrush}"/>
                 </Grid>
-                <Button Content="Save" Width="96" Margin="5,0"/>
+                <Button Content="Save" Width="96" Margin="5,0" Click="OnSave_Button_Click"/>
             </StackPanel>
             <!-- CUBE SETTINGS-->
             <!-- UVSPHERE SETTINGS-->
@@ -171,18 +171,18 @@
                 <Grid Margin="0,5">
                     <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
                             Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
-                            <DockPanel Margin="5">
+                            <DockPanel Margin="5,15,5,5">
                                 <TextBlock Text="Angle" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
                                 <TextBox Text="{Binding Path=Value, ElementName=angleSliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
                                 <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" Interval="1" IsSnapToTickEnabled="True"
                                         x:Name="angleSliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
                             </DockPanel>
                     </Border>
-                    <Label Content="Segments" VerticalAlignment="Top"
+                    <Label Content="Smoothing angle" VerticalAlignment="Top"
                            HorizontalAlignment="Left" Padding="5,0" 
                            Foreground="{StaticResource Editor.FontBrush}"/>
                 </Grid>
-                <Button Content="Save" Width="96" Margin="5,0"/>
+                <Button Content="Save" Width="96" Margin="5,0" Click="OnSave_Button_Click"/>
             </StackPanel>
             <!-- ICOSPHERE SETTINGS-->
             <!-- CYLINDER SETTINGS-->
