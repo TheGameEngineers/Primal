@@ -1,11 +1,8 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+#include "Test.h"
+
 #pragma comment(lib, "engine.lib")
-
-
-#define TEST_ENTITY_COMPONENTS 0
-#define TEST_WINDOW 0
-#define TEST_RENDERER 1
 
 #if TEST_ENTITY_COMPONENTS
 #include "TestEntityComponents.h"

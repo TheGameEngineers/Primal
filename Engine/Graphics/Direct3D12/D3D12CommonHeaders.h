@@ -11,6 +11,10 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d12.lib")
 
+namespace primal::graphics::d3d12 {
+constexpr u32 frame_buffer_count{ 3 };
+}
+
 // Assert that COM call to D3D API succeeded
 #ifdef _DEBUG
 #ifndef DXCall
@@ -37,8 +41,19 @@ if(FAILED(x)) {                                     \
 #ifdef _DEBUG
 // Sets the name of the COM object and outputs a debug string int Visual Studio's output panel.
 #define NAME_D3D12_OBJECT(obj, name) obj->SetName(name); OutputDebugString(L"::D3D12 Object Created: "); OutputDebugString(name); OutputDebugString(L"\n");
+// The indexed variant will include the index in the name of the object
+#define NAME_D3D12_OBJECT_INDEXED(obj, n, name)     \
+{                                                   \
+wchar_t full_name[128];                             \
+if (swprintf_s(full_name, L"%s[%u]", name, n) >0 ){ \
+    obj->SetName(full_name);                        \
+    OutputDebugString(L"::D3D12 Object Created: "); \
+    OutputDebugString(full_name);                   \
+    OutputDebugString(L"\n");                       \
+}}
 #else
 #define NAME_D3D12_OBJECT(x, name)
+#define NAME_D3D12_OBJECT_INDEXED(x, n, name)
 #endif // _DEBUG
 
 

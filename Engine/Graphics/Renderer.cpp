@@ -33,8 +33,15 @@ initialize(graphics_platform platform)
     return set_platform_interface(platform) && gfx.initialize();
 }
 
-void shutdown()
+void
+shutdown()
 {
     gfx.shutdown();
+}
+
+void
+render()
+{
+    gfx.render();
 }
 }
