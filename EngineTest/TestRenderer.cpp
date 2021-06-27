@@ -5,7 +5,7 @@
 #include "..\Platform\Platform.h"
 #include "..\Graphics\Renderer.h"
 #include "TestRenderer.h"
-#ifdef TEST_RENDERER
+#if TEST_RENDERER
 
 using namespace primal;
 
@@ -65,10 +65,10 @@ engine_test::initialize()
 
     platform::window_init_info info[]
     {
-        {&win_proc, nullptr, L"Test window 1", 100 - 2000, 100 - 700, 400, 800},
-        {&win_proc, nullptr, L"Test window 2", 150 - 2000, 150 - 700, 800, 400},
-        {&win_proc, nullptr, L"Test window 3", 200 - 2000, 200 - 700, 400, 400},
-        {&win_proc, nullptr, L"Test window 4", 250 - 2000, 250 - 700, 800, 600},
+        {&win_proc, nullptr, L"Render window 1", 100 - 2000, 100 - 700, 400, 800},
+        {&win_proc, nullptr, L"Render window 2", 150 - 2000, 150 - 700, 800, 400},
+        {&win_proc, nullptr, L"Render window 3", 200 - 2000, 200 - 700, 400, 400},
+        {&win_proc, nullptr, L"Render window 4", 250 - 2000, 250 - 700, 800, 600},
     };
     static_assert(_countof(info) == _countof(_surfaces));
 
