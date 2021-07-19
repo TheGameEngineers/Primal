@@ -3,6 +3,7 @@
 #pragma once
 #include "CommonHeaders.h"
 #include "Graphics\Renderer.h"
+#include "Platform\Window.h"
 
 #include <dxgi1_6.h>
 #include <d3d12.h>

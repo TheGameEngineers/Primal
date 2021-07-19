@@ -24,6 +24,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12Core.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12CommonHeaders.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Resources.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12Surface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -37,5 +38,6 @@
     <ClCompile Include="Graphics\Direct3D12\D3D12Interface.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Resources.cpp" />
+    <ClCompile Include="Graphics\Direct3D12\D3D12Surface.cpp" />
   </ItemGroup>
 </Project>

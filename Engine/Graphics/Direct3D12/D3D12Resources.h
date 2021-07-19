@@ -50,7 +50,7 @@ private:
     D3D12_CPU_DESCRIPTOR_HANDLE         _cpu_start{};
     D3D12_GPU_DESCRIPTOR_HANDLE         _gpu_start{};
     std::unique_ptr<u32[]>              _free_handles{};
-    std::vector<u32>                    _deferred_free_indices[frame_buffer_count]{};
+    utl::vector<u32>                    _deferred_free_indices[frame_buffer_count]{};
     std::mutex                          _mutex{};
     u32                                 _capacity{ 0 };
     u32                                 _size{ 0 };
