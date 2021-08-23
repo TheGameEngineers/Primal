@@ -27,6 +27,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12Surface.h" />
     <ClInclude Include="Utilities\FreeList.h" />
     <ClInclude Include="Utilities\Vector.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12Helpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />

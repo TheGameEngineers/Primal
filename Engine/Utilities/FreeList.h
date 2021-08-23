@@ -69,7 +69,7 @@ public:
         return _array.size();
     }
 
-    constexpr u32 empty() const
+    constexpr bool empty() const
     {
         return _size == 0;
     }

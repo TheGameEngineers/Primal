@@ -32,6 +32,7 @@
     <ClInclude Include="EngineAPI\TransfromComponent.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12CommonHeaders.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Core.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Interface.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Resources.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Surface.h" />

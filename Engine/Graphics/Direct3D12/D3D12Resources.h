@@ -57,4 +57,150 @@ private:
     u32                                 _descriptor_size{};
     const D3D12_DESCRIPTOR_HEAP_TYPE    _type{};
 };
+
+struct d3d12_texture_init_info
+{
+    ID3D12Heap1*                        heap{ nullptr };
+    ID3D12Resource*                     resource{ nullptr };
+    D3D12_SHADER_RESOURCE_VIEW_DESC*    srv_desc{ nullptr };
+    D3D12_RESOURCE_DESC*                desc{ nullptr };
+    D3D12_RESOURCE_ALLOCATION_INFO1     allocation_info{};
+    D3D12_RESOURCE_STATES               initial_state{};
+    D3D12_CLEAR_VALUE                   clear_value{};
+};
+
+class d3d12_texture
+{
+public:
+    constexpr static u32 max_mips{ 14 }; // support up to 16k resolutions.
+    d3d12_texture() = default;
+    explicit d3d12_texture(d3d12_texture_init_info info);
+    DISABLE_COPY(d3d12_texture);
+    constexpr d3d12_texture(d3d12_texture&& o)
+        : _resource{ o._resource }, _srv{ o._srv }
+    {
+        o.reset();
+    }
+
+    constexpr d3d12_texture& operator=(d3d12_texture&& o)
+    {
+        assert(this != &o);
+        if (this != &o)
+        {
+            release();
+            move(o);
+        }
+        return *this;
+    }
+
+    ~d3d12_texture() { release(); }
+
+    void release();
+    constexpr ID3D12Resource *const resource() const { return _resource; }
+    constexpr descriptor_handle srv() const { return _srv; }
+
+private:
+    constexpr void move(d3d12_texture& o)
+    {
+        _resource = o._resource;
+        _srv = o._srv;
+        o.reset();
+    }
+
+    constexpr void reset()
+    {
+        _resource = nullptr;
+        _srv = {};
+    }
+
+    ID3D12Resource*     _resource{ nullptr };
+    descriptor_handle   _srv;
+};
+
+class d3d12_render_texture
+{
+public:
+    d3d12_render_texture() = default;
+    explicit d3d12_render_texture(d3d12_texture_init_info info);
+    DISABLE_COPY(d3d12_render_texture);
+    constexpr d3d12_render_texture(d3d12_render_texture&& o)
+        : _texture{ std::move(o._texture) }, _mip_count{ o._mip_count }
+    {
+        for (u32 i{ 0 }; i < _mip_count; ++i) _rtv[i] = o._rtv[i];
+        o.reset();
+    }
+
+    constexpr d3d12_render_texture& operator=(d3d12_render_texture&& o)
+    {
+        assert(this != &o);
+        if (this != &o)
+        {
+            release();
+            move(o);
+        }
+        return *this;
+    }
+
+    ~d3d12_render_texture() { release(); }
+
+    void release();
+    constexpr u32 mip_count() const { return _mip_count; }
+    constexpr D3D12_CPU_DESCRIPTOR_HANDLE rtv(u32 mip_index) const { assert(mip_index < _mip_count); return _rtv[mip_index].cpu; }
+    constexpr descriptor_handle srv() const { return _texture.srv(); }
+    constexpr ID3D12Resource *const resource() const { return _texture.resource(); }
+private:
+    constexpr void move(d3d12_render_texture& o)
+    {
+        _texture = std::move(o._texture);
+        _mip_count = o._mip_count;
+        for (u32 i{ 0 }; i < _mip_count; ++i) _rtv[i] = o._rtv[i];
+        o.reset();
+    }
+
+    constexpr void reset()
+    {
+        for (u32 i{ 0 }; i < _mip_count; ++i) _rtv[i] = {};
+        _mip_count = 0;
+    }
+
+    d3d12_texture       _texture{};
+    descriptor_handle   _rtv[d3d12_texture::max_mips]{};
+    u32                 _mip_count{ 0 };
+};
+
+class d3d12_depth_buffer
+{
+public:
+    d3d12_depth_buffer() = default;
+    explicit d3d12_depth_buffer(d3d12_texture_init_info info);
+    DISABLE_COPY(d3d12_depth_buffer);
+    constexpr d3d12_depth_buffer(d3d12_depth_buffer&& o)
+        : _texture{ std::move(o._texture) }, _dsv{ o._dsv }
+    {
+        o._dsv = {};
+    }
+
+    constexpr d3d12_depth_buffer& operator=(d3d12_depth_buffer&& o)
+    {
+        assert(this != &o);
+        if (this != &o)
+        {
+            _texture = std::move(o._texture);
+            _dsv = o._dsv;
+            o._dsv = {};
+        }
+        return *this;
+    }
+
+    ~d3d12_depth_buffer() { release(); }
+
+    void release();
+    constexpr D3D12_CPU_DESCRIPTOR_HANDLE dsv() const { return _dsv.cpu; }
+    constexpr descriptor_handle srv() const { return _texture.srv(); }
+    constexpr ID3D12Resource *const resource() const { return _texture.resource(); }
+
+private:
+    d3d12_texture       _texture{};
+    descriptor_handle   _dsv{};
+};
 }
