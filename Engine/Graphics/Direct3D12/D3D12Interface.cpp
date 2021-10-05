@@ -19,6 +19,8 @@ get_platform_interface(platform_interface& pi)
     pi.surface.width = core::surface_width;
     pi.surface.height = core::surface_height;
     pi.surface.render = core::render_surface;
+
+    pi.platform = graphics_platform::direct3d12;
 }
 
 }

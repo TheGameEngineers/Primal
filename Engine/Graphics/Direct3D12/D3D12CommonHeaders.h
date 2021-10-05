@@ -14,6 +14,8 @@
 
 namespace primal::graphics::d3d12 {
 constexpr u32 frame_buffer_count{ 3 };
+using id3d12_device = ID3D12Device8;
+using id3d12_graphics_command_list = ID3D12GraphicsCommandList6;
 }
 
 // Assert that COM call to D3D API succeeded
@@ -57,4 +59,6 @@ if (swprintf_s(full_name, L"%s[%u]", name, n) >0 ){ \
 #define NAME_D3D12_OBJECT_INDEXED(x, n, name)
 #endif // _DEBUG
 
+#include "D3D12Helpers.h"
+#include "D3D12Resources.h"
 

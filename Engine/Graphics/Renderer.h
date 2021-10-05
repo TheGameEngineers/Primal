@@ -38,6 +38,14 @@ enum class graphics_platform :u32
 bool initialize(graphics_platform platform);
 void shutdown();
 
+// Get the location of compiled engine shaders relative to the executable's path.
+// The path is for the graphics API that's currently in use.
+const char* get_engine_shaders_path();
+
+// Get the location of compiled engine shaders, for the specified platform, relative to the executable's path.
+// The path is for the graphics API that's currently in use.
+const char* get_engine_shaders_path(graphics_platform platform);
+
 surface create_surface(platform::window window);
 void remove_surface(surface_id id);
 }

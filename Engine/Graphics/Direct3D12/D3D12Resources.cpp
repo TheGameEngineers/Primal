@@ -2,7 +2,6 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "D3D12Resources.h"
 #include "D3D12Core.h"
-#include "D3D12Helpers.h"
 
 namespace primal::graphics::d3d12 {
 //// DESCRIPTOR HEAP //////////////////////////////////////////////////////////////////////////////
