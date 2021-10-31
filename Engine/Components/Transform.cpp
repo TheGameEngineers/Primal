@@ -13,13 +13,13 @@ utl::vector<math::v3> scales;
 
 } // anonymous namespace
 
-component 
+component
 create(init_info info, game_entity::entity entity)
 {
     assert(entity.is_valid());
     const id::id_type entity_index{ id::index(entity.get_id()) };
 
-    if(positions.size() > entity_index)
+    if (positions.size() > entity_index)
     {
         rotations[entity_index] = math::v4(info.rotation);
         positions[entity_index] = math::v3(info.position);
@@ -33,30 +33,30 @@ create(init_info info, game_entity::entity entity)
         scales.emplace_back(info.scale);
     }
 
-    return component(transform_id{ (id::id_type)positions.size() - 1 });
+    return component{ transform_id{ entity.get_id() } };
 }
 
-void 
-remove(component c)
+void
+remove([[maybe_unused]] component c)
 {
     assert(c.is_valid());
 }
 
-math::v4 
+math::v4
 component::rotation() const
 {
     assert(is_valid());
     return rotations[id::index(_id)];
 }
 
-math::v3 
+math::v3
 component::position() const
 {
     assert(is_valid());
     return positions[id::index(_id)];
 }
 
-math::v3 
+math::v3
 component::scale() const
 {
     assert(is_valid());

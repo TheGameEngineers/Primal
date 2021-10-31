@@ -3,6 +3,7 @@
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "D3D12Shaders.h"
+#include "D3D12GPass.h"
 
 using namespace Microsoft::WRL;
 
@@ -81,11 +82,14 @@ public:
     }
 
     // Signal the fence with the new fence value.
-    void end_frame()
+    void end_frame(const d3d12_surface& surface)
     {
         DXCall(_cmd_list->Close());
         ID3D12CommandList *const cmd_lists[]{ _cmd_list };
         _cmd_queue->ExecuteCommandLists(_countof(cmd_lists), &cmd_lists[0]);
+
+        // Presenting swap chain buffers happens in lockstep with frame buffers.
+        surface.present();
 
         u64& fence_value{ _fence_value };
         ++fence_value;
@@ -167,21 +171,22 @@ private:
 
 using surface_collection = utl::free_list<d3d12_surface>;
 
-id3d12_device*              main_device{ nullptr };
-IDXGIFactory7*              dxgi_factory{ nullptr };
-d3d12_command               gfx_command;
-surface_collection          surfaces;
+id3d12_device*                  main_device{ nullptr };
+IDXGIFactory7*                  dxgi_factory{ nullptr };
+d3d12_command                   gfx_command;
+surface_collection              surfaces;
+d3dx::d3d12_resource_barrier    resource_barriers{};
 
-descriptor_heap             rtv_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
-descriptor_heap             dsv_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
-descriptor_heap             srv_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
-descriptor_heap             uav_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
+descriptor_heap                 rtv_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
+descriptor_heap                 dsv_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
+descriptor_heap                 srv_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
+descriptor_heap                 uav_desc_heap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
 
-utl::vector<IUnknown*>      deferred_releases[frame_buffer_count]{};
-u32                         deferred_releases_flag[frame_buffer_count]{};
-std::mutex                  deferred_releases_mutex{};
+utl::vector<IUnknown*>          deferred_releases[frame_buffer_count]{};
+u32                             deferred_releases_flag[frame_buffer_count]{};
+std::mutex                      deferred_releases_mutex{};
 
-constexpr D3D_FEATURE_LEVEL minimum_feature_level{ D3D_FEATURE_LEVEL_11_0 };
+constexpr D3D_FEATURE_LEVEL     minimum_feature_level{ D3D_FEATURE_LEVEL_11_0 };
 
 bool
 failed_init()
@@ -334,7 +339,8 @@ initialize()
     if (!gfx_command.command_queue()) return failed_init();
 
     // initialize modules
-    if (!shaders::initialize())
+    if (!(shaders::initialize() &&
+          gpass::initialize()))
         return failed_init();
 
     NAME_D3D12_OBJECT(main_device, L"Main D3D12 Device");
@@ -360,6 +366,7 @@ shutdown()
     }
 
     // shutdown modules
+    gpass::shutdown();
     shaders::shutdown();
 
     release(dxgi_factory);
@@ -473,14 +480,51 @@ render_surface(surface_id id)
     }
 
     const d3d12_surface& surface{ surfaces[id] };
+    ID3D12Resource *const current_back_buffer{ surface.back_buffer() };
+
+    d3d12_frame_info frame_info
+    {
+        surface.width(),
+        surface.height()
+    };
+
+    gpass::set_size({ frame_info.surface_width, frame_info.surface_height });
+    d3dx::d3d12_resource_barrier& barriers{ resource_barriers };
+
+    // Record commands
+    cmd_list->RSSetViewports(1, &surface.viewport());
+    cmd_list->RSSetScissorRects(1, &surface.scissor_rect());
+
+    // Depth prepass
+    gpass::add_transitions_for_depth_prepass(barriers);
+    barriers.apply(cmd_list);
+    gpass::set_render_targets_for_depth_prepass(cmd_list);
+    gpass::depth_prepass(cmd_list, frame_info);
+
+    // Geometry and lighting pass
+    gpass::add_transitions_for_gpass(barriers);
+    barriers.apply(cmd_list);
+    gpass::set_render_targets_for_gpass(cmd_list);
+    gpass::render(cmd_list, frame_info);
+
+    d3dx::transition_resource(cmd_list, current_back_buffer,
+                              D3D12_RESOURCE_STATE_PRESENT,
+                              D3D12_RESOURCE_STATE_RENDER_TARGET);
+    // Post-process
+    gpass::add_transitions_for_post_process(barriers);
+    barriers.apply(cmd_list);
+    // Will write to the current back buffer, so back buffer is a render target
+
+    // after post process
+    d3dx::transition_resource(cmd_list, current_back_buffer,
+                              D3D12_RESOURCE_STATE_RENDER_TARGET,
+                              D3D12_RESOURCE_STATE_PRESENT);
 
     // Presenting swap chain buffers happens in lockstep with frame buffers.
-    surface.present();
-    // Record commands
-    // ...
-    // 
+    //surface.present();
+
     // Done recording commands. Now execute commands,
     // signal and increment the fence value for next frame.
-    gfx_command.end_frame();
+    gfx_command.end_frame(surface);
 }
 }

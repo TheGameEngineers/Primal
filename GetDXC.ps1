@@ -1,4 +1,4 @@
-# Courtesy of Devanity (https://github.com/Devaniti/GetDXC)
+# Courtesy of Devaniti (https://github.com/Devaniti/GetDXC)
 # usage: powershell -ExecutionPolicy Bypass -File GetDXC.ps1 PathToFolder
 $SaveFolder = $args[0]
 if ($args.count -lt 1)
