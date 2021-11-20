@@ -94,8 +94,8 @@ descriptor_heap::allocate()
         handle.gpu.ptr = _gpu_start.ptr + offset;
     }
 
+    handle.index = index;
     DEBUG_OP(handle.container = this);
-    DEBUG_OP(handle.index = index);
     return handle;
 }
 

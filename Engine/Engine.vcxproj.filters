@@ -30,6 +30,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12GPass.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12PostProcess.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -47,5 +48,6 @@
     <ClCompile Include="Graphics\Direct3D12\D3D12Helpers.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Gpass.cpp" />
+    <ClCompile Include="Graphics\Direct3D12\D3D12PostProcess.cpp" />
   </ItemGroup>
 </Project>
