@@ -1,11 +1,11 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+#ifdef _WIN64
 #include "Platform.h"
 #include "PlatformTypes.h"
 
 namespace primal::platform {
 
-#ifdef _WIN64
 namespace {
 struct window_info
 {
@@ -56,7 +56,7 @@ LRESULT CALLBACK internal_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM
     case WM_SIZE:
         resized = (wparam != SIZE_MINIMIZED);
         break;
-    
+
     default:
         break;
     }
@@ -78,7 +78,7 @@ LRESULT CALLBACK internal_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM
 void
 resize_window(const window_info& info, const RECT& area)
 {
-    // Asjust the window size for correct device size
+    // Adjust the window size for correct device size
     RECT window_rect{ area };
     AdjustWindowRect(&window_rect, info.style, FALSE);
 
@@ -115,6 +115,7 @@ void
 set_window_fullscreen(window_id id, bool is_fullscreen)
 {
     window_info& info{ get_from_id(id) };
+
     if (info.is_fullscreen != is_fullscreen)
     {
         info.is_fullscreen = is_fullscreen;
@@ -164,7 +165,7 @@ get_window_size(window_id id)
 {
     window_info& info{ get_from_id(id) };
     RECT& area{ info.is_fullscreen ? info.fullscreen_area : info.client_area };
-    return { (u32)area.left, (u32)area.top , (u32)area.right , (u32)area.bottom };
+    return { (u32)area.left, (u32)area.top, (u32)area.right, (u32)area.bottom };
 }
 
 bool
@@ -175,7 +176,7 @@ is_window_closed(window_id id)
 } // anonymous namespace
 
 window
-create_window(const window_init_info* const init_info /* = nullptr */)
+create_window(const window_init_info* init_info /* = nullptr */)
 {
     window_proc callback{ init_info ? init_info->callback : nullptr };
     window_handle parent{ init_info ? init_info->parent : nullptr };
@@ -229,7 +230,7 @@ create_window(const window_init_info* const init_info /* = nullptr */)
         NULL);            // extra creation parameters
 
     if (info.hwnd)
-    {        
+    {
         // Set in the "extra" bytes the pointer to the window callback function
         // which handles messages for the window
         DEBUG_OP(SetLastError(0));
@@ -253,71 +254,9 @@ remove_window(window_id id)
     DestroyWindow(info.hwnd);
     windows.remove(id);
 }
-#else
-#error "must implement at least one platform"
+
+}
+
+#include "IncludeWindowCpp.h"
+
 #endif // _WIND64
-
-void
-window::set_fullscreen(bool is_fullscreen) const
-{
-    assert(is_valid());
-    set_window_fullscreen(_id, is_fullscreen);
-}
-
-bool
-window::is_fullscreen() const
-{
-    assert(is_valid());
-    return is_window_fullscreen(_id);
-}
-
-void*
-window::handle() const
-{
-    assert(is_valid());
-    return get_window_handle(_id);
-}
-
-void
-window::set_caption(const wchar_t* caption) const
-{
-    assert(is_valid());
-    set_window_caption(_id, caption);
-}
-
-math::u32v4
-window::size() const
-{
-    assert(is_valid());
-    return get_window_size(_id);
-}
-
-void
-window::resize(u32 width, u32 height) const
-{
-    assert(is_valid());
-    resize_window(_id, width, height);
-}
-
-u32
-window::width() const
-{
-    math::u32v4 s{ size() };
-    return s.z - s.x;
-}
-
-u32
-window::height() const
-{
-    math::u32v4 s{ size() };
-    return s.w - s.y;
-}
-
-bool
-window::is_closed() const
-{
-    assert(is_valid());
-    return is_window_closed(_id);
-}
-
-}
