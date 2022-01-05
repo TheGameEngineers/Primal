@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -43,6 +44,18 @@ namespace PrimalEditor
 
             return sb.ToString(0, length);
         }
+
+        public static bool IsDirectory(string path)
+        {
+            try
+            {
+                return File.GetAttributes(path).HasFlag(FileAttributes.Directory);
+            }
+            catch (Exception ex) { Debug.WriteLine(ex.Message); }
+            return false;
+        }
+
+        public static bool IsOlder(this DateTime date, DateTime other) => date < other;
 
         public static string SanitizeFileName(string name)
         {

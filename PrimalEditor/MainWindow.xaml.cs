@@ -1,9 +1,11 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using PrimalEditor.Content;
 using PrimalEditor.GameProject;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -92,7 +94,10 @@ namespace PrimalEditor
             else
             {
                 Project.Current?.Unload();
-                DataContext = projectBrowser.DataContext;
+                var project = projectBrowser.DataContext as Project;
+                Debug.Assert(project != null);
+                AssetRegistry.Reset(project.ContentPath);
+                DataContext = project;
             }
         }
     }

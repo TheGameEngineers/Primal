@@ -28,6 +28,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Resources\ContentBrowser\FolderLarge.png" />
+    <None Remove="Resources\ContentBrowser\FolderSmall.png" />
+    <None Remove="Resources\ContentBrowser\ListView.png" />
+    <None Remove="Resources\ContentBrowser\Thumbs.db" />
+    <None Remove="Resources\ContentBrowser\TileView.png" />
     <None Remove="Resources\PrimitiveMeshView\Checkermap.png" />
     <None Remove="Resources\PrimitiveMeshView\PlaneTexture.png" />
   </ItemGroup>
@@ -52,6 +57,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\ContentBrowser\FolderLarge.png" />
+    <Resource Include="Resources\ContentBrowser\FolderSmall.png" />
+    <Resource Include="Resources\ContentBrowser\ListView.png" />
+    <Resource Include="Resources\ContentBrowser\TileView.png" />
     <Resource Include="Resources\PrimitiveMeshView\Checkermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
   </ItemGroup>
