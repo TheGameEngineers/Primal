@@ -101,10 +101,39 @@ namespace PrimalEditor.Content
     /// <summary>
     /// Interaction logic for ContentBrowserView.xaml
     /// </summary>
-    public partial class ContentBrowserView : UserControl
+    public partial class ContentBrowserView : UserControl, IDisposable
     {
         private string _sortedProperty = nameof(ContentInfo.FileName);
         private ListSortDirection _sortDirection;
+
+        public SelectionMode SelectionMode
+        {
+            get => (SelectionMode)GetValue(SelectionModeProperty);
+            set => SetValue(SelectionModeProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectionModeProperty =
+            DependencyProperty.Register(nameof(SelectionMode), typeof(SelectionMode), typeof(ContentBrowserView), new PropertyMetadata(SelectionMode.Extended));
+
+        public FileAccess FileAccess
+        {
+            get => (FileAccess)GetValue(FileAccessProperty);
+            set => SetValue(FileAccessProperty, value);
+        }
+
+        public static readonly DependencyProperty FileAccessProperty =
+            DependencyProperty.Register(nameof(FileAccess), typeof(FileAccess), typeof(ContentBrowserView), new PropertyMetadata(FileAccess.ReadWrite));
+
+
+        internal ContentInfo SelectedItem
+        {
+            get => (ContentInfo)GetValue(SelectedItemProperty);
+            set => SetValue(SelectedItemProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedItemProperty =
+            DependencyProperty.Register(nameof(SelectedItem), typeof(ContentInfo), typeof(ContentBrowserView), new PropertyMetadata(null));
+
         public ContentBrowserView()
         {
             DataContext = null;
@@ -223,7 +252,7 @@ namespace PrimalEditor.Content
         private void OnContent_Item_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var info = (sender as FrameworkElement).DataContext as ContentInfo;
-            ExecutreSelection(info);
+            ExecuteSelection(info);
         }
 
         private void OnContent_Item_KeyDown(object sender, KeyEventArgs e)
@@ -231,11 +260,11 @@ namespace PrimalEditor.Content
             if (e.Key == Key.Enter)
             {
                 var info = (sender as FrameworkElement).DataContext as ContentInfo;
-                ExecutreSelection(info);
+                ExecuteSelection(info);
             }
         }
 
-        private void ExecutreSelection(ContentInfo info)
+        private void ExecuteSelection(ContentInfo info)
         {
             if (info == null) return;
 
@@ -244,6 +273,23 @@ namespace PrimalEditor.Content
                 var vm = DataContext as ContentBrowser;
                 vm.SelectedFolder = info.FullPath;
             }
+        }
+
+        private void OnFolderContent_ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var item = folderListView.SelectedItem as ContentInfo;
+            SelectedItem = item?.IsDirectory == true ? null : item;
+        }
+
+        public void Dispose()
+        {
+            if (Application.Current?.MainWindow != null)
+            {
+                Application.Current.MainWindow.DataContextChanged += OnProjectChanged;
+            }
+
+            (DataContext as ContentBrowser)?.Dispose();
+            DataContext = null;
         }
     }
 }

@@ -143,18 +143,15 @@ namespace PrimalEditor.Content
 
         private void OnSave_Button_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new SaveFileDialog()
-            {
-                InitialDirectory = Project.Current.ContentPath,
-                Filter = "Asset file (*.asset)|*.asset"
-            };
-
+            var dlg = new SaveDialog();
             if(dlg.ShowDialog() == true)
             {
-                Debug.Assert(!string.IsNullOrEmpty(dlg.FileName));
+                Debug.Assert(!string.IsNullOrEmpty(dlg.SaveFilePath));
                 var asset = (DataContext as IAssetEditor).Asset;
                 Debug.Assert(asset != null);
-                asset.Save(dlg.FileName);
+                asset.Save(dlg.SaveFilePath);
+
+                // Note: you can choose to close this window after saving.
             }
         }
     }

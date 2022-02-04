@@ -256,7 +256,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Source" TargetName="image" Value="pack://application:,,,/Resources/ContentBrowser/TileView.png"/>
+                                <Setter Property="Source" TargetName="image" Value="/PrimalEditor;component/Resources/ContentBrowser/TileView.png"/>
                                 <Setter Property="ToolTip" TargetName="border" Value="Tile view"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -276,12 +276,14 @@
         </Grid.RowDefinitions>
 
         <ListView ItemsSource="{Binding FolderContent}" Grid.Row="1" x:Name="folderListView"
-                  IsTextSearchEnabled="True" TextSearch.TextPath="FileName">
+                  IsTextSearchEnabled="True" TextSearch.TextPath="FileName"
+                  SelectionChanged="OnFolderContent_ListView_SelectionChanged">
             <ListView.Style>
                 <Style TargetType="{x:Type ListView}">
                     <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
                     <Setter Property="ListBox.BorderThickness" Value="0"/>
                     <Setter Property="View" Value="{StaticResource gridView}"/>
+                    <Setter Property="SelectionMode" Value="{Binding Path=SelectionMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Path=IsChecked, ElementName=listViewToggle}" Value="False">
                             <Setter Property="View" Value="{StaticResource tileView}"/>
@@ -348,7 +350,6 @@
 
                         <Style TargetType="{x:Type Path}" x:Key="{x:Type Path}">
                             <Setter Property="Margin" Value="0,3,0,0"/>
-                            <Setter Property="Grid.Column" Value="1"/>
                             <Setter Property="Data" Value="M0,0 L1.5,0 L4.5,3 L1.5,6 L0,6 L3,3 z"/>
                             <Setter Property="Fill" Value="{StaticResource Editor.FontBrush}"/>
                             <Setter Property="HorizontalAlignment" Value="Center"/>
