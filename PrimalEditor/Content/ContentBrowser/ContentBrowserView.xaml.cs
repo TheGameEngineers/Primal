@@ -285,7 +285,7 @@ namespace PrimalEditor.Content
         {
             if (Application.Current?.MainWindow != null)
             {
-                Application.Current.MainWindow.DataContextChanged += OnProjectChanged;
+                Application.Current.MainWindow.DataContextChanged -= OnProjectChanged;
             }
 
             (DataContext as ContentBrowser)?.Dispose();

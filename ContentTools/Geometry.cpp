@@ -280,12 +280,102 @@ pack_mesh_data(const mesh& m, u8* const buffer, u64& at)
     memcpy(&buffer[at], data, s); at += s;
 }
 
+bool
+split_meshes_by_material(u32 material_idx, const mesh& m, mesh& submesh)
+{
+    submesh.name = m.name;
+    submesh.lod_threshold = m.lod_threshold;
+    submesh.lod_id = m.lod_id;
+    submesh.material_used.emplace_back(material_idx);
+    submesh.uv_sets.resize(m.uv_sets.size());
+
+    const u32 num_polys{ (u32)m.raw_indices.size() / 3 };
+    utl::vector<u32> vertex_ref(m.positions.size(), u32_invalid_id);
+
+    for (u32 i{ 0 }; i < num_polys; ++i)
+    {
+        const u32 mtl_idx{ m.material_indices[i] };
+        if (mtl_idx != material_idx) continue;
+
+        const u32 index{ i * 3 };
+        for (u32 j = index; j < index + 3; ++j)
+        {
+            const u32 v_idx{ m.raw_indices[j] };
+            if (vertex_ref[v_idx] != u32_invalid_id)
+            {
+                submesh.raw_indices.emplace_back(vertex_ref[v_idx]);
+            }
+            else
+            {
+                submesh.raw_indices.emplace_back((u32)submesh.positions.size());
+                vertex_ref[v_idx] = submesh.raw_indices.back();
+                submesh.positions.emplace_back(m.positions[v_idx]);
+            }
+
+            if (m.normals.size())
+            {
+                submesh.normals.emplace_back(m.normals[j]);
+            }
+
+            if (m.tangents.size())
+            {
+                submesh.tangents.emplace_back(m.tangents[j]);
+            }
+
+            for (u32 k{ 0 }; k < m.uv_sets.size(); ++k)
+            {
+                if (m.uv_sets[k].size())
+                {
+                    submesh.uv_sets[k].emplace_back(m.uv_sets[k][j]);
+                }
+            }
+        }
+    }
+
+    assert((submesh.raw_indices.size() % 3) == 0);
+    return !submesh.raw_indices.empty();
+}
+
+void
+split_meshes_by_material(scene& scene)
+{
+    for (auto& lod : scene.lod_groups)
+    {
+        utl::vector<mesh> new_meshes;
+
+        for (auto& m : lod.meshes)
+        {
+            // If more than one material is used in this mesh
+            // then split it into submeshes.
+            const u32 num_materials{ (u32)m.material_used.size() };
+            if (num_materials > 1)
+            {
+                for (u32 i{ 0 }; i < num_materials; ++i)
+                {
+                    mesh submesh{};
+                    if (split_meshes_by_material(m.material_used[i], m, submesh))
+                    {
+                        new_meshes.emplace_back(submesh);
+                    }
+                }
+            }
+            else
+            {
+                new_meshes.emplace_back(m);
+            }
+        }
+
+        new_meshes.swap(lod.meshes);
+    }
+}
 
 } // anonymous namespace
 
 void
 process_scene(scene& scene, const geometry_import_settings& settings)
 {
+    split_meshes_by_material(scene);
+
     for (auto& lod : scene.lod_groups)
         for (auto& m : lod.meshes)
         {
