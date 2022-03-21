@@ -59,6 +59,8 @@ namespace PrimalEditor.Content
         public DateTime ImportDate { get; protected set; }
         public byte[] Hash { get; protected set; }
 
+        public abstract void Import(string file);
+        public abstract void Load(string file);
         public abstract IEnumerable<string> Save(string file);
 
         private static AssetInfo GetAssetInfo(BinaryReader reader)
@@ -71,7 +73,7 @@ namespace PrimalEditor.Content
             info.Guid = new Guid(reader.ReadBytes(idSize));
             info.ImportDate = DateTime.FromBinary(reader.ReadInt64());
             var hashSize = reader.ReadInt32();
-            if(hashSize>0)
+            if (hashSize > 0)
             {
                 info.Hash = reader.ReadBytes(hashSize);
             }
@@ -81,6 +83,9 @@ namespace PrimalEditor.Content
 
             return info;
         }
+
+        public static AssetInfo TryGetAssetInfo(string file) =>
+            File.Exists(file) && Path.GetExtension(file) == AssetFileExtension ? AssetRegistry.GetAssetInfo(file) ?? GetAssetInfo(file) : null;
 
         public static AssetInfo GetAssetInfo(string file)
         {

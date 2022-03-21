@@ -94,11 +94,13 @@ fbx_context::get_scene(FbxNode* root /*= nullptr*/)
                 lod.name = lod.meshes[0].name;
                 _scene->lod_groups.emplace_back(lod);
             }
-            else if (node->GetLodGroup())
-            {
-                get_lod_group(node);
-            }
-
+        }
+        else if (node->GetLodGroup())
+        {
+            get_lod_group(node);
+        }
+        else
+        {
             // See if there's a mesh somewhere further down the hierarchy.
             get_scene(node);
         }
@@ -129,6 +131,10 @@ fbx_context::get_mesh(FbxNode* node, utl::vector<mesh>& meshes)
             meshes.emplace_back(m);
         }
     }
+
+    // See if there's a mesh somewhere further down the hierarchy.
+    get_scene(node);
+
 }
 
 void
