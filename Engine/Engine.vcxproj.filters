@@ -32,6 +32,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12GPass.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12PostProcess.h" />
     <ClInclude Include="Platform\IncludeWindowCpp.h" />
+    <ClInclude Include="Utilities\IOStream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />

@@ -20,6 +20,36 @@ namespace PrimalEditor.Editors
     //       renderer, this class and the WPF viewer will become obsolete.
     class MeshRendererVertexData : ViewModelBase
     {
+        private bool _isHighlighted;
+        public bool IsHighlighted
+        {
+            get => _isHighlighted;
+            set
+            {
+                if (_isHighlighted != value)
+                {
+                    _isHighlighted = value;
+                    OnPropertyChanged(nameof(IsHighlighted));
+                    OnPropertyChanged(nameof(Diffuse));
+                }
+            }
+        }
+
+        private bool _isIsolated;
+        public bool IsIsolated
+        {
+            get => _isIsolated;
+            set
+            {
+                if (_isIsolated != value)
+                {
+                    _isIsolated = value;
+                    OnPropertyChanged(nameof(IsIsolated));
+                }
+            }
+        }
+
+
         private Brush _specular = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ff111111"));
         public Brush Specular
         {
@@ -37,7 +67,7 @@ namespace PrimalEditor.Editors
         private Brush _diffuse = Brushes.White;
         public Brush Diffuse
         {
-            get => _diffuse;
+            get => _isHighlighted ? Brushes.Orange : _diffuse;
             set
             {
                 if (_diffuse != value)
@@ -48,6 +78,7 @@ namespace PrimalEditor.Editors
             }
         }
 
+        public string Name { get; set; }
         public Point3DCollection Positions { get; } = new Point3DCollection();
         public Vector3DCollection Normals { get; } = new Vector3DCollection();
         public PointCollection UVs { get; } = new PointCollection();
@@ -168,8 +199,6 @@ namespace PrimalEditor.Editors
         public MeshRenderer(MeshLOD lod, MeshRenderer old)
         {
             Debug.Assert(lod?.Meshes.Any() == true);
-            // Calculate vertex size minus the position and normal vectors.
-            var offset = lod.Meshes[0].VertexSize - 3 * sizeof(float) - sizeof(int) - 2 * sizeof(short);
             // In order to set up camera position and target properly, we need to figure out how big
             // this object is that we're rendering. Hence, we need to know its bounding box.
             double minX, minY, minZ; minX = minY = minZ = double.MaxValue;
@@ -180,38 +209,57 @@ namespace PrimalEditor.Editors
 
             foreach (var mesh in lod.Meshes)
             {
-                var vertexData = new MeshRendererVertexData();
+                var vertexData = new MeshRendererVertexData() { Name = mesh.Name };
                 // Unpack all vertices
-                using (var reader = new BinaryReader(new MemoryStream(mesh.Vertices)))
+                using (var reader = new BinaryReader(new MemoryStream(mesh.Positions)))
                     for (int i = 0; i < mesh.VertexCount; ++i)
                     {
                         // Read positions
                         var posX = reader.ReadSingle();
                         var posY = reader.ReadSingle();
                         var posZ = reader.ReadSingle();
-                        var signs = (reader.ReadUInt32() >> 24) & 0x000000ff;
                         vertexData.Positions.Add(new Point3D(posX, posY, posZ));
 
                         // Adjust the bounding box:
                         minX = Math.Min(minX, posX); maxX = Math.Max(maxX, posX);
                         minY = Math.Min(minY, posY); maxY = Math.Max(maxY, posY);
                         minZ = Math.Min(minZ, posZ); maxZ = Math.Max(maxZ, posZ);
-
-                        // Read normals
-                        var nrmX = reader.ReadUInt16() * intervals - 1.0f;
-                        var nrmY = reader.ReadUInt16() * intervals - 1.0f;
-                        var nrmZ = Math.Sqrt(Math.Clamp(1f - (nrmX * nrmX + nrmY * nrmY), 0f, 1f)) * ((signs & 0x2) - 1f);
-                        var normal = new Vector3D(nrmX, nrmY, nrmZ);
-                        normal.Normalize();
-                        vertexData.Normals.Add(normal);
-                        avgNormal += normal;
-
-                        // Read UVs (skip tangent and joint data)
-                        reader.BaseStream.Position += (offset - sizeof(float) * 2);
-                        var u = reader.ReadSingle();
-                        var v = reader.ReadSingle();
-                        vertexData.UVs.Add(new Point(u, v));
                     }
+
+                if (mesh.ElementsType.HasFlag(ElementsType.Normals))
+                {
+                    var tSpaceOffset = 0;
+                    if (mesh.ElementsType.HasFlag(ElementsType.Joints)) tSpaceOffset = sizeof(short) * 4; // skip joint indices.
+                    // Read tangent space
+                    using (var reader = new BinaryReader(new MemoryStream(mesh.Elements)))
+                        for (int i = 0; i < mesh.VertexCount; ++i)
+                        {
+                            var signs = (reader.ReadUInt32() >> 24) & 0x000000ff;
+                            reader.BaseStream.Position += tSpaceOffset;
+                            // Read normals
+                            var nrmX = reader.ReadUInt16() * intervals - 1.0f;
+                            var nrmY = reader.ReadUInt16() * intervals - 1.0f;
+                            var nrmZ = Math.Sqrt(Math.Clamp(1f - (nrmX * nrmX + nrmY * nrmY), 0f, 1f)) * ((signs & 0x2) - 1f);
+                            var normal = new Vector3D(nrmX, nrmY, nrmZ);
+                            normal.Normalize();
+                            vertexData.Normals.Add(normal);
+                            avgNormal += normal;
+
+                            // Read UVs
+                            if (mesh.ElementsType.HasFlag(ElementsType.TSpace))
+                            {
+                                reader.BaseStream.Position += sizeof(short) * 2; // skip tangents.
+                                var u = reader.ReadSingle();
+                                var v = reader.ReadSingle();
+                                vertexData.UVs.Add(new Point(u, v));
+                            }
+
+                            if(mesh.ElementsType.HasFlag(ElementsType.Joints) && mesh.ElementsType.HasFlag(ElementsType.Colors))
+                            {
+                                reader.BaseStream.Position += 4; // skip colors.
+                            }
+                        }
+                }
 
                 using (var reader = new BinaryReader(new MemoryStream(mesh.Indices)))
                     if (mesh.IndexSize == sizeof(short))
@@ -231,6 +279,18 @@ namespace PrimalEditor.Editors
             {
                 CameraTarget = old.CameraTarget;
                 CameraPosition = old.CameraPosition;
+
+                // NOTE: this is only for primitive meshes with multiple LODs,
+                //       because they're displayed with textures:
+                foreach (var mesh in old.Meshes)
+                {
+                    mesh.IsHighlighted = false;
+                }
+
+                foreach (var mesh in Meshes)
+                {
+                    mesh.Diffuse = old.Meshes.First().Diffuse;
+                }
             }
             else
             {
@@ -340,7 +400,7 @@ namespace PrimalEditor.Editors
             var distance = new Vector3D(p.X, p.Y, p.Z).Length;
             for (int i = MaxLODIndex; i >= 0; --i)
             {
-                if(lods[i].LodThreshold < distance)
+                if (lods[i].LodThreshold < distance)
                 {
                     LODIndex = i;
                     break;

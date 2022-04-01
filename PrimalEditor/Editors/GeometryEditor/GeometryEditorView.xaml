@@ -53,6 +53,7 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
 
+            <ed:GeometryDetailsView Tag="{Binding ElementName=geometryView}"/>
             <GridSplitter HorizontalAlignment="Right" Width="5"
                           Background="{StaticResource Editor.Window.GrayBrush1}"
                           VerticalAlignment="Stretch"/>
