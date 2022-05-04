@@ -298,8 +298,8 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
                 FbxVector4 t{ tangents->GetAt(i) };
                 const f32 handedness{ (f32)t[3] };
                 t[3] = 0.0;
+                t = transform.MultT(t);
                 t.Normalize();
-                t = inverse_transpose.MultT(t);
                 m.tangents.emplace_back((f32)t[0], (f32)t[1], (f32)t[2], handedness);
             }
         }

@@ -33,6 +33,9 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12PostProcess.h" />
     <ClInclude Include="Platform\IncludeWindowCpp.h" />
     <ClInclude Include="Utilities\IOStream.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12Content.h" />
+    <ClInclude Include="Content\ContentToEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -52,5 +55,7 @@
     <ClCompile Include="Graphics\Direct3D12\D3D12Gpass.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12PostProcess.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
+    <ClCompile Include="Graphics\Direct3D12\D3D12Upload.cpp" />
+    <ClCompile Include="Graphics\Direct3D12\D3D12Content.cpp" />
   </ItemGroup>
 </Project>
