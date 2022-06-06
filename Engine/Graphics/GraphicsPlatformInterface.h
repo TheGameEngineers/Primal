@@ -20,6 +20,11 @@ struct platform_interface
         void(*render)(surface_id);
     } surface;
 
+    struct {
+        id::id_type (*add_submesh)(const u8*&);
+        void (*remove_submesh)(id::id_type);
+    } resources;
+
     graphics_platform platform = (graphics_platform)-1;
 };
 }

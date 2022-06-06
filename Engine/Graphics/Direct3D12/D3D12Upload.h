@@ -9,13 +9,13 @@ class d3d12_upload_context {
 public:
     d3d12_upload_context(u32 aligned_size);
     DISABLE_COPY_AND_MOVE(d3d12_upload_context);
-    ~d3d12_upload_context() {}
+    ~d3d12_upload_context() { assert(_frame_index == u32_invalid_id); }
 
     void end_upload();
 
-    constexpr id3d12_graphics_command_list *const command_list() const { return _cmd_list; }
-    constexpr ID3D12Resource *const upload_buffer() const { return _upload_buffer; }
-    constexpr void *const cpu_address() const { return _cpu_address; }
+    [[nodiscard]] constexpr id3d12_graphics_command_list *const command_list() const { return _cmd_list; }
+    [[nodiscard]] constexpr ID3D12Resource *const upload_buffer() const { return _upload_buffer; }
+    [[nodiscard]] constexpr void *const cpu_address() const { return _cpu_address; }
 
 private:
     DEBUG_OP(d3d12_upload_context() = default);

@@ -47,7 +47,7 @@ constexpr f32 unpack_to_float(u32 i, f32 min, f32 max)
     return unpack_to_unit_float<bits>(i) * (max - min) + min;
 }
 
-// Align by rounding up. Will result in a multiple of 'alignment'
+// Align by rounding up. Will result in a multiple of 'alignment' that is greater than or equal to 'size'.
 template<u64 alignment>
 constexpr u64 align_size_up(u64 size)
 {
@@ -57,7 +57,7 @@ constexpr u64 align_size_up(u64 size)
     return ((size + mask) & ~mask);
 }
 
-// Align by rounding down. Will result in a multiple of 'alignment'
+// Align by rounding down. Will result in a multiple of 'alignment' that is less than or equal to 'size'.
 template<u64 alignment>
 constexpr u64 align_size_down(u64 size)
 {

@@ -57,5 +57,6 @@
     <ClCompile Include="Platform\Window.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Content.cpp" />
+    <ClCompile Include="Content\ContentToEngine.cpp" />
   </ItemGroup>
 </Project>

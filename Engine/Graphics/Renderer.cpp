@@ -99,4 +99,15 @@ surface::render() const
     gfx.surface.render(_id);
 }
 
+id::id_type
+add_submesh(const u8*& data)
+{
+    return gfx.resources.add_submesh(data);
+}
+
+void remove_submesh(id::id_type id)
+{
+    gfx.resources.remove_submesh(id);
+}
+
 }
