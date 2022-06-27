@@ -1,7 +1,7 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "Geometry.h"
-#include "..\Utilities\IOStream.h"
+#include "Utilities/IOStream.h"
 
 namespace primal::tools {
 namespace {

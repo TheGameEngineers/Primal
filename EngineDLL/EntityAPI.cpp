@@ -4,9 +4,9 @@
 #include "Common.h"
 #include "CommonHeaders.h"
 #include "Id.h"
-#include "..\Engine\Components\Entity.h"
-#include "..\Engine\Components\Transform.h"
-#include "..\Engine\Components\Script.h"
+#include "Engine/Components/Entity.h"
+#include "Engine/Components/Transform.h"
+#include "Engine/Components/Script.h"
 
 using namespace primal;
 

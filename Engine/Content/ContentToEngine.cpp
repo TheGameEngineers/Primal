@@ -35,7 +35,7 @@ public:
     void gpu_ids(u32 lod, id::id_type*& ids, u32& id_count)
     {
         assert(lod < _lod_count);
-        ids = (id::id_type*)(_buffer + _lod_offsets[lod].offset);
+        ids = &_gpu_ids[_lod_offsets[lod].offset];
         id_count = _lod_offsets[lod].count;
     }
 
@@ -107,7 +107,7 @@ create_mesh_hierarchy(const void *const data)
     const u32 lod_count{ blob.read<u32>() };
     assert(lod_count);
     geometry_hierarchy_stream stream{ hierarchy_buffer, lod_count };
-    u16 submesh_index{ 0 };
+    u32 submesh_index{ 0 };
     id::id_type *const gpu_ids{ stream.gpu_ids() };
 
     for (u32 lod_idx{ 0 }; lod_idx < lod_count; ++lod_idx)
@@ -115,7 +115,7 @@ create_mesh_hierarchy(const void *const data)
         stream.thresholds()[lod_idx] = blob.read<f32>();
         const u32 id_count{ blob.read<u32>() };
         assert(id_count < (1 << 16));
-        stream.lod_offsets()[lod_idx] = { submesh_index, (u16)id_count };
+        stream.lod_offsets()[lod_idx] = { (u16)submesh_index, (u16)id_count };
         blob.skip(sizeof(u32)); // skip over size_of_submeshes
         for (u32 id_idx{ 0 }; id_idx < id_count; ++id_idx)
         {

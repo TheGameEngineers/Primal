@@ -1,11 +1,13 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 
-#include "..\Platform\PlatformTypes.h"
-#include "..\Platform\Platform.h"
-#include "..\Graphics\Renderer.h"
-#include "..\Graphics\Direct3D12\D3D12Core.h"
-#include "..\Content\ContentToEngine.h"
+#include "Platform/PlatformTypes.h"
+#include "Platform/Platform.h"
+#include "Graphics/Renderer.h"
+#include "Graphics/Direct3D12/D3D12Core.h"
+#include "Content/ContentToEngine.h"
+#include "Components/Entity.h"
+#include "Components/Transform.h"
 #include "TestRenderer.h"
 #include "ShaderCompilation.h"
 #include <filesystem>
@@ -53,7 +55,10 @@ void joint_test_workers()
 }
 /////////////////////////////////////////////////////////////////////////////////////
 
+game_entity::entity entity{};
 id::id_type model_id{ id::invalid_id };
+graphics::camera camera{};
+
 graphics::render_surface _surfaces[4];
 time_it timer{};
 
@@ -142,6 +147,23 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+game_entity::entity
+create_one_game_entity()
+{
+    transform::init_info transform_info{};
+    math::v3a rot{ 0, 3.14f, 0 };
+    DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+    math::v4a rot_quat;
+    DirectX::XMStoreFloat4A(&rot_quat, quat);
+    memcpy(&transform_info.rotation[0], &rot_quat.x, sizeof(transform_info.rotation));
+
+    game_entity::entity_info entity_info{};
+    entity_info.transform = &transform_info;
+    game_entity::entity ntt{ game_entity::create(entity_info) };
+    assert(ntt.is_valid());
+    return ntt;
+}
+
 bool
 read_file(std::filesystem::path path, std::unique_ptr<u8[]>& data, u64& size)
 {
@@ -213,6 +235,10 @@ test_initialize()
 
     init_test_workers(buffer_test_worker);
 
+    entity = create_one_game_entity();
+    camera = graphics::create_camera(graphics::perspective_camera_init_info(entity.get_id()));
+    assert(camera.is_valid());
+
     is_restarting = false;
     return true;
 }
@@ -220,6 +246,16 @@ test_initialize()
 void
 test_shutdown()
 {
+    if (camera.is_valid())
+    {
+        graphics::remove_camera(camera.get_id());
+    }
+
+    if (entity.is_valid())
+    {
+        game_entity::remove(entity.get_id());
+    }
+
     joint_test_workers();
 
     if (id::is_valid(model_id))
