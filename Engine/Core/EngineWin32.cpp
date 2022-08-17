@@ -1,6 +1,6 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
-#if !defined(SHIPPING)
+#if !defined(SHIPPING) && defined(_WIN64)
 #include "Content/ContentLoader.h"
 #include "Components/Script.h"
 #include "Platform/PlatformTypes.h"

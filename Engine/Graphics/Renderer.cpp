@@ -16,8 +16,9 @@ constexpr const char* engine_shader_paths[]{
 
 platform_interface gfx{};
 
+#ifndef PRIMAL_PLUS
 bool
-set_platform_interface(graphics_platform platform)
+set_platform_interface(graphics_platform platform, platform_interface& pi)
 {
     switch (platform)
     {
@@ -31,13 +32,17 @@ set_platform_interface(graphics_platform platform)
     assert(gfx.platform == platform);
     return true;
 }
-
+#endif
 } // anonymous namespace
+
+#ifdef PRIMAL_PLUS
+extern bool set_platform_interface(graphics_platform platform, platform_interface& pi);
+#endif
 
 bool
 initialize(graphics_platform platform)
 {
-    return set_platform_interface(platform) && gfx.initialize();
+    return set_platform_interface(platform, gfx) && gfx.initialize();
 }
 
 void

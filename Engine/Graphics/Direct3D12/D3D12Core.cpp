@@ -7,6 +7,9 @@
 #include "D3D12PostProcess.h"
 #include "D3D12Upload.h"
 
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 606; }
+extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
+
 using namespace Microsoft::WRL;
 
 namespace primal::graphics::d3d12::core {

@@ -2,16 +2,19 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #pragma once
 
+#ifdef _WIN64
 #pragma warning(disable: 4530) // disable exception warning
+#endif
 
 // C/C++
 // NOTE: don't put here any headers that include std::vector or std::deque
-#include <stdint.h>
+#include <cstdint>
 #include <assert.h>
 #include <typeinfo>
 #include <memory>
 #include <unordered_map>
 #include <mutex>
+#include <cstring>
 
 #if defined(_WIN64)
 #include <DirectXMath.h>
@@ -41,7 +44,7 @@
 
 // common headers
 #include "PrimitiveTypes.h"
-#include "Utilities/Math.h"
-#include "Utilities/Utilities.h"
-#include "Utilities/MathTypes.h"
+#include "../Utilities/Math.h"
+#include "../Utilities/Utilities.h"
+#include "../Utilities/MathTypes.h"
 #include "Id.h"

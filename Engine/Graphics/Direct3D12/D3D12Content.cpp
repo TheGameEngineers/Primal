@@ -22,9 +22,8 @@ utl::free_list<submesh_view>        submesh_views{};
 std::mutex                          submesh_mutex{};
 
 D3D_PRIMITIVE_TOPOLOGY
-get_d3d_primitive_topology(primal::content::primitve_topology::type type)
+get_d3d_primitive_topology(primitve_topology::type type)
 {
-    using namespace primal::content;
     assert(type < primitve_topology::count);
 
     switch (type)
@@ -99,7 +98,7 @@ add(const u8*& data)
 
     
 
-    view.primitive_topology = get_d3d_primitive_topology((primal::content::primitve_topology::type)primitive_topology);
+    view.primitive_topology = get_d3d_primitive_topology((primitve_topology::type)primitive_topology);
     view.elements_type = elements_type;
 
     std::lock_guard lock{ submesh_mutex };

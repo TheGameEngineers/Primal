@@ -55,9 +55,13 @@ void joint_test_workers()
 }
 /////////////////////////////////////////////////////////////////////////////////////
 
-game_entity::entity entity{};
+struct {
+    game_entity::entity entity{};
+    graphics::camera camera{};
+} camera;
+
+id::id_type item_id{ id::invalid_id };
 id::id_type model_id{ id::invalid_id };
-graphics::camera camera{};
 
 graphics::render_surface _surfaces[4];
 time_it timer{};
@@ -67,6 +71,8 @@ bool is_restarting{ false };
 void destroy_render_surface(graphics::render_surface& surface);
 bool test_initialize();
 void test_shutdown();
+id::id_type create_render_item(id::id_type entity_id);
+void destroy_render_item(id::id_type item_id);
 
 LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -235,9 +241,11 @@ test_initialize()
 
     init_test_workers(buffer_test_worker);
 
-    entity = create_one_game_entity();
-    camera = graphics::create_camera(graphics::perspective_camera_init_info(entity.get_id()));
-    assert(camera.is_valid());
+    camera.entity = create_one_game_entity();
+    camera.camera = graphics::create_camera(graphics::perspective_camera_init_info(camera.entity.get_id()));
+    assert(camera.camera.is_valid());
+
+    item_id = create_render_item(create_one_game_entity().get_id());
 
     is_restarting = false;
     return true;
@@ -246,14 +254,16 @@ test_initialize()
 void
 test_shutdown()
 {
-    if (camera.is_valid())
+    destroy_render_item(item_id);
+
+    if (camera.camera.is_valid())
     {
-        graphics::remove_camera(camera.get_id());
+        graphics::remove_camera(camera.camera.get_id());
     }
 
-    if (entity.is_valid())
+    if (camera.entity.is_valid())
     {
-        game_entity::remove(entity.get_id());
+        game_entity::remove(camera.entity.get_id());
     }
 
     joint_test_workers();

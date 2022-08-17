@@ -1,13 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-	<XamlDebuggingInformation>True</XamlDebuggingInformation>
-	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-	<Configurations>DebugEditor;ReleaseEditor</Configurations>
-	<Platforms>x64</Platforms>
+    <XamlDebuggingInformation>True</XamlDebuggingInformation>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Configurations>DebugEditor;ReleaseEditor</Configurations>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
@@ -18,6 +18,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>..\x64\ReleaseEditor\</OutputPath>
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,22 +39,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <COMReference Include="EnvDTE80.dll">
-      <Guid>1a31287a-4d7d-413e-8e32-3b374931bd89</Guid>
-      <VersionMajor>8</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Lcid>0</Lcid>
-      <Isolated>false</Isolated>
-    </COMReference>
-    <COMReference Include="EnvDTE.dll">
-      <Guid>80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2</Guid>
-      <VersionMajor>8</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Lcid>0</Lcid>
-      <Isolated>false</Isolated>
-    </COMReference>
+    <PackageReference Include="envdte" Version="17.3.32804.24" />
+    <PackageReference Include="envdte80" Version="17.3.32804.24" />
   </ItemGroup>
 
   <ItemGroup>

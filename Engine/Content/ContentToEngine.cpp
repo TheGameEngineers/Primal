@@ -70,6 +70,9 @@ constexpr uintptr_t single_mesh_marker{ (uintptr_t)0x01 };
 utl::free_list<u8*> geometry_hierarchies;
 std::mutex          geometry_mutex;
 
+utl::free_list < std::unique_ptr<u8[]>>     shaders;
+std::mutex                                  shader_mutex;
+
 // NOTE: expects the same data as create_geometry_resource()
 u32
 get_geometry_hierarchy_buffer_size(const void *const data)
@@ -156,7 +159,7 @@ create_single_submesh(const void *const data)
     // create a fake pointer and put it in the geometry_hierarchies.
     static_assert(sizeof(uintptr_t) > sizeof(id::id_type));
     constexpr u8 shift_bits{ (sizeof(uintptr_t) - sizeof(id::id_type)) << 3 };
-    u8 *const fake_pointer{ (u8 *const)((((uintptr_t)gpu_id) << shift_bits) | single_mesh_marker)};
+    u8 *const fake_pointer{ (u8 *const)((((uintptr_t)gpu_id) << shift_bits) | single_mesh_marker) };
     std::lock_guard lock{ geometry_mutex };
     return geometry_hierarchies.add(fake_pointer);
 }
@@ -179,7 +182,7 @@ is_single_mesh(const void *const data)
     return submesh_count == 1;
 }
 
-id::id_type
+constexpr id::id_type
 gpu_id_from_fake_pointer(u8 *const pointer)
 {
     assert((uintptr_t)pointer & single_mesh_marker);
@@ -295,5 +298,32 @@ destroy_resource(id::id_type id, asset_type::type type)
         assert(false);
         break;
     }
+}
+
+id::id_type
+add_shader(const u8* data)
+{
+    const compiled_shader_ptr shader_ptr{ (const compiled_shader_ptr)data };
+    const u64 size{ sizeof(u64) + compiled_shader::hash_length + shader_ptr->byte_code_size() };
+    std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
+    memcpy(shader.get(), data, size);
+    std::lock_guard lock{ shader_mutex };
+    return shaders.add(std::move(shader));
+}
+
+void
+remove_shader(id::id_type id)
+{
+    std::lock_guard lock{ shader_mutex };
+    assert(id::is_valid(id));
+    shaders.remove(id);
+}
+
+compiled_shader_ptr
+get_shader(id::id_type id)
+{
+    std::lock_guard lock{ shader_mutex };
+    assert(id::is_valid(id));
+    return (const compiled_shader_ptr)(shaders[id].get());
 }
 }

@@ -2,7 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "Common.h"
 #include "CommonHeaders.h"
-#include "Engine/Components/Script.h"
+#include "Components/Script.h"
 #include "Graphics/Renderer.h"
 #include "Platform/PlatformTypes.h"
 #include "Platform/Platform.h"
