@@ -6,6 +6,7 @@
 #include "D3D12GPass.h"
 #include "D3D12PostProcess.h"
 #include "D3D12Upload.h"
+#include "D3D12Content.h"
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 606; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
@@ -352,7 +353,8 @@ initialize()
     if (!(shaders::initialize() &&
           gpass::initialize() &&
           fx::initialize() &&
-          upload::initialize()))
+          upload::initialize() &&
+          content::initialize()))
         return failed_init();
 
     NAME_D3D12_OBJECT(main_device, L"Main D3D12 Device");
@@ -378,6 +380,7 @@ shutdown()
     }
 
     // shutdown modules
+    content::shutdown();
     upload::shutdown();
     fx::shutdown();
     gpass::shutdown();

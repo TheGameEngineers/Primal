@@ -50,14 +50,14 @@ if(FAILED(x)) {                                     \
 // Sets the name of the COM object and outputs a debug string int Visual Studio's output panel.
 #define NAME_D3D12_OBJECT(obj, name) obj->SetName(name); OutputDebugString(L"::D3D12 Object Created: "); OutputDebugString(name); OutputDebugString(L"\n");
 // The indexed variant will include the index in the name of the object
-#define NAME_D3D12_OBJECT_INDEXED(obj, n, name)     \
-{                                                   \
-wchar_t full_name[128];                             \
-if (swprintf_s(full_name, L"%s[%u]", name, n) >0 ){ \
-    obj->SetName(full_name);                        \
-    OutputDebugString(L"::D3D12 Object Created: "); \
-    OutputDebugString(full_name);                   \
-    OutputDebugString(L"\n");                       \
+#define NAME_D3D12_OBJECT_INDEXED(obj, n, name)            \
+{                                                          \
+wchar_t full_name[128];                                    \
+if (swprintf_s(full_name, L"%s[%llu]", name, (u64)n) >0 ){ \
+    obj->SetName(full_name);                               \
+    OutputDebugString(L"::D3D12 Object Created: ");        \
+    OutputDebugString(full_name);                          \
+    OutputDebugString(L"\n");                              \
 }}
 #else
 #define NAME_D3D12_OBJECT(x, name)

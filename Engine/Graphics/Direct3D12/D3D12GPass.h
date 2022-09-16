@@ -9,6 +9,18 @@ struct d3d12_frame_info;
 }
 namespace primal::graphics::d3d12::gpass {
 
+struct opaque_root_parameter {
+    enum parameter : u32 {
+        per_frame_data,
+        position_buffer,
+        element_buffer,
+        srv_indices,
+        per_object_data,
+
+        count
+    };
+};
+
 bool initialize();
 void shutdown();
 

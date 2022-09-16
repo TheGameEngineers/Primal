@@ -92,7 +92,8 @@ create_gpass_pso_and_root_signature()
     using idx = gpass_root_param_indices;
     d3dx::d3d12_root_parameter parameters[idx::count]{};
     parameters[0].as_constants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
-    const d3dx::d3d12_root_signature_desc root_signature{ &parameters[0], idx::count };
+    d3dx::d3d12_root_signature_desc root_signature{ &parameters[0], idx::count };
+    root_signature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
     gpass_root_sig = root_signature.create();
     assert(gpass_root_sig);
     NAME_D3D12_OBJECT(gpass_root_sig, L"GPass Root Signature");

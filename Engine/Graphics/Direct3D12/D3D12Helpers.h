@@ -238,16 +238,23 @@ private:
 // Static samplers = 0 DWORDs (compiled into shader)
 struct d3d12_root_signature_desc : public D3D12_ROOT_SIGNATURE_DESC1
 {
+    constexpr static D3D12_ROOT_SIGNATURE_FLAGS default_flags{
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS |
+        D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
+        D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED
+    };
+
     constexpr explicit d3d12_root_signature_desc(const d3d12_root_parameter* parameters,
                                                  u32 parameter_count,
+                                                 D3D12_ROOT_SIGNATURE_FLAGS flags = default_flags,
                                                  const D3D12_STATIC_SAMPLER_DESC* static_samplers = nullptr,
-                                                 u32 sampler_count = 0, D3D12_ROOT_SIGNATURE_FLAGS flags =
-                                                 D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
-                                                 D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-                                                 D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-                                                 D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-                                                 D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |
-                                                 D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS)
+                                                 u32 sampler_count = 0)
         : D3D12_ROOT_SIGNATURE_DESC1{ parameter_count, parameters, sampler_count, static_samplers, flags }
     {}
 
@@ -264,7 +271,7 @@ class alignas(void*) d3d12_pipeline_state_subobject
 {
 public:
     d3d12_pipeline_state_subobject() = default;
-    constexpr explicit d3d12_pipeline_state_subobject(T subobject) : _type{ type }, _subobject{ subobject }{}
+    constexpr explicit d3d12_pipeline_state_subobject(T subobject) : _type{ type }, _subobject{ subobject } {}
     d3d12_pipeline_state_subobject& operator=(const T& subobject) { _subobject = subobject; return *this; }
 private:
     const D3D12_PIPELINE_STATE_SUBOBJECT_TYPE _type{ type };
