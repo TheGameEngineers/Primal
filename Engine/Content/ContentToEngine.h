@@ -31,6 +31,12 @@ private:
     u8          _byte_code;
 } const *compiled_shader_ptr;
 
+struct lod_offset
+{
+    u16 offset;
+    u16 count;
+};
+
 id::id_type create_resource(const void *const data, asset_type::type type);
 void destroy_resource(id::id_type id, asset_type::type type);
 
@@ -38,4 +44,6 @@ id::id_type add_shader(const u8* data);
 void remove_shader(id::id_type id);
 compiled_shader_ptr get_shader(id::id_type id);
 
+void get_submesh_gpu_ids(id::id_type geometry_content_id, u32 id_count, id::id_type *const gpu_ids);
+void get_lod_offsets(const id::id_type *const geometry_ids, const f32 *const thresholds, u32 id_count, utl::vector<lod_offset>& offsets);
 }

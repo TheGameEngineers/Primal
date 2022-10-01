@@ -10,12 +10,6 @@ namespace {
 class geometry_hierarchy_stream
 {
 public:
-    struct lod_offset
-    {
-        u16 offset;
-        u16 count;
-    };
-
     DISABLE_COPY_AND_MOVE(geometry_hierarchy_stream);
     geometry_hierarchy_stream(u8 *const buffer, u32 lods = u32_invalid_id)
         : _buffer{ buffer }
@@ -42,6 +36,7 @@ public:
     u32 lod_from_threshold(f32 threshold)
     {
         assert(threshold > 0);
+        if (_lod_count == 1) return 0;
 
         for (u32 i{ _lod_count - 1 }; i > 0; --i)
         {
@@ -82,7 +77,7 @@ get_geometry_hierarchy_buffer_size(const void *const data)
     const u32 lod_count{ blob.read<u32>() };
     assert(lod_count);
     // add size of  lod_count, thresholds and lod offsets to the size of hierarchy.
-    u32 size{ sizeof(u32) + (sizeof(f32) + sizeof(geometry_hierarchy_stream::lod_offset)) * lod_count };
+    u32 size{ sizeof(u32) + (sizeof(f32) + sizeof(lod_offset)) * lod_count };
 
     for (u32 lod_idx{ 0 }; lod_idx < lod_count; ++lod_idx)
     {
@@ -345,5 +340,55 @@ get_shader(id::id_type id)
     std::lock_guard lock{ shader_mutex };
     assert(id::is_valid(id));
     return (const compiled_shader_ptr)(shaders[id].get());
+}
+
+void
+get_submesh_gpu_ids(id::id_type geometry_content_id, u32 id_count, id::id_type *const gpu_ids)
+{
+    std::lock_guard lock{ geometry_mutex };
+    u8 *const pointer{ geometry_hierarchies[geometry_content_id] };
+    if ((uintptr_t)pointer & single_mesh_marker)
+    {
+        assert(id_count == 1);
+        *gpu_ids = gpu_id_from_fake_pointer(pointer);
+    }
+    else
+    {
+        geometry_hierarchy_stream stream{ pointer };
+
+        assert([&]() {
+            const u32 lod_count{ stream.lod_count() };
+            const lod_offset lod_offset{ stream.lod_offsets()[lod_count - 1] };
+            const u32 gpu_id_count{ (u32)lod_offset.offset + (u32)lod_offset.count };
+            return gpu_id_count == id_count;
+               }());
+
+        memcpy(gpu_ids, stream.gpu_ids(), sizeof(id::id_type) * id_count);
+    }
+}
+
+void
+get_lod_offsets(const id::id_type *const geometry_ids, const f32 *const thresholds, u32 id_count, utl::vector<lod_offset>& offsets)
+{
+    assert(geometry_ids && thresholds && id_count);
+    assert(offsets.empty());
+
+    std::lock_guard lock{ geometry_mutex };
+
+    for (u32 i{ 0 }; i < id_count; ++i)
+    {
+        u8 *const pointer{ geometry_hierarchies[geometry_ids[i]] };
+        if ((uintptr_t)pointer & single_mesh_marker)
+        {
+            assert(id_count == 1);
+            offsets.emplace_back(lod_offset{ 0, 1 });
+        }
+        else
+        {
+            geometry_hierarchy_stream stream{ pointer };
+            const u32 lod{ stream.lod_from_threshold(thresholds[i]) };
+            offsets.emplace_back(stream.lod_offsets()[lod]);
+        }
+    }
 }
 }
