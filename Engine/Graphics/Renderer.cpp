@@ -98,10 +98,10 @@ surface::height() const
 }
 
 void
-surface::render() const
+surface::render(frame_info info) const
 {
     assert(is_valid());
-    gfx.surface.render(_id);
+    gfx.surface.render(_id, info);
 }
 
 camera

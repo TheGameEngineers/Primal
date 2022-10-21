@@ -45,6 +45,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\Direct3D12\Shaders\SharedTypes.h" />
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Platform\IncludeWindowCpp.h" />

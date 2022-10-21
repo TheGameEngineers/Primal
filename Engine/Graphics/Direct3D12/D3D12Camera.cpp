@@ -249,9 +249,9 @@ d3d12_camera::update()
     using namespace DirectX;
     math::v3 pos{ entity.transform().position() };
     math::v3 dir{ entity.transform().orientation() };
-    XMVECTOR position{ XMLoadFloat3(&pos) };
-    XMVECTOR direction{ XMLoadFloat3(&dir) };
-    _view = XMMatrixLookToRH(position, direction, _up);
+    _position = XMLoadFloat3(&pos);
+    _direction = XMLoadFloat3(&dir);
+    _view = XMMatrixLookToRH(_position, _direction, _up);
 
     if (_is_dirty)
     {
