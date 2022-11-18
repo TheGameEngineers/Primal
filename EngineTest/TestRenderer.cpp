@@ -8,6 +8,7 @@
 #include "Content/ContentToEngine.h"
 #include "Components/Entity.h"
 #include "Components/Transform.h"
+#include "Components/Script.h"
 #include "TestRenderer.h"
 #include "ShaderCompilation.h"
 #include <filesystem>
@@ -15,6 +16,30 @@
 #if TEST_RENDERER
 
 using namespace primal;
+
+class rotator_script;
+REGISTER_SCRIPT(rotator_script);
+class rotator_script : public script::entity_script
+{
+public:
+    constexpr explicit rotator_script(game_entity::entity entity)
+        : script::entity_script{ entity } {}
+
+    void begin_play() override {}
+    void update(float dt) override
+    {
+        _angle += 0.25f * dt * math::two_pi;
+        if (_angle > math::two_pi) _angle -= math::two_pi;
+        math::v3a rot{ 0.f, _angle, 0.f };
+        DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+        math::v4 rot_quat{};
+        DirectX::XMStoreFloat4(&rot_quat, quat);
+        set_rotation(rot_quat);
+    }
+
+private:
+    f32 _angle{ 0.f };
+};
 
 // Multithreading test worker spawn code ////////////////////////////////////////////
 #define ENABLE_TEST_WORKERS 0
@@ -157,26 +182,34 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 game_entity::entity
-create_one_game_entity(bool is_camera)
+create_one_game_entity(math::v3 position, math::v3 rotation, bool rotates)
 {
     transform::init_info transform_info{};
-    math::v3a rot{ 0, is_camera ? 3.14f : 0.f, 0 };
-    DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+    DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
     math::v4a rot_quat;
     DirectX::XMStoreFloat4A(&rot_quat, quat);
     memcpy(&transform_info.rotation[0], &rot_quat.x, sizeof(transform_info.rotation));
+    memcpy(&transform_info.position[0], &position.x, sizeof(transform_info.position));
 
-    if (is_camera)
+    script::init_info script_info{};
+    if (rotates)
     {
-        transform_info.position[1] = 1.f;
-        transform_info.position[2] = 3.f;
+        script_info.script_creator = script::detail::get_script_creator(script::detail::string_hash()("rotator_script"));
+        assert(script_info.script_creator);
     }
 
     game_entity::entity_info entity_info{};
     entity_info.transform = &transform_info;
+    entity_info.script = &script_info;
     game_entity::entity ntt{ game_entity::create(entity_info) };
     assert(ntt.is_valid());
     return ntt;
+}
+
+void
+remove_game_entity(game_entity::entity_id id)
+{
+    game_entity::remove(id);
 }
 
 bool
@@ -204,7 +237,7 @@ create_camera_surface(camera_surface& surface, platform::window_init_info info)
 {
     surface.surface.window = platform::create_window(&info);
     surface.surface.surface = graphics::create_surface(surface.surface.window);
-    surface.entity = create_one_game_entity(true);
+    surface.entity = create_one_game_entity({ 0.f, 1.f, 3.f }, { 0.f, 3.14f, 0.f }, false);
     surface.camera = graphics::create_camera(graphics::perspective_camera_init_info{ surface.entity.get_id() });
     surface.camera.aspect_ratio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -255,7 +288,7 @@ test_initialize()
 
     init_test_workers(buffer_test_worker);
 
-    item_id = create_render_item(create_one_game_entity(false).get_id());
+    item_id = create_render_item(create_one_game_entity({}, {}, true).get_id());
 
     is_restarting = false;
     return true;
@@ -289,12 +322,20 @@ engine_test::run()
 {
     timer.begin();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    script::update(timer.dt_avg());
     for (u32 i{ 0 }; i < _countof(_surfaces); ++i)
     {
         if (_surfaces[i].surface.surface.is_valid())
         {
             f32 threshold{ 10 };
-            _surfaces[i].surface.surface.render({&item_id, &threshold, 1, _surfaces[i].camera.get_id()});
+
+            graphics::frame_info info{};
+            info.render_item_ids = &item_id;
+            info.render_item_count = 1;
+            info.thresholds = &threshold;
+            info.camer_id = _surfaces[i].camera.get_id();
+
+            _surfaces[i].surface.surface.render(info);
         }
     }
     timer.end();
