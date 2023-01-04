@@ -184,7 +184,7 @@ get_entity_id(d3d12_camera& camera, void* const data, [[maybe_unused]] u32 size)
     *entity_id = camera.entity_id();
 }
 
-void
+constexpr void
 dummy_set(d3d12_camera&, const void *const, u32)
 {}
 

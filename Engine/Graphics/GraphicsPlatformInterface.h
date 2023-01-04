@@ -20,6 +20,13 @@ struct platform_interface
     } surface;
 
     struct {
+        light(*create)(light_init_info);
+        void(*remove)(light_id, u64);
+        void(*set_parameter)(light_id, u64, light_parameter::parameter, const void *const, u32);
+        void(*get_parameter)(light_id, u64, light_parameter::parameter, void *const, u32);
+    } light;
+
+    struct {
         camera(*create)(camera_init_info);
         void(*remove)(camera_id);
         void(*set_parameter)(camera_id, camera_parameter::parameter, const void *const, u32);
