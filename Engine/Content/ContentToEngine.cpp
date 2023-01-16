@@ -60,6 +60,7 @@ private:
     u32             _lod_count;
 };
 
+// NOTE: This is needed to maintain compatibility with STL vector.
 struct noexcept_map {
     std::unordered_map<u32, std::unique_ptr<u8[]>> map;
     noexcept_map() = default;
@@ -335,7 +336,7 @@ add_shader_group(const u8 *const * shaders, u32 num_shaders, const u32 *const ke
     {
         assert(shaders[i]);
         const compiled_shader_ptr shader_ptr{ (const compiled_shader_ptr)shaders[i] };
-        const u64 size{ compiled_shader::buffer_size(shader_ptr->byte_code_size()) };
+        const u64 size{ shader_ptr->buffer_size() };
         std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
         memcpy(shader.get(), shaders[i], size);
         group.map[keys[i]] = std::move(shader);
@@ -349,7 +350,7 @@ remove_shader_group(id::id_type id)
 {
     std::lock_guard lock{ shader_mutex };
     assert(id::is_valid(id));
-    
+
     shader_groups[id].map.clear();
     shader_groups.remove(id);
 }
@@ -410,7 +411,6 @@ get_lod_offsets(const id::id_type *const geometry_ids, const f32 *const threshol
         u8 *const pointer{ geometry_hierarchies[geometry_ids[i]] };
         if ((uintptr_t)pointer & single_mesh_marker)
         {
-            assert(id_count == 1);
             offsets.emplace_back(lod_offset{ 0, 1 });
         }
         else

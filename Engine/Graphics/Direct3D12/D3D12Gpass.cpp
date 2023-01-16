@@ -4,6 +4,7 @@
 #include "D3D12Core.h"
 #include "D3D12Shaders.h"
 #include "D3D12Content.h"
+#include "D3D12Light.h"
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
 #include "Components/Entity.h"
@@ -358,6 +359,8 @@ void render(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d1
             current_root_signature = cache.root_signatures[i];
             cmd_list->SetGraphicsRootSignature(current_root_signature);
             cmd_list->SetGraphicsRootConstantBufferView(opaque_root_parameter::global_shader_data, d3d12_info.global_shader_data);
+            cmd_list->SetGraphicsRootShaderResourceView(opaque_root_parameter::directional_lights,
+                                                        light::non_cullable_light_buffer(d3d12_info.frame_index));
         }
 
         if (current_pipeline_state != cache.gpass_pipeline_states[i])

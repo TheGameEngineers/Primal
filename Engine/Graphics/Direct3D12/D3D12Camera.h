@@ -12,12 +12,12 @@ public:
 
     void update();
     void up(math::v3 up);
-    void field_of_view(f32 fov);
-    void aspect_ratio(f32 aspect_ratio);
-    void view_width(f32 width);
-    void view_height(f32 height);
-    void near_z(f32 near_z);
-    void far_z(f32 far_z);
+    constexpr void field_of_view(f32 fov);
+    constexpr void aspect_ratio(f32 aspect_ratio);
+    constexpr void view_width(f32 width);
+    constexpr void view_height(f32 height);
+    constexpr void near_z(f32 near_z);
+    constexpr void far_z(f32 far_z);
 
     [[nodiscard]] constexpr DirectX::XMMATRIX view() const { return _view; }
     [[nodiscard]] constexpr DirectX::XMMATRIX projection() const { return _projection;}

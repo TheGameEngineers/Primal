@@ -12,7 +12,7 @@ void remove_game_entity(game_entity::entity_id id);
 
 namespace {
 const u64 left_set{ 0 };
-const u64 right_set{ 0 };
+const u64 right_set{ 1 };
 
 utl::vector<graphics::light> lights;
 

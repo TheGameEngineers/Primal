@@ -7,6 +7,7 @@
 #include "D3D12PostProcess.h"
 #include "D3D12Upload.h"
 #include "D3D12Content.h"
+#include "D3D12Light.h"
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
 
@@ -289,8 +290,9 @@ get_d3d12_frame_info(const frame_info& info, constant_buffer& cbuffer,
     XMStoreFloat4x4A(&data.InvViewProjection, camera.inverse_view_projection());
     XMStoreFloat3(&data.CameraPosition, camera.position());
     XMStoreFloat3(&data.CameraDirection, camera.direction());
-    data.ViewWidth = surface.width();
-    data.ViewHeight = surface.height();
+    data.ViewWidth = (f32)surface.width();
+    data.ViewHeight = (f32)surface.height();
+    data.NumDirectionalLights = light::non_cullable_light_count(info.light_set_key);
     data.DeltaTime = delta_time;
 
     // NOTE: be careful not to read from this buffer. Reads are really really slow.
@@ -303,8 +305,8 @@ get_d3d12_frame_info(const frame_info& info, constant_buffer& cbuffer,
         &info,
         &camera,
         cbuffer.gpu_address(shader_data),
-        data.ViewWidth,
-        data.ViewHeight,
+        surface.width(),
+        surface.height(),
         frame_idx,
         delta_time
     };
@@ -403,7 +405,8 @@ initialize()
           gpass::initialize() &&
           fx::initialize() &&
           upload::initialize() &&
-          content::initialize()))
+          content::initialize() &&
+          light::initialize()))
         return failed_init();
 
     NAME_D3D12_OBJECT(main_device, L"Main D3D12 Device");
@@ -429,6 +432,7 @@ shutdown()
     }
 
     // shutdown modules
+    light::shutdown();
     content::shutdown();
     upload::shutdown();
     fx::shutdown();
@@ -586,6 +590,7 @@ render_surface(surface_id id, frame_info info)
     gpass::depth_prepass(cmd_list, d3d12_info);
 
     // Geometry and lighting pass
+    light::update_light_buffers(d3d12_info);
     gpass::add_transitions_for_gpass(barriers);
     barriers.apply(cmd_list);
     gpass::set_render_targets_for_gpass(cmd_list);

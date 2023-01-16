@@ -83,7 +83,7 @@ get_chage_ptr(const game_entity::entity *const entity)
 }
 #else
 transform::component_cache *const
-get_chage_ptr(const game_entity::entity *const entity)
+get_cache_ptr(const game_entity::entity *const entity)
 {
     assert(game_entity::is_alive((*entity).get_id()));
     const transform::transform_id id{ (*entity).transform().get_id() };
@@ -197,7 +197,7 @@ update(float dt)
 void
 entity_script::set_rotation(const game_entity::entity *const entity, math::v4 rotation_quaternion)
 {
-    transform::component_cache& cache{ *get_chage_ptr(entity) };
+    transform::component_cache& cache{ *get_cache_ptr(entity) };
     cache.flags |= transform::component_flags::rotation;
     cache.rotation = rotation_quaternion;
 }
@@ -205,7 +205,7 @@ entity_script::set_rotation(const game_entity::entity *const entity, math::v4 ro
 void
 entity_script::set_orientation(const game_entity::entity *const entity, math::v3 orientation_vector)
 {
-    transform::component_cache& cache{ *get_chage_ptr(entity) };
+    transform::component_cache& cache{ *get_cache_ptr(entity) };
     cache.flags |= transform::component_flags::orientation;
     cache.orientation = orientation_vector;
 }
@@ -213,7 +213,7 @@ entity_script::set_orientation(const game_entity::entity *const entity, math::v3
 void
 entity_script::set_position(const game_entity::entity *const entity, math::v3 position)
 {
-    transform::component_cache& cache{ *get_chage_ptr(entity) };
+    transform::component_cache& cache{ *get_cache_ptr(entity) };
     cache.flags |= transform::component_flags::position;
     cache.position = position;
 }
@@ -221,7 +221,7 @@ entity_script::set_position(const game_entity::entity *const entity, math::v3 po
 void
 entity_script::set_scale(const game_entity::entity *const entity, math::v3 scale)
 {
-    transform::component_cache& cache{ *get_chage_ptr(entity) };
+    transform::component_cache& cache{ *get_cache_ptr(entity) };
     cache.flags |= transform::component_flags::scale;
     cache.scale = scale;
 }

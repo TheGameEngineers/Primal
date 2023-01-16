@@ -6,19 +6,20 @@
 
 struct GlobalShaderData
 {
-    float4x4 View;
-    float4x4 Projection;
-    float4x4 InvProjection;
-    float4x4 ViewProjection;
-    float4x4 InvViewProjection;
+    float4x4    View;
+    float4x4    Projection;
+    float4x4    InvProjection;
+    float4x4    ViewProjection;
+    float4x4    InvViewProjection;
 
-    float3   CameraPosition;
-    uint     ViewWidth;
+    float3      CameraPosition;
+    float        ViewWidth;
 
-    float3   CameraDirection;
-    uint     ViewHeight;
+    float3      CameraDirection;
+    float        ViewHeight;
 
-    float    DeltaTime;
+    uint       NumDirectionalLights;
+    float       DeltaTime;
 };
 
 struct PerObjectData
