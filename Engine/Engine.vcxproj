@@ -31,6 +31,7 @@
     <ClInclude Include="Content\ContentToEngine.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
     <ClInclude Include="EngineAPI\GameEntity.h" />
+    <ClInclude Include="EngineAPI\Input.h" />
     <ClInclude Include="EngineAPI\Light.h" />
     <ClInclude Include="EngineAPI\ScriptComponent.h" />
     <ClInclude Include="EngineAPI\TransfromComponent.h" />
@@ -50,6 +51,8 @@
     <ClInclude Include="Graphics\Direct3D12\Shaders\SharedTypes.h" />
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\Renderer.h" />
+    <ClInclude Include="Input\Input.h" />
+    <ClInclude Include="Input\InputWin32.h" />
     <ClInclude Include="Platform\IncludeWindowCpp.h" />
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\PlatformTypes.h" />
@@ -82,6 +85,8 @@
     <ClCompile Include="Graphics\Direct3D12\D3D12Surface.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
+    <ClCompile Include="Input\Input.cpp" />
+    <ClCompile Include="Input\InputWin32.cpp" />
     <ClCompile Include="Platform\PlatformWin32.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
   </ItemGroup>

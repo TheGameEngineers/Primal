@@ -41,6 +41,9 @@
     <ClInclude Include="Graphics\Direct3D12\Shaders\SharedTypes.h" />
     <ClInclude Include="EngineAPI\Light.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Light.h" />
+    <ClInclude Include="EngineAPI\Input.h" />
+    <ClInclude Include="Input\Input.h" />
+    <ClInclude Include="Input\InputWin32.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -65,6 +68,8 @@
     <ClCompile Include="Content\ContentToEngine.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Camera.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Light.cpp" />
+    <ClCompile Include="Input\Input.cpp" />
+    <ClCompile Include="Input\InputWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
