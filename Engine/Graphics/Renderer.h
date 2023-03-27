@@ -82,6 +82,10 @@ struct light_parameter {
         is_enabled,
         intensity,
         color,
+        attenuation,
+        range,
+        umbra,
+        penumbra,
         type,
         entity_id,
 

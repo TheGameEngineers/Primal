@@ -28,10 +28,17 @@ public:
     void is_enabled(bool is_enabled) const;
     void intensity(f32 intensity) const;
     void color(math::v3 color) const;
+    void attenuation(math::v3 attenuation) const;
+    void range(f32 range) const;
+    void cone_angles(f32 umbra, f32 penumbra) const;
 
     bool is_enabled() const;
     f32 intensity() const;
     math::v3 color() const;
+    math::v3 attenuation() const;
+    f32 range() const;
+    f32 ubmra() const;
+    f32 penubmra() const;
     type light_type() const;
     id::id_type entity_id() const;
 

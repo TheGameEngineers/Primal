@@ -142,6 +142,7 @@ struct input_code {
 
         key_numlock,
         key_scrollock,
+        key_tilde,
     };
 };
 
@@ -149,7 +150,7 @@ struct input_source {
     enum type : u32 {
         keyboard,
         mouse,
-        controler,
+        controller,
         raw,
 
         count

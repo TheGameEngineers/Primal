@@ -213,7 +213,7 @@ constexpr u32 vk_mapping[256]{
     /* 0xBE */ u32_invalid_id,
     /* 0xBF */ u32_invalid_id,
 
-    /* 0xC0 */ u32_invalid_id,
+    /* 0xC0 */ input_code::key_tilde,
     /* 0xC1 */ u32_invalid_id,
     /* 0xC2 */ u32_invalid_id,
     /* 0xC3 */ u32_invalid_id,
