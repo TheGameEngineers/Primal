@@ -13,12 +13,12 @@ struct GlobalShaderData
     float4x4    InvViewProjection;
 
     float3      CameraPosition;
-    float        ViewWidth;
+    float       ViewWidth;
 
     float3      CameraDirection;
-    float        ViewHeight;
+    float       ViewHeight;
 
-    uint       NumDirectionalLights;
+    uint        NumDirectionalLights;
     float       DeltaTime;
 };
 
@@ -27,6 +27,37 @@ struct PerObjectData
     float4x4 World;
     float4x4 InvWorld;
     float4x4 WorldViewProjection;
+};
+
+struct Plane
+{
+    float3  Normal;
+    float   Distance;
+};
+
+// View frustum planes (in view space)
+// Plane order: left, right, top, bottom
+// Front and back planes are computed in light culling compute shader.
+struct Frustum
+{
+    Plane Planes[4];
+};
+
+struct LightCullingDispatchParameters
+{
+    // Number of groups dispatched. (This parameter is not available as an HLSL system value!)
+    uint2   NumThreadGroups;
+
+    // Total number of threads dispatched. (Also not available as an HLSL system value!)
+    // NOTE: This value may be less than the actual number of threads executed 
+    //       if the screen size is not evenly divisible by the block size.
+    uint2   NumThreads;
+
+    // Number of lights for culling (doesn't include directional lights, because those can't be culled).
+    uint    NumLights;
+
+    // The index of currenct depth buffer in SRV descriptor heap
+    uint    DepthBufferSrvIndex;
 };
 
 // Contains light cullign data that's formatted and ready to be copied
@@ -77,6 +108,8 @@ static_assert((sizeof(PerObjectData) % 16) == 0,
               "Make sure PerObjectData is formatted in 16-byte chunks without any implicit padding.");
 static_assert((sizeof(LightParameters) % 16) == 0,
               "Make sure LightParameters is formatted in 16-byte chunks without any implicit padding.");
+static_assert((sizeof(LightCullingLightInfo) % 16) == 0,
+              "Make sure LightCullingLightInfo is formatted in 16-byte chunks without any implicit padding.");
 static_assert((sizeof(DirectionalLightParameters) % 16) == 0,
               "Make sure DirectionalLightParameters is formatted in 16-byte chunks without any implicit padding.");
 #endif

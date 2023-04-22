@@ -142,6 +142,16 @@ struct input_code {
 
         key_numlock,
         key_scrollock,
+        key_colon,
+        key_plus,
+        key_comma,
+        key_minus,
+        key_period,
+        key_question,
+        key_bracket_open,
+        key_pipe,
+        key_bracket_close,
+        key_quote,
         key_tilde,
     };
 };

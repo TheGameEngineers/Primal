@@ -4,5 +4,6 @@
 #define PRIMAL_COMMON_HLSLI
 
 #include "CommonTypes.hlsli"
+#include "CommonFunctions.hlsli"
 
 #endif // PRIMAL_COMMON_HLSLI

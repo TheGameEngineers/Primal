@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "D3D12Surface.h"
 #include "D3D12Core.h"
+#include "D3D12LightCulling.h"
 
 namespace primal::graphics::d3d12 {
 namespace {
@@ -56,6 +57,9 @@ d3d12_surface::create_swap_chain(IDXGIFactory7* factory, ID3D12CommandQueue* cmd
     }
 
     finalize();
+
+    assert(!id::is_valid(_light_culling_id));
+    _light_culling_id = delight::add_culler();
 }
 
 void
@@ -119,6 +123,11 @@ d3d12_surface::finalize()
 void
 d3d12_surface::release()
 {
+    if (id::is_valid(_light_culling_id))
+    {
+        delight::remove_culler(_light_culling_id);
+    }
+
     for (u32 i{ 0 }; i < buffer_count; ++i)
     {
         render_target_data& data{ _render_target_data[i] };

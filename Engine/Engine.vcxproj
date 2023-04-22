@@ -43,6 +43,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Interface.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Light.h" />
+    <ClInclude Include="Graphics\Direct3D12\D3D12LightCulling.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12PostProcess.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Resources.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12Shaders.h" />
@@ -79,6 +80,7 @@
     <ClCompile Include="Graphics\Direct3D12\D3D12Helpers.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Interface.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Light.cpp" />
+    <ClCompile Include="Graphics\Direct3D12\D3D12LightCulling.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12PostProcess.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Resources.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Shaders.cpp" />

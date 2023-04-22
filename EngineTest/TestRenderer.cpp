@@ -338,7 +338,7 @@ engine_test::run()
     static u32 counter{ 0 };
     static u32 light_set_key{ 0 };
     ++counter;
-    if ((counter % 90) == 0) light_set_key = (light_set_key + 1) % 2;
+    //if ((counter % 90) == 0) light_set_key = (light_set_key + 1) % 2;
 
     timer.begin();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));

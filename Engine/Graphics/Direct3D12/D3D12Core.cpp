@@ -8,6 +8,7 @@
 #include "D3D12Upload.h"
 #include "D3D12Content.h"
 #include "D3D12Light.h"
+#include "D3D12LightCulling.h"
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
 
@@ -290,8 +291,8 @@ get_d3d12_frame_info(const frame_info& info, constant_buffer& cbuffer,
     XMStoreFloat4x4A(&data.InvViewProjection, camera.inverse_view_projection());
     XMStoreFloat3(&data.CameraPosition, camera.position());
     XMStoreFloat3(&data.CameraDirection, camera.direction());
-    data.ViewWidth = (f32)surface.width();
-    data.ViewHeight = (f32)surface.height();
+    data.ViewWidth = surface. viewport().Width;
+    data.ViewHeight = surface.viewport().Height;
     data.NumDirectionalLights = light::non_cullable_light_count(info.light_set_key);
     data.DeltaTime = delta_time;
 
@@ -307,6 +308,7 @@ get_d3d12_frame_info(const frame_info& info, constant_buffer& cbuffer,
         cbuffer.gpu_address(shader_data),
         surface.width(),
         surface.height(),
+        surface.light_culling_id(),
         frame_idx,
         delta_time
     };
@@ -406,7 +408,7 @@ initialize()
           fx::initialize() &&
           upload::initialize() &&
           content::initialize() &&
-          light::initialize()))
+          delight::initialize()))
         return failed_init();
 
     NAME_D3D12_OBJECT(main_device, L"Main D3D12 Device");
@@ -432,7 +434,7 @@ shutdown()
     }
 
     // shutdown modules
-    light::shutdown();
+    delight::shutdown();
     content::shutdown();
     upload::shutdown();
     fx::shutdown();
@@ -591,6 +593,7 @@ render_surface(surface_id id, frame_info info)
 
     // Geometry and lighting pass
     light::update_light_buffers(d3d12_info);
+    delight::cull_lights(cmd_list, d3d12_info, barriers);
     gpass::add_transitions_for_gpass(barriers);
     barriers.apply(cmd_list);
     gpass::set_render_targets_for_gpass(cmd_list);

@@ -176,8 +176,8 @@ private:
         XMVECTOR p{ _desired_position - _position };
         XMVECTOR o{ _desired_spherical - _spherical };
 
-        _move_position = (XMVectorGetX(XMVector3Length(p)) > math::epsilon);
-        _move_rotation = (XMVectorGetX(XMVector3Length(o)) > math::epsilon);
+        _move_position = (XMVectorGetX(XMVector3LengthSq(p)) > math::epsilon);
+        _move_rotation = (XMVectorGetX(XMVector3LengthSq(o)) > math::epsilon);
 
         const f32 scale{ 0.2f * dt / 0.016667f };
 

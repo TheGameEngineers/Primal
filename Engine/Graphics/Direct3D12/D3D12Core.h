@@ -9,13 +9,14 @@ namespace camera { class d3d12_camera; }
 
 struct d3d12_frame_info
 {
-    const frame_info*           info;
-    camera::d3d12_camera*       camera;
-    D3D12_GPU_VIRTUAL_ADDRESS   global_shader_data;
-    u32                         surface_width;
-    u32                         surface_height;
-    u32                         frame_index;
-    f32                         delta_time;
+    const frame_info*           info{ nullptr };
+    camera::d3d12_camera*       camera{ nullptr };
+    D3D12_GPU_VIRTUAL_ADDRESS   global_shader_data{ 0 };
+    u32                         surface_width{ 0 };
+    u32                         surface_height{ 0 };
+    id::id_type                 light_culling_id{ id::invalid_id };
+    u32                         frame_index{ 0 };
+    f32                         delta_time{ 16.7f };
 };
 }
 

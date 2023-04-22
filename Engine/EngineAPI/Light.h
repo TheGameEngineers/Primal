@@ -37,8 +37,8 @@ public:
     math::v3 color() const;
     math::v3 attenuation() const;
     f32 range() const;
-    f32 ubmra() const;
-    f32 penubmra() const;
+    f32 umbra() const;
+    f32 penumbra() const;
     type light_type() const;
     id::id_type entity_id() const;
 

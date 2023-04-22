@@ -205,7 +205,7 @@ light::range() const
 }
 
 f32
-light::ubmra() const
+light::umbra() const
 {
     assert(is_valid());
     f32 umbra;
@@ -214,7 +214,7 @@ light::ubmra() const
 }
 
 f32
-light::penubmra() const
+light::penumbra() const
 {
     assert(is_valid());
     f32 penumbra;
