@@ -137,7 +137,7 @@ d3d12_buffer::release()
 }
 //// CONSTANT BUFFER //////////////////////////////////////////////////////////////////////////////
 constant_buffer::constant_buffer(d3d12_buffer_init_info info)
-    : _buffer{info, true}
+    : _buffer{ info, true }
 {
     NAME_D3D12_OBJECT_INDEXED(buffer(), size(), L"Constant Buffer - size");
 
@@ -150,7 +150,7 @@ u8 *const
 constant_buffer::allocate(u32 size)
 {
     std::lock_guard lock{ _mutex };
-    const u32 aligned_size{(u32)d3dx::align_size_for_constant_buffer(size)};
+    const u32 aligned_size{ (u32)d3dx::align_size_for_constant_buffer(size) };
     assert(_cpu_offset + aligned_size <= _buffer.size());
     if (_cpu_offset + aligned_size <= _buffer.size())
     {
@@ -160,6 +160,40 @@ constant_buffer::allocate(u32 size)
     }
 
     return nullptr;
+}
+//// STRUCTURED BUFFER ////////////////////////////////////////////////////////////////////////////
+structured_buffer::structured_buffer(const d3d12_buffer_init_info& info)
+    : _buffer{ info, false }, _stride{ info.stride }
+{
+    assert(info.size && info.size == (info.stride * info.element_count));
+    assert(info.alignment > 0);
+    NAME_D3D12_OBJECT_INDEXED(buffer(), info.size, L"Structured Buffer - size");
+
+    if (info.create_uav)
+    {
+        assert(info.flags && D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        _uav = core::uav_heap().allocate();
+        _uav_shader_visible = core::srv_heap().allocate();
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};
+        desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        desc.Format = DXGI_FORMAT_UNKNOWN;
+        desc.Buffer.CounterOffsetInBytes = 0;
+        desc.Buffer.FirstElement = 0;
+        desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+        desc.Buffer.NumElements = info.element_count;
+        desc.Buffer.StructureByteStride = info.stride;
+
+        core::device()->CreateUnorderedAccessView(buffer(), nullptr, &desc, _uav.cpu);
+        core::device()->CopyDescriptorsSimple(1, _uav_shader_visible.cpu, _uav.cpu, core::srv_heap().type());
+    }
+}
+
+void
+structured_buffer::release()
+{
+    core::srv_heap().free(_uav_shader_visible);
+    core::uav_heap().free(_uav);
+    _buffer.release();
 }
 //// D3D12 TEXTURE ////////////////////////////////////////////////////////////////////////////////
 d3d12_texture::d3d12_texture(d3d12_texture_init_info info)

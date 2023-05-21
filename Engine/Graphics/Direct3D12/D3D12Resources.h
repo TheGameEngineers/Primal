@@ -177,9 +177,92 @@ public:
 
 private:
     d3d12_buffer    _buffer{};
-    u8*             _cpu_address{nullptr};
-    u32             _cpu_offset{0};
+    u8*             _cpu_address{ nullptr };
+    u32             _cpu_offset{ 0 };
     std::mutex      _mutex{};
+};
+
+class structured_buffer
+{
+public:
+    structured_buffer() = default;
+    explicit structured_buffer(const d3d12_buffer_init_info& info);
+    DISABLE_COPY(structured_buffer);
+    constexpr structured_buffer(structured_buffer&& o)
+        : _buffer{ std::move(o._buffer) }, _uav{ o._uav }, _uav_shader_visible{ o._uav_shader_visible }
+        , _stride{ o._stride }
+    {
+        o.reset();
+    }
+
+    constexpr structured_buffer& operator=(structured_buffer&& o)
+    {
+        assert(this != &o);
+        if (this != &o)
+        {
+            release();
+            move(o);
+        }
+
+        return *this;
+    }
+
+    ~structured_buffer() { release(); }
+
+    void release();
+
+    void clear_uav(id3d12_graphics_command_list *const cmd_list, const u32 *const values) const
+    {
+        cmd_list->ClearUnorderedAccessViewUint(_uav_shader_visible.gpu, _uav.cpu,
+                                               buffer(), values, 0, nullptr);
+    }
+
+    void clear_uav(id3d12_graphics_command_list *const cmd_list, const f32 *const values) const
+    {
+        cmd_list->ClearUnorderedAccessViewFloat(_uav_shader_visible.gpu, _uav.cpu,
+                                               buffer(), values, 0, nullptr);
+    }
+
+    [[nodiscard]] constexpr ID3D12Resource* buffer() const { return _buffer.buffer(); }
+    [[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const { return _buffer.gpu_address(); }
+    [[nodiscard]] constexpr u32 size() const { return _buffer.size(); }
+    [[nodiscard]] constexpr descriptor_handle uav() const { return _uav; }
+    [[nodiscard]] constexpr descriptor_handle uav_shader_visible() const { return _uav_shader_visible; }
+
+    [[nodiscard]] constexpr static d3d12_buffer_init_info get_default_init_info(u32 stride, u32 element_count)
+    {
+        assert(stride && element_count);
+        d3d12_buffer_init_info info{};
+        info.size = stride * element_count;
+        info.stride = stride;
+        info.element_count = element_count;
+        info.alignment = stride;
+        info.flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        return info;
+    }
+
+private:
+
+    constexpr void move(structured_buffer& o)
+    {
+        _buffer = std::move(o._buffer);
+        _uav = o._uav;
+        _uav_shader_visible = o._uav_shader_visible;
+        _stride = o._stride;
+        o.reset();
+    }
+
+    constexpr void reset()
+    {
+        _uav = {};
+        _uav_shader_visible = {};
+        _stride = 0;
+    }
+
+    d3d12_buffer        _buffer{};
+    descriptor_handle   _uav{};
+    descriptor_handle   _uav_shader_visible{};
+    u32                 _stride{ 0 };
 };
 
 struct d3d12_texture_init_info

@@ -15,11 +15,14 @@ constexpr DXGI_FORMAT           depth_buffer_format{ DXGI_FORMAT_D32_FLOAT };
 struct opaque_root_parameter {
     enum parameter : u32 {
         global_shader_data,
+        per_object_data,
         position_buffer,
         element_buffer,
         srv_indices,
         directional_lights,
-        per_object_data,
+        cullable_lights,
+        light_grid,
+        light_index_list,
 
         count
     };

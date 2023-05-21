@@ -35,6 +35,20 @@ struct Plane
     float   Distance;
 };
 
+struct Sphere
+{
+    float3 Center;
+    float  Radius;
+};
+
+struct Cone
+{
+    float3 Tip;
+    float  Height;
+    float3 Direction;
+    float  Radius;
+};
+
 // View frustum planes (in view space)
 // Plane order: left, right, top, bottom
 // Front and back planes are computed in light culling compute shader.
@@ -42,6 +56,16 @@ struct Frustum
 {
     Plane Planes[4];
 };
+
+#ifndef __cplusplus
+struct ComputeShaderInput
+{
+    uint3 GroupID           : SV_GroupID;           // 3D index of the thread group in the dispatch.
+    uint3 GroupThreadID     : SV_GroupThreadID;     // 3D index of local thread ID in a thread group.
+    uint3 DispatchThreadID  : SV_DispatchThreadID;  // 3D index of global thread ID in the dispatch.
+    uint  GroupIndex        : SV_GroupIndex;        // Flattened local index of the thread within a thread group.
+};
+#endif
 
 struct LightCullingDispatchParameters
 {

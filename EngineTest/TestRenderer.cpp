@@ -130,7 +130,7 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
     }
 
-    if ((resized && GetAsyncKeyState(VK_LBUTTON) >= 0) || toggle_fullscreen)
+    if ((resized && GetKeyState(VK_LBUTTON) >= 0) || toggle_fullscreen)
     {
         platform::window win{ platform::window_id{(id::id_type)GetWindowLongPtr(hwnd, GWLP_USERDATA)} };
         for (u32 i{ 0 }; i < _countof(_surfaces); ++i)

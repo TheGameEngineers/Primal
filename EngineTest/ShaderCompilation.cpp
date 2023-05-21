@@ -36,6 +36,7 @@ constexpr engine_shader_info engine_shader_files[]
     {engine_shader::fill_color_ps,          {"FillColor.hlsl", "FillColorPS", shader_type::pixel}},
     {engine_shader::post_process_ps,        {"PostProcess.hlsl", "PostProcessPS", shader_type::pixel}},
     {engine_shader::grid_frustums_cs,       {"GridFrustums.hlsl", "ComputeGridFrustumsCS", shader_type::compute}},
+    {engine_shader::light_culling_cs,       {"CullLights.hlsl", "CullLightsCS", shader_type::compute}},
 };
 
 static_assert(_countof(engine_shader_files) == engine_shader::count);
@@ -217,20 +218,9 @@ compiled_shaders_are_up_to_date()
     if (!std::filesystem::exists(engine_shaders_path)) return false;
     auto shaders_compilation_time = std::filesystem::last_write_time(engine_shaders_path);
 
-    std::filesystem::path full_path{};
-
-    // Check if either of engine shader source files is newer than the compiled shader file.
-    // In that case, we need to recompile.
-    for (u32 i{ 0 }; i < engine_shader::count; ++i)
+    for (const auto& entry : std::filesystem::directory_iterator{ shaders_source_path })
     {
-        auto& file = engine_shader_files[i];
-
-        full_path = shaders_source_path;
-        full_path += file.info.file_name;
-        if (!std::filesystem::exists(full_path)) return false;
-
-        auto shader_file_time = std::filesystem::last_write_time(full_path);
-        if (shader_file_time > shaders_compilation_time)
+        if (entry.last_write_time() > shaders_compilation_time)
         {
             return false;
         }
@@ -313,7 +303,8 @@ compile_shaders()
         if (!std::filesystem::exists(full_path)) return false;
         utl::vector<std::wstring> extra_args{};
 
-        if (file.id == engine_shader::grid_frustums_cs)
+        if (file.id == engine_shader::grid_frustums_cs ||
+            file.id == engine_shader::light_culling_cs)
         {
             // TODO: get TILE_SIZE value from d3d12
             extra_args.emplace_back(L"-D");

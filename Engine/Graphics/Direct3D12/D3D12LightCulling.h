@@ -23,4 +23,6 @@ void cull_lights(id3d12_graphics_command_list *const cmd_list,
 
 // TODO: temporary for visualizing light culling. Remove later.
 D3D12_GPU_VIRTUAL_ADDRESS frustums(id::id_type light_culling_id, u32 frame_index);
+D3D12_GPU_VIRTUAL_ADDRESS light_grid_opaque(id::id_type light_culling_id, u32 frame_index);
+D3D12_GPU_VIRTUAL_ADDRESS light_index_list_opaque(id::id_type light_culling_id, u32 frame_index);
 }
