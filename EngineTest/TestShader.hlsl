@@ -103,8 +103,8 @@ VertexOut TestShaderVS(in uint VertexIdx: SV_VertexID)
     return vsOut;
 }
 
-#define TILE_SIZE 16
-#define NO_LIGHT_ATTENUATION 1
+#define TILE_SIZE 32
+#define NO_LIGHT_ATTENUATION 0
 
 float3 CalculateLighting(float3 N, float3 L, float3 V, float3 lightColor)
 {
@@ -131,9 +131,16 @@ float3 PointLight(float3 N, float3 worldPosition, float3 V, LightParameters ligh
     {
         const float dRcp = rsqrt(dSq);
         L *= dRcp;
-        color = CalculateLighting(N, L, V, light.Color * light.Intensity * 0.2f);
+        color = saturate(dot(N, L)) * light.Color * light.Intensity * 0.2f;
     }
 #else
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation);
+    }
 #endif
     return color;
 }
@@ -150,9 +157,18 @@ float3 Spotlight(float3 N, float3 worldPosition, float3 V, LightParameters light
         L *= dRcp;
         const float CosAngleToLight = saturate(dot(-L, light.Direction));
         const float angularAttenuation = float(light.CosPenumbra < CosAngleToLight);
-        color = CalculateLighting(N, L, V, light.Color * light.Intensity * angularAttenuation * 0.2f);
+        color = saturate(dot(N, L)) * light.Color * light.Intensity * angularAttenuation * 0.2f;
     }
 #else
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        const float CosAngleToLight = saturate(dot(-L, light.Direction));
+        const float angularAttenuation = smoothstep(light.CosPenumbra, light.CosUmbra, CosAngleToLight);
+        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation * angularAttenuation);
+    }
 #endif
     return color;
 }
@@ -184,13 +200,32 @@ PixelOut TestShaderPS(in VertexOut psIn)
             lightDirection = GlobalData.CameraDirection;
         }
 
-        color += 0.1f * CalculateLighting(normal, -lightDirection, viewDir, light.Color * light.Intensity);
+        color += 0.02f * CalculateLighting(normal, -lightDirection, viewDir, light.Color * light.Intensity);
     }
 
     const uint gridIndex = GetGridIndex(psIn.HomogeneousPosition.xy, GlobalData.ViewWidth);
     uint lightStartIndex = LightGrid[gridIndex].x;
     const uint lightCount = LightGrid[gridIndex].y;
 
+#if USE_BOUNDING_SPHERES
+    const uint numPointLights = lightStartIndex + (lightCount >> 16);
+    const uint numSpotlights = numPointLights + (lightCount & 0xffff);
+
+    for (i = lightStartIndex; i < numPointLights; ++i)
+    {
+        const uint lightIndex = LightIndexList[i];
+        LightParameters light = CullableLights[lightIndex];
+        color += PointLight(normal, psIn.WorldPosition, viewDir, light);
+    }
+
+    for (i = numPointLights; i < numSpotlights; ++i)
+    {
+        const uint lightIndex = LightIndexList[i];
+        LightParameters light = CullableLights[lightIndex];
+        color += Spotlight(normal, psIn.WorldPosition, viewDir, light);
+    }
+
+#else
     for (i = 0; i < lightCount; ++i)
     {
         const uint lightIndex = LightIndexList[lightStartIndex + i];
@@ -205,6 +240,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
             color += Spotlight(normal, psIn.WorldPosition, viewDir, light);
         }
     }
+#endif
 
     float3 ambient = 0 / 255.f;
     psOut.Color = saturate(float4(color + ambient, 1.f));

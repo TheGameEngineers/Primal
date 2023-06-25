@@ -379,16 +379,6 @@ initialize()
         ComPtr<ID3D12InfoQueue> info_queue;
         DXCall(main_device->QueryInterface(IID_PPV_ARGS(&info_queue)));
 
-        D3D12_MESSAGE_ID disabled_messages[]
-        {
-            D3D12_MESSAGE_ID_CLEARUNORDEREDACCESSVIEW_INCOMPATIBLE_WITH_STRUCTURED_BUFFERS,
-        };
-
-        D3D12_INFO_QUEUE_FILTER filter{};
-        filter.DenyList.NumIDs = _countof(disabled_messages);
-        filter.DenyList.pIDList = &disabled_messages[0];
-        info_queue->AddStorageFilterEntries(&filter);
-
         info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
         info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
         info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);

@@ -48,6 +48,7 @@ bool ConeInsidePlane(Cone cone, Plane plane)
     return PointInsidePlane(cone.Tip, plane) && PointInsidePlane(Q, plane);
 }
 
+#if !USE_BOUNDING_SPHERES
 // Check to see of a light is partially contained within the frustum.
 bool SphereInsideFrustum(Sphere sphere, Frustum frustum, float zNear, float zFar)
 {
@@ -85,14 +86,33 @@ bool ConeInsideFrustum(Cone cone, Frustum frustum, float zNear, float zFar)
 
     return result;
 }
+#endif
+// Converts a normalized screen-space position to a 3D coordinate depending on "inverse" parameter.
+// uv is screen-space uv coordinate of the pixel
+// depth is z-buffer depth
+// inverse parameter can be
+//      - inverse projection            -> screen to view-space
+//      - inverse view_projection       -> screen to world-space
+//      - inverse world-view_projection -> screen to object-space
+
+float4 UnprojectUV(float2 uv, float depth, float4x4 inverse)
+{
+    // Convert to clip space
+    float4 clip = float4(float2(uv.x, 1.f - uv.y) * 2.f - 1.f, depth, 1.f);
+
+    // 3D-space position (before perspective divide).
+    float4 position = mul(inverse, clip);
+
+    // Divide by w to get the 3D-space position.
+    return position / position.w;
+}
 
 float4 ClipToView(float4 clip, float4x4 inverseProjection)
 {
     // View space position
     float4 view = mul(inverseProjection, clip);
     // Perspective (un)projection
-    view /= view.w;
-    return view;
+    return view / view.w;
 }
 
 float4 ScreenToView(float4 screen, float2 invViewDimensions, float4x4 inverseProjection)
