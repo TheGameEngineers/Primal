@@ -131,7 +131,7 @@ float3 PointLight(float3 N, float3 worldPosition, float3 V, LightParameters ligh
     {
         const float dRcp = rsqrt(dSq);
         L *= dRcp;
-        color = saturate(dot(N, L)) * light.Color * light.Intensity * 0.2f;
+        color = saturate(dot(N, L)) * light.Color * light.Intensity * 0.01f;
     }
 #else
     if (dSq < light.Range * light.Range)
@@ -139,7 +139,7 @@ float3 PointLight(float3 N, float3 worldPosition, float3 V, LightParameters ligh
         const float dRcp = rsqrt(dSq);
         L *= dRcp;
         const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
-        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation);
+        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation * 0.2f);
     }
 #endif
     return color;
@@ -157,7 +157,7 @@ float3 Spotlight(float3 N, float3 worldPosition, float3 V, LightParameters light
         L *= dRcp;
         const float CosAngleToLight = saturate(dot(-L, light.Direction));
         const float angularAttenuation = float(light.CosPenumbra < CosAngleToLight);
-        color = saturate(dot(N, L)) * light.Color * light.Intensity * angularAttenuation * 0.2f;
+        color = saturate(dot(N, L)) * light.Color * light.Intensity * angularAttenuation * 0.01f;
     }
 #else
     if (dSq < light.Range * light.Range)
@@ -167,7 +167,7 @@ float3 Spotlight(float3 N, float3 worldPosition, float3 V, LightParameters light
         const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
         const float CosAngleToLight = saturate(dot(-L, light.Direction));
         const float angularAttenuation = smoothstep(light.CosPenumbra, light.CosUmbra, CosAngleToLight);
-        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation * angularAttenuation);
+        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation * angularAttenuation * 0.2f);
     }
 #endif
     return color;

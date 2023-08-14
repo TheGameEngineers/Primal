@@ -242,6 +242,9 @@ const char* get_engine_shaders_path(graphics_platform platform);
 surface create_surface(platform::window window);
 void remove_surface(surface_id id);
 
+void create_light_set(u64 light_set_key);
+void remove_light_set(u64 light_set_key);
+
 light create_light(light_init_info info);
 void remove_light(light_id id, u64 light_set_key);
 

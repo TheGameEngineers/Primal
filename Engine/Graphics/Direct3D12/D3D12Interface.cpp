@@ -23,6 +23,8 @@ get_platform_interface(platform_interface& pi)
     pi.surface.height = core::surface_height;
     pi.surface.render = core::render_surface;
 
+    pi.light.create_light_set = light::create_light_set;
+    pi.light.remove_light_set = light::remove_light_set;
     pi.light.create = light::create;
     pi.light.remove = light::remove;
     pi.light.set_parameter = light::set_parameter;

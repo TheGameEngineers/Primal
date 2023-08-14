@@ -104,6 +104,17 @@ surface::render(frame_info info) const
     gfx.surface.render(_id, info);
 }
 
+void
+create_light_set(u64 light_set_key)
+{
+    gfx.light.create_light_set(light_set_key);
+}
+void
+remove_light_set(u64 light_set_key)
+{
+    gfx.light.remove_light_set(light_set_key);
+}
+
 light
 create_light(light_init_info info)
 {

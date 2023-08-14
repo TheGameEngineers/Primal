@@ -19,6 +19,17 @@ struct asset_type {
     };
 };
 
+struct texture_flags {
+    enum flags : u32 {
+        is_hdr = 0x01,
+        has_alpha = 0x02,
+        is_premultiplied_alpha = 0x04,
+        is_imported_as_normal_map = 0x08,
+        is_cube_map = 0x10,
+        is_volume_map = 0x20,
+    };
+};
+
 typedef struct compiled_shader
 {
     static constexpr u32 hash_length{ 16 };
