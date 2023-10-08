@@ -207,7 +207,7 @@ struct material_init_info
     id::id_type*        texture_ids;
 };
 
-struct primitve_topology {
+struct primitive_topology {
     enum type : u32 {
         point_list = 1,
         line_list,

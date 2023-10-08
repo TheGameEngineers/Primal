@@ -164,17 +164,17 @@ private:
 };
 
 constexpr D3D_PRIMITIVE_TOPOLOGY
-get_d3d_primitive_topology(primitve_topology::type type)
+get_d3d_primitive_topology(primitive_topology::type type)
 {
-    assert(type < primitve_topology::count);
+    assert(type < primitive_topology::count);
 
     switch (type)
     {
-    case primitve_topology::point_list:     return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-    case primitve_topology::line_list:      return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-    case primitve_topology::line_strip:     return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
-    case primitve_topology::triangle_list:  return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    case primitve_topology::triangle_strip: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    case primitive_topology::point_list:     return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case primitive_topology::line_list:      return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case primitive_topology::line_strip:     return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case primitive_topology::triangle_list:  return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case primitive_topology::triangle_strip: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     }
 
     return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
@@ -479,7 +479,7 @@ add(const u8*& data)
 
 
 
-    view.primitive_topology = get_d3d_primitive_topology((primitve_topology::type)primitive_topology);
+    view.primitive_topology = get_d3d_primitive_topology((primitive_topology::type)primitive_topology);
     view.elements_type = elements_type;
 
     std::lock_guard lock{ submesh_mutex };
@@ -595,10 +595,10 @@ add(id::id_type entity_id, id::id_type geometry_content_id,
     submesh::views_cache views_cache
     {
         (D3D12_GPU_VIRTUAL_ADDRESS *const)alloca(material_count * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
-        (D3D12_GPU_VIRTUAL_ADDRESS *const)alloca(material_count * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
-        (D3D12_INDEX_BUFFER_VIEW *const)alloca(material_count * sizeof(D3D12_INDEX_BUFFER_VIEW)),
-        (D3D_PRIMITIVE_TOPOLOGY *const)alloca(material_count * sizeof(D3D_PRIMITIVE_TOPOLOGY)),
-        (u32 *const)alloca(material_count * sizeof(u32))
+            (D3D12_GPU_VIRTUAL_ADDRESS *const)alloca(material_count * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
+            (D3D12_INDEX_BUFFER_VIEW *const)alloca(material_count * sizeof(D3D12_INDEX_BUFFER_VIEW)),
+            (D3D_PRIMITIVE_TOPOLOGY *const)alloca(material_count * sizeof(D3D_PRIMITIVE_TOPOLOGY)),
+            (u32 *const)alloca(material_count * sizeof(u32))
     };
 
     submesh::get_views(gpu_ids, material_count, views_cache);

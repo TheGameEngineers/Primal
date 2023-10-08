@@ -21,9 +21,9 @@ namespace PrimalEditor.GameDev
     }
     static class VisualStudio
     {
-        private static readonly ManualResetEventSlim _resetEvent = new ManualResetEventSlim(false);
+        private static readonly ManualResetEventSlim _resetEvent = new(false);
         private static readonly string _progID = "VisualStudio.DTE.17.0";
-        private static readonly object _lock = new object();
+        private static readonly object _lock = new();
         private static readonly string[] _buildConfigurationNames = new string[] { "Debug", "DebugEditor", "Release", "ReleaseEditor" };
         private static EnvDTE80.DTE2 _vsInstance = null;
 

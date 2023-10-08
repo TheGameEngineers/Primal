@@ -3,6 +3,7 @@
 using PrimalEditor.Content;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,9 +12,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace PrimalEditor
 {
+    static class EnumExtensions
+    {
+        public static string GetDescription(this Enum value)
+        {
+            return (value.GetType().GetField(value.ToString())
+                .GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[]).FirstOrDefault()?.Description ?? value.ToString();
+        }
+    }
+
     static class VisualExtensions
     {
         public static T FindVisualParent<T>(this DependencyObject depObject) where T : DependencyObject
@@ -35,6 +46,10 @@ namespace PrimalEditor
 
     public static class ContentHelper
     {
+        public static string[] MeshFileExtensions = { ".fbx" };
+        public static string[] ImageFileExtensions = { ".bmp", ",png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr" };
+        public static string[] AudioFileExtensions = { ".ogg", ".wav" };
+
         public static string GetRandomString(int length = 8)
         {
             if (length <= 0) length = 8;
@@ -64,6 +79,7 @@ namespace PrimalEditor
 
         public static string SanitizeFileName(string name)
         {
+            Debug.Assert(!string.IsNullOrEmpty(name));
             var path = new StringBuilder(name.Substring(0, name.LastIndexOf(Path.DirectorySeparatorChar) + 1));
             var file = new StringBuilder(name[(name.LastIndexOf(Path.DirectorySeparatorChar) + 1)..]);
             foreach (var c in Path.GetInvalidPathChars())
@@ -107,50 +123,140 @@ namespace PrimalEditor
             }
         }
 
-        private static void Import(string file, string destination)
+        private static Asset Import(string file, string destination)
         {
             Debug.Assert(!string.IsNullOrEmpty(file));
-            if (IsDirectory(file)) return;
-            if (!destination.EndsWith(Path.DirectorySeparatorChar)) destination += Path.DirectorySeparatorChar;
+            if (IsDirectory(file)) return null;
             var name = Path.GetFileNameWithoutExtension(file).ToLower();
             var ext = Path.GetExtension(file).ToLower();
 
-            Asset asset = null;
-
-            switch (ext)
+            Asset asset = ext switch
             {
-                case ".fbx": asset = new Content.Geometry(); break;
-                case ".bmp": break;
-                case ".png": break;
-                case ".jpg": break;
-                case ".jpeg": break;
-                case ".tiff": break;
-                case ".tif": break;
-                case ".tga": break;
-                case ".wav": break;
-                case ".ogg": break;
-                default:
-                    break;
-            }
+                { } when MeshFileExtensions.Contains(ext) => new Content.Geometry(),
+                { } when ImageFileExtensions.Contains(ext) => new Texture(),
+                { } when AudioFileExtensions.Contains(ext) => null,
+                _ => null
+            };
 
-            if(asset != null)
+            if (asset != null)
             {
                 Import(asset, name, file, destination);
             }
+
+            return asset;
         }
 
         private static void Import(Asset asset, string name, string file, string destination)
         {
-            Debug.Assert(asset != null);
+            destination = destination?.Trim();
 
+            Debug.Assert(asset != null);
+            Debug.Assert(!string.IsNullOrEmpty(destination) && Directory.Exists(destination));
+
+            if (!destination.EndsWith(Path.DirectorySeparatorChar)) destination += Path.DirectorySeparatorChar;
             asset.FullPath = destination + name + Asset.AssetFileExtension;
-            if(!string.IsNullOrEmpty(file))
+
+            bool importSucceeded = false;
+            try
             {
-                asset.Import(file);
+                // NOTE: FullPath must be set before we call asset.Import().
+                importSucceeded = !string.IsNullOrEmpty(file) && asset.Import(file);
+
+                if (importSucceeded)
+                {
+                    asset.Save(asset.FullPath);
+                }
+
+                return;
+            }
+            finally
+            {
+                // TODO: UI stuff for import status
+            }
+        }
+    }
+
+    static class BitmapHelper
+    {
+        public static byte[] CreateThumbnail(BitmapSource image, int maxWidth, int maxHeight)
+        {
+            var scaleX = maxWidth / (double)image.PixelWidth;
+            var scaleY = maxHeight / (double)image.PixelHeight;
+            var ratio = Math.Min(scaleX, scaleY);
+
+            var thumbnail = new TransformedBitmap(image, new ScaleTransform(ratio, ratio, 0.5, 0.5));
+
+            using var memStream = new MemoryStream();
+            memStream.SetLength(0);
+
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(thumbnail));
+            encoder.Save(memStream);
+
+            return memStream.ToArray();
+        }
+
+        internal static BitmapSource ImageFromSlice(Slice slice, bool isNormalMap = false)
+        {
+            var data = slice.RawContent;
+            var bytesPerPixel = data.Length / (slice.Width * slice.Height);
+            var stride = slice.Width * bytesPerPixel; // This should be the same as slice.RowPitch
+            var format = PixelFormats.Default;
+            byte[] bgrData = null;
+
+            if (bytesPerPixel == 16) format = PixelFormats.Rgba128Float;
+            else if (bytesPerPixel == 4) format = PixelFormats.Bgra32;
+            else if (bytesPerPixel == 3 || bytesPerPixel == 2) format = PixelFormats.Bgr24;
+            else if (bytesPerPixel == 1) format = PixelFormats.Gray8;
+
+            if (bytesPerPixel == 16)
+            {
+                bgrData = new byte[data.Length];
+                Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
+            }
+            else if (bytesPerPixel == 4 || bytesPerPixel == 3)
+            {
+                bgrData = new byte[data.Length];
+                Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
+
+                // swap R and B channels: RGB -> BGR
+                for (int i = 0; i < data.Length; i += bytesPerPixel)
+                {
+                    var r = bgrData[i + 2];
+                    bgrData[i + 2] = bgrData[i];
+                    bgrData[i] = r;
+                }
+            }
+            else if (bytesPerPixel == 2)
+            {
+                bgrData = new byte[slice.Width * slice.Height * 3];
+                stride = slice.Width * 3;
+                var inv255 = 1.0 / 255.0;
+                var isNM = isNormalMap ? 1 : 0;
+                int index = 0;
+                for (int i = 0; i < data.Length; i += 2)
+                {
+                    var r = data[i + 0] * inv255 * 2.0 - 1.0;
+                    var g = data[i + 1] * inv255 * 2.0 - 1.0;
+                    var b = (Math.Sqrt(Math.Clamp(1.0 - (r * r + g * g), 0.0, 1.0)) + 1.0) * 0.5 * 255.0;
+                    bgrData[index + 2] = data[i + 0];
+                    bgrData[index + 1] = data[i + 1];
+                    bgrData[index + 0] = (byte)(b * isNM);
+                    index += 3;
+                }
+            }
+            else if(bytesPerPixel == 1)
+            {
+                bgrData = new byte[data.Length];
+                Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
             }
 
-            asset.Save(asset.FullPath);
-            return;
+            BitmapSource image = null;
+            if(bgrData != null)
+            {
+                image = BitmapSource.Create(slice.Width, slice.Height, 96.0, 96.0, format, null, bgrData, stride);
+            }
+            return image;
         }
     }
 }

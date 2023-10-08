@@ -22,7 +22,7 @@ namespace PrimalEditor.Editors
     /// </summary>
     public partial class GeometryView : UserControl
     {
-        private static readonly GeometryView _geometryView = new GeometryView() { Background = (Brush)Application.Current.FindResource("Editor.Window.GrayBrush4") };
+        private static readonly GeometryView _geometryView = new() { Background = (Brush)Application.Current.FindResource("Editor.Window.GrayBrush4") };
         private Point _clickedPosition;
         private bool _capturedLeft;
         private bool _capturedRight;

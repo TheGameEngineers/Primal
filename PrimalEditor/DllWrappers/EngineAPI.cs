@@ -18,7 +18,7 @@ namespace PrimalEditor.EngineAPIStructs
     {
         public Vector3 Position;
         public Vector3 Rotation;
-        public Vector3 Scale = new Vector3(1, 1, 1);
+        public Vector3 Scale = new(1, 1, 1);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -30,8 +30,8 @@ namespace PrimalEditor.EngineAPIStructs
     [StructLayout(LayoutKind.Sequential)]
     class GameEntityDescriptor
     {
-        public TransformComponent Transform = new TransformComponent();
-        public ScriptComponent Script = new ScriptComponent();
+        public TransformComponent Transform = new();
+        public ScriptComponent Script = new();
     }
 }
 
@@ -64,7 +64,7 @@ namespace PrimalEditor.DllWrappers
             private static extern int CreateGameEntity(GameEntityDescriptor desc);
             public static int CreateGameEntity(GameEntity entity)
             {
-                GameEntityDescriptor desc = new GameEntityDescriptor();
+                GameEntityDescriptor desc = new();
 
                 //transform component
                 {
