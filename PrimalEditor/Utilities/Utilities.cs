@@ -29,6 +29,11 @@ namespace PrimalEditor.Utilities
             return Math.Abs(value.Value - other.Value) < Epsilon;
         }
 
+        public static bool IsTheSameAs(this double value, double other)
+        {
+            return Math.Abs(value - other) < Epsilon;
+        }
+
         // Align by rounding up. Will result in a multiple of 'alignment' that is greater than or equal to 'size'.
         public static long AlignSizeUp(long size, long alignment)
         {

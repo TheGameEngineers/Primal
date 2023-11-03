@@ -317,6 +317,22 @@ namespace PrimalEditor.Editors
 
     class GeometryEditor : ViewModelBase, IAssetEditor
     {
+        private AssetEditorState _state;
+        public AssetEditorState State
+        {
+            get => _state;
+            set
+            {
+                if (_state != value)
+                {
+                    _state = value;
+                    OnPropertyChanged(nameof(State));
+                }
+            }
+        }
+
+        public Guid AssetGuid {get; private set;}
+
         Asset IAssetEditor.Asset => Geometry;
 
         private Content.Geometry _geometry;
@@ -413,6 +429,7 @@ namespace PrimalEditor.Editors
             Debug.Assert(asset is Content.Geometry);
             if (asset is Content.Geometry geometry)
             {
+                AssetGuid = asset.Guid;
                 Geometry = geometry;
                 var numLods = geometry.GetLODGroup().LODs.Count;
                 if (LODIndex >= numLods)
@@ -430,6 +447,7 @@ namespace PrimalEditor.Editors
         {
             try
             {
+                AssetGuid = info.Guid;
                 Debug.Assert(info != null && File.Exists(info.FullPath));
                 var geometry = new Content.Geometry();
                 await Task.Run(() =>

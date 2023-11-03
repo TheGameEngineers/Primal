@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -46,9 +47,9 @@ namespace PrimalEditor
 
     public static class ContentHelper
     {
-        public static string[] MeshFileExtensions = { ".fbx" };
-        public static string[] ImageFileExtensions = { ".bmp", ",png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr" };
-        public static string[] AudioFileExtensions = { ".ogg", ".wav" };
+        public static string[] MeshFileExtensions { get; } = { ".fbx" };
+        public static string[] ImageFileExtensions { get; } = { ".bmp", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr" };
+        public static string[] AudioFileExtensions { get; } = { ".ogg", ".wav" };
 
         public static string GetRandomString(int length = 8)
         {
@@ -176,6 +177,43 @@ namespace PrimalEditor
         }
     }
 
+    static class CompressionHelper
+    {
+        public static byte[] Compress(byte[] data)
+        {
+            Debug.Assert(data?.Length > 0);
+            byte[] compressedData = null;
+            using (var output = new MemoryStream())
+            {
+                using (var compressor = new DeflateStream(output, CompressionLevel.Optimal, true))
+                {
+                    compressor.Write(data, 0, data.Length);
+                }
+
+                compressedData = output.ToArray();
+            }
+
+            return compressedData;
+        }
+
+        public static byte[] Decompress(byte[] data)
+        {
+            Debug.Assert(data?.Length > 0);
+            byte[] decompressedData = null;
+            using (var output = new MemoryStream())
+            {
+                using (var compressor = new DeflateStream(new MemoryStream(data), CompressionMode.Decompress))
+                {
+                    compressor.CopyTo(output);
+                }
+
+                decompressedData = output.ToArray();
+            }
+
+            return decompressedData;
+        }
+    }
+
     static class BitmapHelper
     {
         public static byte[] CreateThumbnail(BitmapSource image, int maxWidth, int maxHeight)
@@ -231,28 +269,38 @@ namespace PrimalEditor
             {
                 bgrData = new byte[slice.Width * slice.Height * 3];
                 stride = slice.Width * 3;
-                var inv255 = 1.0 / 255.0;
-                var isNM = isNormalMap ? 1 : 0;
                 int index = 0;
                 for (int i = 0; i < data.Length; i += 2)
                 {
-                    var r = data[i + 0] * inv255 * 2.0 - 1.0;
-                    var g = data[i + 1] * inv255 * 2.0 - 1.0;
-                    var b = (Math.Sqrt(Math.Clamp(1.0 - (r * r + g * g), 0.0, 1.0)) + 1.0) * 0.5 * 255.0;
                     bgrData[index + 2] = data[i + 0];
                     bgrData[index + 1] = data[i + 1];
-                    bgrData[index + 0] = (byte)(b * isNM);
+                    bgrData[index + 0] = 0;
                     index += 3;
                 }
+
+                if (isNormalMap)
+                {
+                    var inv255 = 1.0 / 255.0;
+                    index = 0;
+                    for (int i = 0; i < data.Length; i += 2)
+                    {
+                        var r = data[i + 0] * inv255 * 2.0 - 1.0;
+                        var g = data[i + 1] * inv255 * 2.0 - 1.0;
+                        var b = (Math.Sqrt(Math.Clamp(1.0 - (r * r + g * g), 0.0, 1.0)) + 1.0) * 0.5 * 255.0;
+                        bgrData[index + 0] = (byte)b;
+                        index += 3;
+                    }
+
+                }
             }
-            else if(bytesPerPixel == 1)
+            else if (bytesPerPixel == 1)
             {
                 bgrData = new byte[data.Length];
                 Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
             }
 
             BitmapSource image = null;
-            if(bgrData != null)
+            if (bgrData != null)
             {
                 image = BitmapSource.Create(slice.Width, slice.Height, 96.0, 96.0, format, null, bgrData, stride);
             }

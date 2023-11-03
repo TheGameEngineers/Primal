@@ -189,7 +189,39 @@ namespace PrimalEditor.DllWrappers
             return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
         }
 
-        private static List<List<List<Slice>>> SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
+        private static void SetSubresourceData(List<List<List<Slice>>> slices, TextureData data)
+        {
+            var subresourceData = SlicesToBinary(slices);
+            data.SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
+            data.SubresourceSize= subresourceData.Length;
+            Marshal.Copy(subresourceData, 0, data.SubresourceData, data.SubresourceSize);
+        }
+
+        private static void GetTextureDataInfo(Texture texture, TextureData data)
+        {
+            var info = data.Info;
+
+            info.Width = texture.Width;
+            info.Height = texture.Height;
+            info.ArraySize = texture.ArraySize;
+            info.MipLevels = texture.MipLevels;
+            info.Format = (int)texture.Format;
+            info.Flags = (int)texture.Flags;
+        }
+
+        private static void GetTextureInfo(Texture texture, TextureData data)
+        {
+            var info = data.Info;
+
+            texture.Width = info.Width;
+            texture.Height = info.Height;
+            texture.ArraySize = info.ArraySize;
+            texture.MipLevels = info.MipLevels;
+            texture.Format = (DXGI_FORMAT)info.Format;
+            texture.Flags = (TextureFlags)info.Flags;
+        }
+
+        public static List<List<List<Slice>>> SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
         {
             Debug.Assert(data?.Length > 0 && arraySize > 0);
             Debug.Assert(mipLevels > 0 && mipLevels < Texture.MaxMipLevels);
@@ -236,28 +268,62 @@ namespace PrimalEditor.DllWrappers
             return slices;
         }
 
-        private static void GetTextureDataInfo(Texture texture, TextureData data)
+        public static byte[] SlicesToBinary(List<List<List<Slice>>> slices)
         {
-            var info = data.Info;
+            Debug.Assert(slices?.Any() == true && slices.First()?.Any() == true);
+            using var writer = new BinaryWriter(new MemoryStream());
+            foreach (var arraySlice in slices)
+            {
+                foreach (var mipLevel in arraySlice)
+                {
+                    foreach (var slice in mipLevel)
+                    {
+                        writer.Write(slice.Width);
+                        writer.Write(slice.Height);
+                        writer.Write(slice.RowPitch);
+                        writer.Write(slice.SlicePitch);
+                        writer.Write(slice.RawContent);
+                    }
+                }
+            }
 
-            info.Width = texture.Width;
-            info.Height = texture.Height;
-            info.ArraySize = texture.ArraySize;
-            info.MipLevels = texture.MipLevels;
-            info.Format = (int)texture.Format;
-            info.Flags = (int)texture.Flags;
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream)?.ToArray();
+            Debug.Assert(data?.Length > 0);
+
+            return data;
         }
 
-        private static void GetTextureInfo(Texture texture, TextureData data)
-        {
-            var info = data.Info;
+        [DllImport(_toolsDLL)]
+        private static extern void Decompress([In, Out] TextureData data);
 
-            texture.Width = info.Width;
-            texture.Height = info.Height;
-            texture.ArraySize = info.ArraySize;
-            texture.MipLevels = info.MipLevels;
-            texture.Format = (DXGI_FORMAT)info.Format;
-            texture.Flags = (TextureFlags)info.Flags;
+        public static List<List<List<Slice>>> Decompress(Texture texture)
+        {
+            Debug.Assert(texture.ImportSettings.Compress);
+            using var textureData = new TextureData();
+
+            try
+            {
+                GetTextureDataInfo(texture, textureData);
+                textureData.ImportSettings.FromContentSettings(texture);
+                SetSubresourceData(texture.Slices, textureData);
+
+                Decompress(textureData);
+
+                if (textureData.Info.ImportError != 0)
+                {
+                    Logger.Log(MessageType.Error, $"Error: {EnumExtensions.GetDescription((TextureImportError)textureData.Info.ImportError)}");
+                    throw new Exception($"Error while trying to decompress mipmaps. Error code {textureData.Info.ImportError}");
+                }
+
+                return GetSlices(textureData);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(MessageType.Error, $"Failed to decompress mipmaps from {texture.FileName}");
+                Debug.WriteLine(ex.Message);
+                return new();
+            }
         }
 
         [DllImport(_toolsDLL)]
@@ -270,9 +336,7 @@ namespace PrimalEditor.DllWrappers
 
             try
             {
-                GetTextureDataInfo(texture, textureData);
                 textureData.ImportSettings.FromContentSettings(texture);
-
                 Import(textureData);
 
                 if (textureData.Info.ImportError != 0)
