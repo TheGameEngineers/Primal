@@ -1,0 +1,74 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Editors.TextureDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:content="clr-namespace:PrimalEditor.Content"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ed="clr-namespace:PrimalEditor.Editors"
+             xmlns:primal="clr-namespace:PrimalEditor"
+             d:DataContext="{d:DesignInstance Type=ed:TextureEditor}"
+             Background="{StaticResource Editor.Window.GrayBrush3}"
+             mc:Ignorable="d" d:DesignHeight="1080" d:DesignWidth="400">
+    <UserControl.Resources>
+        <ed:TextureSizeToStringConverter x:Key="textureSizeToStringConverter"/>
+        <primal:BooleanToYesNoConverter x:Key="booleanToYesNoConverter"/>
+        <primal:EnumDescriptionConverter x:Key="enumDescriptionConverter"/>
+        <content:DataSizeToStringConverter x:Key="dataSizeToStringConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <StackPanel Orientation="Horizontal" Margin="5">
+            <StackPanel.Resources>
+                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
+                    <Setter Property="Margin" Value="0,5"/>
+                </Style>
+            </StackPanel.Resources>
+            <StackPanel Width="100">
+                <TextBlock Text="Name"/>
+                <TextBlock Text="Dimension"/>
+                <TextBlock Text="Size"/>
+                <TextBlock Text="Format"/>
+                <TextBlock Text="Import Data"/>
+                <TextBlock Text="Data Size"/>
+                <TextBlock Text="Mip Levels"/>
+                <TextBlock Text="Is Normal Map"/>
+                <TextBlock Text="Is HDR"/>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock d:Text="NormalMapTexture" Text="{Binding Texture.FileName}"/>
+                <TextBlock d:Text="2D Texture" Text="{Binding Texture.ImportSettings.Dimension, Converter={StaticResource enumDescriptionConverter}}"/>
+                <TextBlock d:Text="1024 x 1024 (512 x 512)">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource textureSizeToStringConverter}">
+                            <Binding Path="."/>
+                            <Binding Path="SelectedSliceBitmap"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock d:Text="BC7 (RGBA) High Quality" Text="{Binding Texture.FormatName}"/>
+                <TextBlock d:Text="02-Jul-23 13:37" Text="{Binding Texture.ImportDate, StringFormat=dd-MMM-yyyy HH:mm}"/>
+                <StackPanel Orientation="Horizontal" d:Visibility="Visible">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedSlice}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock d:Text="32 MB" Text="{Binding DataSize, Converter={StaticResource dataSizeToStringConverter}}"/>
+                    <TextBlock Text=" ("/>
+                    <TextBlock d:Text="4 MB" Text="{Binding SelectedSlice.RawContent.LongLength, Converter={StaticResource dataSizeToStringConverter}}"/>
+                    <TextBlock Text=")"/>
+                </StackPanel>
+                <TextBlock d:Text="12" Text="{Binding Texture.MipLevels}"/>
+                <TextBlock d:Text="Yes" Text="{Binding Texture.IsNormalMap, Converter={StaticResource booleanToYesNoConverter}}"/>
+                <TextBlock d:Text="No" Text="{Binding Texture.IsHDR, Converter={StaticResource booleanToYesNoConverter}}"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

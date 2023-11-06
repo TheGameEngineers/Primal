@@ -8,8 +8,16 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ed="clr-namespace:PrimalEditor.Editors"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             xmlns:content="clr-namespace:PrimalEditor.Content"
+             d:DesignHeight="450" d:DesignWidth="800" mc:Ignorable="d"
+             FocusVisualStyle="{x:Null}" Focusable="True">
+    <UserControl.CommandBindings>
+        <CommandBinding Command="{x:Static ed:TextureViewCommands.CenterCommand}" Executed="OnCenterTexture"/>
+        <CommandBinding Command="{x:Static ed:TextureViewCommands.ZoomInCommand}" Executed="OnZoomInTexture"/>
+        <CommandBinding Command="{x:Static ed:TextureViewCommands.ZoomOutCommand}" Executed="OnZoomOutTexture"/>
+        <CommandBinding Command="{x:Static ed:TextureViewCommands.ZoomFitCommand}" Executed="OnZoomFitTexture"/>
+        <CommandBinding Command="{x:Static ed:TextureViewCommands.ActualSizeCommand}" Executed="OnActualSizeTexture"/>
+    </UserControl.CommandBindings>
     <UserControl.Resources>
         <Style BasedOn="{StaticResource LightTextBlockStyle}" TargetType="{x:Type TextBlock}"/>
     </UserControl.Resources>
@@ -30,7 +38,42 @@
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" Opacity="0.3" ShadowDepth="0"/>
             </Border.Effect>
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Margin="5,2" Orientation="Horizontal">
+                <Button Margin="0,0,2,0" VerticalAlignment="Stretch" Command="{Binding SetAllChannelsCommand}" Content="All"/>
+                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                              CommandParameter="0" IsChecked="{Binding IsRedChannelSelected, Mode=OneWay}">
+                    <Rectangle Width="8" Fill="{StaticResource Editor.RedBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                </ToggleButton>
+                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                              CommandParameter="1"  IsChecked="{Binding IsGreenChannelSelected, Mode=OneWay}">
+                    <Rectangle Width="8" Fill="{StaticResource Editor.GreenBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                </ToggleButton>
+                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                              CommandParameter="2" IsChecked="{Binding IsBlueChannelSelected, Mode=OneWay}">
+                    <Rectangle Width="8" Fill="{StaticResource Editor.BlueBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                </ToggleButton>
+                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                              CommandParameter="3" IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}">
+                    <Rectangle Width="8" Fill="{StaticResource Editor.FontBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                </ToggleButton>
+
+                <ToggleButton Content="View as Normal Map" Padding="5" Margin="5,0" Command="{Binding RegenerateBitmapsCommand}"
+                              CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}" VerticalAlignment="Stretch"
+                              d:Visibility="Visible" IsChecked="{Binding Texture.IsNormalMap, Mode=OneWay}">
+                    <ToggleButton.Style>
+                        <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}">
+                            <Setter Property="IsEnabled" Value="False"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Texture.Format}" Value="{x:Static content:DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM}">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+
                 <TextBlock Margin="5,0" Text="Layer:" Visibility="{Binding Path=Visibility, ElementName=arraySlider}"/>
                 <Slider x:Name="arraySlider" Width="200" VerticalAlignment="Center" Interval="1" IsSnapToTickEnabled="True"
                         Maximum="{Binding MaxArrayIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding ArrayIndex}"
@@ -93,6 +136,7 @@
                 <ColumnDefinition MinWidth="250" MaxWidth="400"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
+            <ed:TextureDetailsView Margin="0,0,5,0"/>
             <GridSplitter Width="5" HorizontalAlignment="Right" VerticalAlignment="Stretch"
               Background="{StaticResource Editor.Window.GrayBrush1}"/>
             <ed:TextureView x:Name="textureView" Grid.Column="1"/>
