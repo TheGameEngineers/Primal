@@ -20,6 +20,7 @@
     </UserControl.CommandBindings>
     <UserControl.Resources>
         <Style BasedOn="{StaticResource LightTextBlockStyle}" TargetType="{x:Type TextBlock}"/>
+        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter"/>
     </UserControl.Resources>
     <UserControl.DataContext>
         <ed:TextureEditor/>
@@ -53,7 +54,8 @@
                     <Rectangle Width="8" Fill="{StaticResource Editor.BlueBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
                 </ToggleButton>
                 <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
-                              CommandParameter="3" IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}">
+                              CommandParameter="3" IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}"
+                              Visibility="{Binding Texture.HasAlpha, Converter={StaticResource booleanToVisibilityConverter}}">
                     <Rectangle Width="8" Fill="{StaticResource Editor.FontBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
                 </ToggleButton>
 
@@ -140,6 +142,43 @@
             <GridSplitter Width="5" HorizontalAlignment="Right" VerticalAlignment="Stretch"
               Background="{StaticResource Editor.Window.GrayBrush1}"/>
             <ed:TextureView x:Name="textureView" Grid.Column="1"/>
+            <!-- HELP -->
+            <Border CornerRadius="10" Background="#40000000" HorizontalAlignment="Left" Margin="10"
+                    VerticalAlignment="Bottom" BorderBrush="Black" BorderThickness="2" Grid.Column="1">
+                <Border.Style>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="Opacity" Value="0.3"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Path=IsExpanded, ElementName=expanderHelp}" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Expander ExpandDirection="Up" x:Name="expanderHelp" d:IsExpanded="True">
+                    <Expander.Header>
+                        <TextBlock Text="?" FontSize="20" FontFamily="Arial"
+                                   Foreground="White" FontWeight="Bold" Margin="-3,0,5,0"/>
+                    </Expander.Header>
+                    <StackPanel Margin="10" Opacity="0.8">
+                        <StackPanel.Resources>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Foreground" Value="{StaticResource Editor.OrangeBrush}"/>
+                            </Style>
+                        </StackPanel.Resources>
+                        <TextBlock Text="RMB+drag: pan"/>
+                        <TextBlock Text="Mouse wheel: zoom in/out"/>
+                        <TextBlock Text="Home: center image"/>
+                        <TextBlock Text="Ctrl+Plus: zoom in"/>
+                        <TextBlock Text="Ctrl+Minus: zoom out"/>
+                        <TextBlock Text="Ctrl+0: zoom to actual size"/>
+                        <TextBlock Text="Alt+0: zoom to fit"/>
+                    </StackPanel>
+                </Expander>
+            </Border>
         </Grid>
     </DockPanel>
 </UserControl>

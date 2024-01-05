@@ -15,35 +15,29 @@
               MouseRightButtonDown="OnGrid_Mouse_RBD" MouseRightButtonUp="OnGrid_Mouse_RBU"
               MouseWheel="OnGrid_Mouse_Wheel" PreviewMouseMove="OnGrid_Mouse_Move" x:Name="backgroundGrid">
             <Grid.LayoutTransform>
-                <ScaleTransform ScaleX="{Binding ScaleFactor}" ScaleY="{Binding ScaleFactor}"/>
+                <ScaleTransform />
             </Grid.LayoutTransform>
 
             <Canvas IsHitTestVisible="False">
-                <Rectangle Canvas.Left="{Binding PanOffset.X}" Canvas.Top="{Binding PanOffset.Y}"
-                           Width="{Binding Path=ActualWidth, ElementName=textureImage}" 
-                           Height="{Binding Path=ActualHeight, ElementName=textureImage}">
-                    <Rectangle.Fill>
-                        <ImageBrush x:Name="textureBackground" ImageSource="/PrimalEditor;component/Resources/TextureEditor/Checker64.png"
-                                    TileMode="Tile" Viewport="0,0,64,64" ViewportUnits="Absolute"/>
-                    </Rectangle.Fill>
-                </Rectangle>
-            </Canvas>
-
-            <Canvas IsHitTestVisible="False">
-                <Image x:Name="textureImage" Canvas.Left="{Binding PanOffset.X}" Canvas.Top="{Binding PanOffset.Y}"
-                       Source="{Binding SelectedSliceBitmap}">
-                    <Image.Effect>
-                        <ed:ChannelSelectEffect Channels="{Binding Channels}" Stride="{Binding Stride}" />
-                    </Image.Effect>
-                </Image>
+                <Border x:Name="imageBorder">
+                    <Border.Background>
+                        <ImageBrush x:Name="textureBackground" TileMode="Tile" Viewport="0,0,64,64" ViewportUnits="Absolute"
+                                    ImageSource="/PrimalEditor;component/Resources/TextureEditor/Checker64.png"/>
+                    </Border.Background>
+                    <Image x:Name="textureImage" Source="{Binding SelectedSliceBitmap}">
+                        <Image.Effect>
+                            <ed:ChannelSelectEffect Channels="{Binding Channels}" Stride="{Binding Stride}" />
+                        </Image.Effect>
+                    </Image>
+                </Border>
             </Canvas>
         </Grid>
 
         <!-- ZOOM LABEL -->
         <Border x:Name="zoomLabel" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#50000000" CornerRadius="5"
                 IsHitTestVisible="False" Opacity="0" d:Opacity="1">
-            <TextBlock Text="{Binding ScaleFactor, StringFormat=ZOOM {0:p0}}" d:Text="ZOOM 50%"
-                       Margin="10,5" HorizontalAlignment="Left" VerticalAlignment="Top"
+            <TextBlock Text="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, StringFormat=ZOOM {0:p0}}"
+                       d:Text="ZOOM 50%" Margin="10,5" HorizontalAlignment="Left" VerticalAlignment="Top"
                        FontFamily="Bahnschrift condensed" FontSize="32" Foreground="{StaticResource Editor.FontBrush}"/>
         </Border>
         

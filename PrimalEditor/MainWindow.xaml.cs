@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Content;
+using PrimalEditor.DllWrappers;
 using PrimalEditor.GameProject;
 using System;
 using System.Collections.Generic;
@@ -27,13 +28,6 @@ namespace PrimalEditor
     public partial class MainWindow : Window
     {
         public static string PrimalPath { get; private set; }
-
-        public MainWindow()
-        {
-            InitializeComponent();
-            Loaded += OnMainWindowLoaded;
-            Closing += OnMainWindowClosing;
-        }
         
         private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
         {
@@ -81,6 +75,7 @@ namespace PrimalEditor
                 Closing -= OnMainWindowClosing;
                 Project.Current?.Unload();
                 DataContext = null;
+                ContentToolsAPI.ShutDownContentTools();
             }
         }
 
@@ -99,6 +94,13 @@ namespace PrimalEditor
                 ContentWatcher.Reset(project.ContentPath, project.Path);
                 DataContext = project;
             }
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            Loaded += OnMainWindowLoaded;
+            Closing += OnMainWindowClosing;
         }
     }
 }

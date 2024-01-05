@@ -23,12 +23,8 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     {
         const float3 inv_mask = 1.f - Channels.rgb;
         const float3 mask = c.rgb * Channels.rgb;
-
-        const float r = mask.r + (mask.g * inv_mask.b + mask.b * inv_mask.g) * inv_mask.r;
-        const float g = mask.g + (mask.b * inv_mask.r + mask.r * inv_mask.b) * inv_mask.g;
-        const float b = mask.b + (mask.r * inv_mask.g + mask.g * inv_mask.r) * inv_mask.b;
-
-        return float4(r, g, b, (stride == 4 && any(Channels.a)) ? c.a : 1.f);
+        const float3 color = mask.rgb + (mask.gbr * inv_mask.brg + mask.brg * inv_mask.gbr) * inv_mask.rgb;
+        return float4(color, (stride == 4 && any(Channels.a)) ? c.a : 1.f);
     }
 
     return float4(1.f, 0.f, 1.f, 1.f);

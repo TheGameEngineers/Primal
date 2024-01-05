@@ -7,8 +7,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:opt="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
                     xmlns:local="clr-namespace:PrimalEditor.Dictionaries"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:utl ="clr-namespace:PrimalEditor.Utilities.Controls">
 
+    <sys:Double x:Key="AssetIconWidth">90</sys:Double>
+    
     <Style TargetType="{x:Type TextBlock}" x:Key="LightTextBlockStyle">
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -27,9 +30,11 @@
 
     <Style TargetType="{x:Type TextBox}" x:Key="{x:Type TextBox}" BasedOn="{StaticResource TextBoxStyle}">
         <EventSetter Event="KeyDown" Handler="OnTextBox_KeyDown"/>
+        <EventSetter Event="GotFocus" Handler="OnTextBox_GotFocus"/>
     </Style>
 
     <Style TargetType="{x:Type TextBox}" x:Key="TextBoxStyle_WithRename" BasedOn="{StaticResource TextBoxStyle}">
+        <EventSetter Event="GotFocus" Handler="OnTextBox_GotFocus"/>
         <EventSetter Event="KeyDown" Handler="OnTextBoxRename_KeyDown"/>
         <EventSetter Event="LostFocus" Handler="OnTextBoxRename_LostFocus"/>
     </Style>
@@ -331,6 +336,7 @@
                                         <Setter Property="SnapsToDevicePixels" Value="True"/>
                                         <Setter Property="DockPanel.Dock" Value="Right"/>
                                         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+                                        <Setter Property="Focusable" Value="False"/>
                                     </Style>
                                 </DockPanel.Resources>
                                 <TextBlock Margin=" 5,2,0,0" VerticalAlignment="Center"
@@ -415,6 +421,7 @@
                                         <Setter Property="SnapsToDevicePixels" Value="True"/>
                                         <Setter Property="DockPanel.Dock" Value="Right"/>
                                         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+                                        <Setter Property="Focusable" Value="False"/>
                                     </Style>
                                 </DockPanel.Resources>
                                 <TextBlock Margin=" 5,2,0,0" VerticalAlignment="Center"

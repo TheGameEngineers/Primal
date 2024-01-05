@@ -17,7 +17,7 @@
             <RowDefinition/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <local:ContentBrowserView x:Name="contentBrowserView" SelectionMode="Single" FileAccess="Write" AllowDrop="False"
+        <local:ContentBrowserView x:Name="contentBrowserView" SelectionMode="Single" FileAccess="Write" AllowImport="False"
                                   MouseDoubleClick="OnContentBrowser_Mouse_DoubleClick"/>
 
         <Border Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}">

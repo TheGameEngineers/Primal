@@ -17,6 +17,7 @@
     <ClInclude Include="ToolsCommon.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ContentTools.cpp" />
     <ClCompile Include="FbxImporter.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="NormalMapIdentification.cpp" />

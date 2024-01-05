@@ -27,6 +27,7 @@ struct texture_flags {
         is_imported_as_normal_map = 0x08,
         is_cube_map = 0x10,
         is_volume_map = 0x20,
+        is_srgb = 0x40,
     };
 };
 
