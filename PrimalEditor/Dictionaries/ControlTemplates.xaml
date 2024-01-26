@@ -235,18 +235,18 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Selector.IsSelectionActive" Value="True">
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="false">
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+                            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="Selector.IsSelectionActive" Value="False"/>
                                 <Condition Property="IsMouseOver" Value="True"/>
                             </MultiTrigger.Conditions>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
                         </MultiTrigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>

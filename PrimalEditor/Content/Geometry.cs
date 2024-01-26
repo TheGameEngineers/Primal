@@ -450,9 +450,15 @@ namespace PrimalEditor.Content
                 Logger.Log(MessageType.Error, msg);
             }
 
-            if(ImportSettings.ImportEmbeddedTextures)
+            if (ImportSettings.ImportEmbeddedTextures)
             {
-                // TODO
+                var embeddedMediaDir = $@"{tempPath}{Path.GetFileNameWithoutExtension(tempFile)}.fbm{Path.DirectorySeparatorChar}";
+                if (Directory.Exists(embeddedMediaDir))
+                {
+                    Debug.Assert(!string.IsNullOrEmpty(FullPath));
+                    var files = Directory.GetFiles(embeddedMediaDir);
+                    new ConfigureImportSettings(files, Path.GetDirectoryName(FullPath)).Import();
+                }
             }
 
             return result;
@@ -717,5 +723,11 @@ namespace PrimalEditor.Content
         }
 
         public Geometry() : base(AssetType.Mesh) { }
+
+        public Geometry(IAssetImportSettings importSettings) : this()
+        {
+            Debug.Assert(importSettings is GeometryImportSettings);
+            ImportSettings = (GeometryImportSettings)importSettings;
+        }
     }
 }

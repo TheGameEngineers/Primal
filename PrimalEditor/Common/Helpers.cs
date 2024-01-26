@@ -46,14 +46,14 @@ namespace PrimalEditor
 
         public static T FindVisualChild<T>(this DependencyObject depObj) where T : DependencyObject
         {
-            if(depObj is not Visual) return null;
+            if (depObj is not Visual) return null;
 
-            for(int i=0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
             {
                 var child = VisualTreeHelper.GetChild(depObj, i);
 
                 var result = (child as T) ?? FindVisualChild<T>(child);
-                if(result != null) return result;
+                if (result != null) return result;
             }
             return null;
         }
@@ -125,27 +125,34 @@ namespace PrimalEditor
             return null;
         }
 
-        public static async Task ImportFilesAsync(string[] files, string destination)
+        internal static async Task<List<Asset>> ImportFilesAsync(IEnumerable<AssetProxy> proxies)
         {
+            List<Asset> assets = new();
             try
             {
-                Debug.Assert(!string.IsNullOrEmpty(destination));
                 ContentWatcher.EnableFileWatcher(false);
-                var tasks = files.Select(async file => await Task.Run(() => { Import(file, destination); }));
+                var tasks = proxies.Select(async proxy =>
+                await Task.Run(() =>
+                {
+                    assets.Add(Import(proxy.FileInfo.FullName, proxy.ImportSettings, proxy.DestinationFolder));
+                }));
+
                 await Task.WhenAll(tasks);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to import files to {destination}");
+                Debug.WriteLine($"Failed to import files.");
                 Debug.WriteLine(ex.Message);
             }
             finally
             {
                 ContentWatcher.EnableFileWatcher(true);
             }
+
+            return assets;
         }
 
-        private static Asset Import(string file, string destination)
+        private static Asset Import(string file, IAssetImportSettings importSettings, string destination)
         {
             Debug.Assert(!string.IsNullOrEmpty(file));
             if (IsDirectory(file)) return null;
@@ -154,8 +161,8 @@ namespace PrimalEditor
 
             Asset asset = ext switch
             {
-                { } when MeshFileExtensions.Contains(ext) => new Content.Geometry(),
-                { } when ImageFileExtensions.Contains(ext) => new Texture(),
+                { } when MeshFileExtensions.Contains(ext) => new Content.Geometry(importSettings),
+                { } when ImageFileExtensions.Contains(ext) => new Texture(importSettings),
                 { } when AudioFileExtensions.Contains(ext) => null,
                 _ => null
             };

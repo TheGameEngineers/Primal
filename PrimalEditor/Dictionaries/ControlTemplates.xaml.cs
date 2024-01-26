@@ -39,6 +39,10 @@ namespace PrimalEditor.Dictionaries
 
         private void OnTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
+            var textBox = sender as TextBox;
+            var exp = textBox.GetBindingExpression(TextBox.TextProperty);
+            exp?.UpdateTarget();
+
             (sender as TextBox).SelectAll();
         }
 

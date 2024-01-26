@@ -1,0 +1,26 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<Window x:Class="PrimalEditor.Content.ConfigureImportSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PrimalEditor.Content"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type={x:Type local:ConfigureImportSettings}}"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True"
+        Title="Configure Import Settings" Height="800" Width="1280"
+        Style="{StaticResource PrimalWindowStyle}">
+    <Grid>
+        <TabControl Background="Transparent" BorderThickness="0"
+                    x:Name="tabControl">
+            <TabItem Header="Geometry" Tag="{x:Static local:AssetType.Mesh}" MinWidth="96">
+                <local:ConfigureGeometryImportSettingsView />
+            </TabItem>
+            <TabItem Header="Texture"  Tag="{x:Static local:AssetType.Texture}" MinWidth="96"/>
+            <TabItem Header="Audio"    Tag="{x:Static local:AssetType.Audio}" MinWidth="96"/>
+        </TabControl>
+    </Grid>
+</Window>

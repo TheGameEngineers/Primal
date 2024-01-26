@@ -20,9 +20,29 @@ namespace PrimalEditor.Content
     }
 
     interface IAssetImportSettings
-    { 
+    {
         void ToBinary(BinaryWriter writer);
         void FromBinary(BinaryReader reader);
+
+        static void CopyImportSettings(IAssetImportSettings fromSettings, IAssetImportSettings toSettings)
+        {
+            if (fromSettings == null || toSettings == null)
+            {
+                throw new ArgumentNullException("Arguments should not be null.");
+            }
+            else if (fromSettings.GetType() != toSettings.GetType())
+            {
+                throw new ArgumentException("Arguments should be of the same type.");
+            }
+
+            using BinaryWriter writer = new(new MemoryStream());
+            fromSettings.ToBinary(writer);
+            writer.Flush();
+            var bytes = (writer.BaseStream as MemoryStream).ToArray();
+
+            using BinaryReader reader = new(new MemoryStream(bytes));
+            toSettings.FromBinary(reader);
+        }
     }
 
     sealed class AssetInfo
