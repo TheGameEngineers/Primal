@@ -80,17 +80,45 @@ fbx_context::get_scene(FbxNode* root /*= nullptr*/)
     }
 
     const s32 num_nodes{ root->GetChildCount() };
-    for (s32 i{ 0 }; i < num_nodes; ++i)
-    {
-        FbxNode* node{ root->GetChild(i) };
-        if (!node) continue;
 
+    if(_scene_data->settings.coalesce_meshes)
+    {
         lod_group lod{};
-        get_meshes(node, lod.meshes, 0, -1.f);
+        for (s32 i{ 0 }; i < num_nodes; ++i)
+        {
+            FbxNode* node{ root->GetChild(i) };
+            if (!node) continue;
+
+            get_meshes(node, lod.meshes, 0, -1.f);
+        }
+
         if (lod.meshes.size())
         {
             lod.name = lod.meshes[0].name;
+            mesh combined_mesh{};
+            
+            if (coalesce_meshes(lod, combined_mesh, _progression))
+            {
+                lod.meshes.clear();
+                lod.meshes.emplace_back(combined_mesh);
+            }
             _scene->lod_groups.emplace_back(lod);
+        }
+    }
+    else
+    {
+        for (s32 i{ 0 }; i < num_nodes; ++i)
+        {
+            FbxNode* node{ root->GetChild(i) };
+            if (!node) continue;
+
+            lod_group lod{};
+            get_meshes(node, lod.meshes, 0, -1.f);
+            if (lod.meshes.size())
+            {
+                lod.name = lod.meshes[0].name;
+                _scene->lod_groups.emplace_back(lod);
+            }
         }
     }
 }
@@ -154,6 +182,7 @@ fbx_context::get_mesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u3
     if (get_mesh_data(fbx_mesh, m))
     {
         meshes.emplace_back(m);
+        _progression->callback(_progression->value(), _progression->max_value() + 1);
     }
 }
 
@@ -335,15 +364,15 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
 }
 
 EDITOR_INTERFACE void
-ImportFbx(const char* file, scene_data* data)
+ImportFbx(const char* file, scene_data* data, progression::progress_callback callback)
 {
     assert(file && data);
     scene scene{};
-
+    progression progression{ callback };
     // NOTE: anything that involves using the FBX SDK should be single-threaded
     {
         std::lock_guard lock{ fbx_mutex };
-        fbx_context fbx_context{ file, &scene, data };
+        fbx_context fbx_context{ file, &scene, data, &progression };
         if (fbx_context.is_valid())
         {
             fbx_context.get_scene();
@@ -355,7 +384,7 @@ ImportFbx(const char* file, scene_data* data)
         }
     }
 
-    process_scene(scene, data->settings);
+    process_scene(scene, data->settings, &progression);
     pack_data(scene, *data);
 }
 

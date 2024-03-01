@@ -113,6 +113,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public byte ReverseHandedness = 0;
         public byte ImportEmbededTextures = 1;
         public byte ImportAnimations = 1;
+        public byte CoalesceMeshes = 0;
 
         private byte ToByte(bool value) => value ? (byte)1 : (byte)0;
 
@@ -126,6 +127,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
             ReverseHandedness = ToByte(settings.ReverseHandedness);
             ImportEmbededTextures = ToByte(settings.ImportEmbeddedTextures);
             ImportAnimations = ToByte(settings.ImportAnimations);
+            CoalesceMeshes = ToByte(settings.CoalesceMeshes);
         }
     }
 
@@ -165,6 +167,7 @@ namespace PrimalEditor.DllWrappers
     static class ContentToolsAPI
     {
         private const string _toolsDLL = "ContentTools.dll";
+        private delegate void ProgressCallback(int value, int maxValue);
 
         [DllImport(_toolsDLL)]
         public static extern void ShutDownContentTools();
@@ -386,17 +389,19 @@ namespace PrimalEditor.DllWrappers
 
         [DllImport(_toolsDLL)]
         private static extern void CreatePrimitiveMesh([In, Out] SceneData data, PrimitiveInitInfo info);
-        public static void CreatePrimitveMesh(Content.Geometry geometry, PrimitiveInitInfo info)
+        public static void CreatePrimitiveMesh(Geometry geometry, PrimitiveInitInfo info)
         {
             GeometryFromSceneData(geometry, (sceneData) => CreatePrimitiveMesh(sceneData, info), $"Failed to create {info.Type} primitive mesh.");
         }
 
         [DllImport(_toolsDLL)]
-        private static extern void ImportFbx(string file, [In, Out] SceneData data);
+        private static extern void ImportFbx(string file, [In, Out] SceneData data, ProgressCallback callback);
 
-        public static void ImportFbx(string file, Content.Geometry geometry)
+        public static void ImportFbx(string file, Geometry geometry)
         {
-            GeometryFromSceneData(geometry, (sceneData) => ImportFbx(file, sceneData), $"Failed to import from FBX file: {file}");
+            var item = ImportingItemCollection.GetItem(geometry);
+            ProgressCallback callback = item != null ? item.SetProgress : null;
+            GeometryFromSceneData(geometry, (sceneData) => ImportFbx(file, sceneData, callback), $"Failed to import from FBX file: {file}");
         }
         #endregion Geometry
     }

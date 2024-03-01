@@ -47,24 +47,48 @@ namespace PrimalEditor.Editors
             dlg.ShowDialog();
         }
 
+        private void UnloadAndCloseAllWindows()
+        {
+            Project.Current?.Unload();
+
+            var mainWindow = Application.Current.MainWindow;
+
+            foreach (Window win in Application.Current.Windows)
+            {
+                if (win != mainWindow)
+                {
+                    win.DataContext = null;
+                    win.Close();
+                }
+            }
+
+            mainWindow.DataContext = null;
+            mainWindow.Close();
+        }
+
         private void OnNewProject(object sender, ExecutedRoutedEventArgs e)
         {
             ProjectBrowserDialog.GotoNewProjectTab = true;
-            Project.Current?.Unload();
-            Application.Current.MainWindow.DataContext = null;
-            Application.Current.MainWindow.Close();
+            UnloadAndCloseAllWindows();
         }
 
-        private void OnOpenProject(object sender, ExecutedRoutedEventArgs e)
-        {
-            Project.Current?.Unload();
-            Application.Current.MainWindow.DataContext = null;
-            Application.Current.MainWindow.Close();
-        }
+        private void OnOpenProject(object sender, ExecutedRoutedEventArgs e) => UnloadAndCloseAllWindows();
 
         private void OnEditorClose(object sender, ExecutedRoutedEventArgs e)
         {
             Application.Current.MainWindow.Close();
+        }
+
+        private void OnContentBrowser_Loaded(object sender, RoutedEventArgs e)
+            => OnContentBrowser_IsVisibleChanged(sender, default);
+
+        private void OnContentBrowser_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((sender as FrameworkElement).DataContext is ContentBrowser contentBrowser &&
+                string.IsNullOrEmpty(contentBrowser.SelectedFolder?.Trim()))
+            {
+                contentBrowser.SelectedFolder = contentBrowser.ContentFolder;
+            }
         }
     }
 }

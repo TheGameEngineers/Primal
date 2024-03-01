@@ -22,18 +22,10 @@ namespace PrimalEditor.Content
     /// </summary>
     public partial class ConfigureGeometryImportSettingsView : UserControl
     {
-        private void RefreshListBoxItems()
-        {
-            // TODO: this is quite hacky and feels icky. Can we refresh items numbering in some other way?
-            var vm = (DataContext as ConfigureImportSettings).GeometryImportSettingsConfigurator;
-            vm.OnPropertyChanged(nameof(vm.GeometryProxies));
-        }
-
         private void OnRemove_Button_Click(object sender, RoutedEventArgs e)
         {
             var vm = DataContext as ConfigureImportSettings;
             vm.GeometryImportSettingsConfigurator.RemoveFile((sender as FrameworkElement).DataContext as GeometryProxy);
-            RefreshListBoxItems();
         }
 
 
@@ -65,9 +57,16 @@ namespace PrimalEditor.Content
         private void OnListBox_Drop(object sender, DragEventArgs e)
         {
             ConfigureImportSettingsWindow.AddDroppedFiles(DataContext as ConfigureImportSettings, sender as ListBox, e);
-            RefreshListBoxItems();
         }
-        
+
+        private void OnClearImportingItems_Button_Click(object sender, RoutedEventArgs e)
+        {
+            ImportingItemCollection.Clear(AssetType.Animation);
+            ImportingItemCollection.Clear(AssetType.Material);
+            ImportingItemCollection.Clear(AssetType.Mesh);
+            ImportingItemCollection.Clear(AssetType.Skeleton);
+        }
+
         public ConfigureGeometryImportSettingsView()
         {
             InitializeComponent();
@@ -78,6 +77,6 @@ namespace PrimalEditor.Content
                 .ContainerFromIndex(geometryListBox.SelectedIndex) as ListBoxItem;
                 item?.Focus();
             };
-        }        
+        }
     }
 }

@@ -1,0 +1,108 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Content.ImportingItemsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Content"
+             mc:Ignorable="d" 
+             d:DesignHeight="80" d:DesignWidth="196">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Border Background="{StaticResource Editor.Window.GrayBrush2}">
+            <ItemsControl ItemsSource="{Binding Source={x:Static local:ImportingItemCollection.FilteredItems}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:ImportingItem}">
+                        <Grid Background="{StaticResource Editor.Window.GrayBrush1}" Margin="1" x:Name="itemGrid" ClipToBounds="True">
+                            <Rectangle Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="96,0,0,0"
+                                       x:Name="statusBar" d:Fill="{StaticResource Editor.GreenBrush}">
+                                <Rectangle.RenderTransform>
+                                    <SkewTransform AngleX="35"/>
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+                            <TextBlock FontFamily="Bahnschrift" FontSize="10" Foreground="#20ffffff" x:Name="assetType"
+                                       Margin="0,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Bottom" d:Text="TEXTURE">
+                                <TextBlock.LayoutTransform>
+                                    <ScaleTransform ScaleX="1.62" ScaleY="1"/>
+                                </TextBlock.LayoutTransform>
+                            </TextBlock>
+                            <StackPanel Margin="5,5,5,2">
+                                <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.FontBrush}" TextWrapping="Wrap" d:Text="DiffuseTexture.png"/>
+                                <TextBlock Text="{Binding ImportDuration}" Foreground="{StaticResource Editor.FontBrush}" d:Text="00:03:40"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="statusText" Width="85" d:Text="Done."/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="{x:Type StackPanel}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ProgressMaximum}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="{Binding ProgressValue}" Margin="10,0,0,0" d:Text="9" Foreground="{StaticResource Editor.FontBrush}"/>
+                                        <TextBlock Text="{Binding ProgressMaximum, StringFormat= /{0}}" d:Text="/10" Foreground="{StaticResource Editor.FontBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" TargetName="assetType" Value="{StaticResource Editor.OrangeBrush}"/>
+                                <Setter Property="Background" TargetName="itemGrid" Value="Black"/>
+                            </Trigger>
+
+                            <DataTrigger Binding="{Binding Status}" Value="{x:Static local:ImportStatus.Importing}">
+                                <Setter Property="Text" TargetName="statusText" Value="Importing..."/>
+                                <Setter Property="Foreground" TargetName="statusText" Value="{StaticResource Editor.OrangeBrush}"/>
+                                <Setter Property="Fill" TargetName="statusBar" Value="{StaticResource Editor.OrangeBrush}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Status}" Value="{x:Static local:ImportStatus.Succeeded}">
+                                <Setter Property="Text" TargetName="statusText" Value="Done."/>
+                                <Setter Property="Foreground" TargetName="statusText" Value="{StaticResource Editor.GreenBrush}"/>
+                                <Setter Property="Fill" TargetName="statusBar" Value="{StaticResource Editor.GreenBrush}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Status}" Value="{x:Static local:ImportStatus.Failed}">
+                                <Setter Property="Text" TargetName="statusText" Value="Failed!"/>
+                                <Setter Property="Foreground" TargetName="statusText" Value="{StaticResource Editor.RedBrush}"/>
+                                <Setter Property="Fill" TargetName="statusBar" Value="{StaticResource Editor.RedBrush}"/>
+                                <Setter Property="Background" TargetName="itemGrid">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="{StaticResource Editor.RedColor}" Opacity="0.1"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+
+                            <DataTrigger Binding="{Binding Asset.Type}" Value="{x:Static local:AssetType.Animation}">
+                                <Setter Property="Text" TargetName="assetType" Value="ANIMATION"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Asset.Type}" Value="{x:Static local:AssetType.Audio}">
+                                <Setter Property="Text" TargetName="assetType" Value="AUDIO"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Asset.Type}" Value="{x:Static local:AssetType.Material}">
+                                <Setter Property="Text" TargetName="assetType" Value="MATERIAL"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Asset.Type}" Value="{x:Static local:AssetType.Mesh}">
+                                <Setter Property="Text" TargetName="assetType" Value="MESH"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Asset.Type}" Value="{x:Static local:AssetType.Skeleton}">
+                                <Setter Property="Text" TargetName="assetType" Value="SKELETON"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Asset.Type}" Value="{x:Static local:AssetType.Texture}">
+                                <Setter Property="Text" TargetName="assetType" Value="TEXTURE"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+    </ScrollViewer>
+</UserControl>

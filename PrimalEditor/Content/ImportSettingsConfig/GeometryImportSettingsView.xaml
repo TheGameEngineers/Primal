@@ -1,0 +1,53 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Content.GeometryImportSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Content"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type={x:Type local:GeometryImportSettings}}"
+             d:DesignHeight="450" d:DesignWidth="800" Background="{StaticResource Editor.Window.GrayBrush3}">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
+    </UserControl.Resources>
+    <UniformGrid Rows="7" VerticalAlignment="Top">
+        <DockPanel VerticalAlignment="Center">
+            <TextBlock Text="Normals" Width="150"/>
+            <ComboBox x:Name="normalsComboBox" SelectedIndex="{Binding CalculateNormals}">
+                <ComboBoxItem Content="Import"/>
+                <ComboBoxItem Content="Calculate"/>
+            </ComboBox>
+        </DockPanel>
+        <DockPanel Margin="0,2" VerticalAlignment="Center">
+            <TextBlock Text="Tangents" Width="150"/>
+            <ComboBox SelectedIndex="{Binding CalculateTangents}">
+                <ComboBoxItem Content="Import"/>
+                <ComboBoxItem Content="Mikk TSpace"/>
+            </ComboBox>
+        </DockPanel>
+        <DockPanel VerticalAlignment="Center">
+            <TextBlock Text="Smoothing Angle" Width="150"/>
+            <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" VerticalAlignment="Center" Interval="1" IsSnapToTickEnabled="True"
+                    x:Name="angleSlider" Value="{Binding SmoothingAngle}"  d:Value="65"/>
+        </DockPanel>
+        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+            <TextBlock Text="Import Embedded Textures" Width="150"/>
+            <CheckBox IsChecked="{Binding ImportEmbeddedTextures}" Margin="-1,0,0,0" d:IsChecked="True"/>
+        </DockPanel>
+        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+            <TextBlock Text="Import Animations" Width="150"/>
+            <CheckBox IsChecked="{Binding ImportAnimations}" Margin="-1,0,0,0" d:IsChecked="{x:Null}"/>
+        </DockPanel>
+        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+            <TextBlock Text="Reverse Handedness" Width="150"/>
+            <CheckBox IsChecked="{Binding ReverseHandedness}" Margin="-1,0,0,0" d:IsChecked="{x:Null}"/>
+        </DockPanel>
+        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+            <TextBlock Text="Coalesce Meshes" Width="150"/>
+            <CheckBox IsChecked="{Binding CoalesceMeshes}" Margin="-1,0,0,0" d:IsChecked="False"/>
+        </DockPanel>
+    </UniformGrid>
+</UserControl>

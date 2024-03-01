@@ -1,0 +1,31 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Content.ChangeDestinationFolder"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Content"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type={x:Type local:AssetProxy}}"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <local:ContentSubfolderConverter x:Key="contentSubfolderConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="{Binding FileInfo.Name, StringFormat='Destination folder for {0} is'}"
+                   TextTrimming="CharacterEllipsis" d:Text="Destination folder for file.ext is" Margin="0,0,0,5"/>
+        <Border BorderBrush="{StaticResource Editor.Window.GrayBrush6}" BorderThickness="1" CornerRadius="3" Grid.Row="1">
+            <DockPanel Margin="5">
+                <Button Content="Change" DockPanel.Dock="Right" Click="OnChangeDestinationFolder_Button_Click"/>
+                <TextBlock Text="{Binding DestinationFolder, Converter={StaticResource contentSubfolderConverter}}"
+                           TextTrimming="CharacterEllipsis" d:Text="/Meshes/TreeModels"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

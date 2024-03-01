@@ -13,18 +13,17 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <primal:IndexOfConverter x:Key="indexOfConverter"/>
+        <AlternationConverter x:Key="alternationConverter">
+            <SolidColorBrush Color="Transparent"/>
+            <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor1}"/>
+        </AlternationConverter>
         <local:DataSizeToStringConverter x:Key="dataSizeToStringConverter"/>
         <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
 
         <Style TargetType="{x:Type ListBoxItem}" x:Key="AlternateColorListBoxItemStyle" BasedOn="{StaticResource ListBoxItemStyle}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush1}"/>
-            <Style.Triggers>
-                <Trigger Property="ItemsControl.AlternationIndex" Value="0">
-                    <Setter Property="Background" Value="Transparent"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Background" 
+                    Value="{Binding Path=(ItemsControl.AlternationCount), RelativeSource={RelativeSource Self}, Converter={StaticResource alternationConverter}}"/>
         </Style>
 
         <Style TargetType="{x:Type Line}" x:Key="RedLineStyle">
@@ -55,7 +54,7 @@
                     <Button Content="Import" Width="64" Click="OnImport_Button_Click"
                             IsEnabled="{Binding GeometryProxies.Count}"/>
                 </StackPanel>
-                <ListBox ItemsSource="{Binding GeometryProxies}" AlternationCount="2" SelectionMode="Extended"
+                <ListBox ItemsSource="{Binding GeometryProxies}" AlternationCount="{Binding GeometryProxies.Count}" SelectionMode="Extended"
                          ItemContainerStyle="{StaticResource AlternateColorListBoxItemStyle}"
                          x:Name="geometryListBox" HorizontalContentAlignment="Stretch" BorderBrush="{StaticResource Editor.OrangeBrush}"
                          SelectedIndex="0" AllowDrop="True" Drop="OnListBox_Drop" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -98,20 +97,15 @@
                                     <RowDefinition/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{StaticResource indexOfConverter}" StringFormat="{}{0}. ">
-                                            <Binding Path="."/>
-                                            <Binding Path="DataContext.GeometryProxies" ElementName="geometryListBox"/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                           Text="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, StringFormat='{}{0}. '}"/>
+                                
                                 <TextBlock Text="{Binding FileInfo.Name}" Foreground="{StaticResource Editor.OrangeBrush}" TextTrimming="CharacterEllipsis"
                                            Margin="0,0,20,0" Grid.Row="0" Grid.Column="1"/>
-                                <TextBlock Text="{Binding FileInfo.LastAccessTime}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
+                                <TextBlock Text="{Binding FileInfo.LastWriteTime}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
                                 <TextBlock Text="{Binding FileInfo.Length, Converter={StaticResource dataSizeToStringConverter}}"
                                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
-                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemove_Button_Click" Background="Transparent" Grid.Column="2"
+                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemove_Button_Click" Background="Transparent" Grid.Column="1"
                                         x:Name="removeButton" Visibility="Collapsed">
                                     <Button.Content>
                                         <Grid>
@@ -166,25 +160,47 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="{Binding FileInfo.Name, StringFormat='Import settings for {0}'}" TextTrimming="CharacterEllipsis"
                            d:Text="Import settings for model.fbx" FontSize="16" Margin="10"/>
-                <StackPanel x:Name="PLACEHODLDER" Grid.Row="1" Margin="10,0,10,28" Height="128" Background="DarkMagenta">
-                    <TextBlock Text="THIS IS A PLACEHOLDER FOR"/>
-                    <TextBlock Text="GEOMETRY IMPORT SETTINGS."/>
-                </StackPanel>
-
+                <local:GeometryImportSettingsView DataContext="{Binding ImportSettings}" Grid.Row="1" Margin="10,0,10,28"/>
+                <Border Grid.Row="1" CornerRadius="5" BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="1" Background="#50000000"
+                        Margin="5,-5,5,23" x:Name="lockBorder" ToolTipService.InitialShowDelay="100"
+                        ToolTip="Import settings are locked when multiple sources are selected.&#13;Current settings can be applied to the selection.">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=geometryListBox}" Value="1">
+                                    <Setter Property="Visibility" Value="Hidden"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border Background="{StaticResource Editor.OrangeBrush}" CornerRadius="3" Width="16" Height="12"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5,10" Opacity="0.6">
+                        <Border BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="2,2,2,0" CornerRadius="3,3,0,0"
+                                Height="18" Width="10" Margin="0,-10,0,0">
+                            <Rectangle Fill="{StaticResource Editor.Window.GrayBrush2}" Width="3" Height="5" Margin="0,8,0,0"/>
+                        </Border>
+                    </Border>
+                </Border>
                 <StackPanel Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,0">
-                    <Button Content="Apply to Selection" Width="150" Click="OnApplyToSelection_Button_Click"/>
+                    <Button Content="Apply to Selection" Width="150" Click="OnApplyToSelection_Button_Click"
+                            Visibility="{Binding Path=Visibility, ElementName=lockBorder}"/>
                     <Button Content="Apply to All" Width="150" Margin="0,8" Click="OnApplyToAll_Button_Click"/>
                     <Button Content="Set as Default" Width="150" />
                 </StackPanel>
+
+                <local:ChangeDestinationFolder Grid.Row="3" Margin="10,20,10,10" VerticalAlignment="Top" />
+
             </Grid>
         </Border>
 
         <GridSplitter Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" Background="Transparent"/>
 
         <Grid Grid.Column="2" Background="{StaticResource Editor.Window.GrayBrush3}">
+            <Button Content="Clear" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" Click="OnClearImportingItems_Button_Click"/>
             <DockPanel Margin="10">
                 <TextBlock Text="Imported files" DockPanel.Dock="Top" FontSize="16"/>
-                <Border x:Name="ANOTHER_PLACEHOLDER" Margin="0,10,0,0" Background="{StaticResource Editor.Window.GrayBrush2}"/>
+                <local:ImportingItemsView Margin="0,10,10,0"/>
             </DockPanel>
         </Grid>
 
