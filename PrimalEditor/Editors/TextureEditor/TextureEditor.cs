@@ -24,6 +24,8 @@ namespace PrimalEditor.Editors
         public ICommand SetAllChannelsCommand { get; init; }
         public ICommand SetChannelCommand { get; init; }
         public ICommand RegenerateBitmapsCommand { get; init; }
+        public ICommand ReimportCommand { get; init; }
+        public ICommand SaveCommand { get; init; }
 
         private AssetEditorState _state;
         public AssetEditorState State
@@ -40,6 +42,20 @@ namespace PrimalEditor.Editors
         }
 
         public Guid AssetGuid { get; private set; }
+
+        private bool _canSaveChanges;
+        public bool CanSaveChanges
+        {
+            get => _canSaveChanges;
+            set
+            {
+                if (_canSaveChanges != value)
+                {
+                    _canSaveChanges = value;
+                    OnPropertyChanged(nameof(CanSaveChanges));
+                }
+            }
+        }
 
         private bool _isRedChannelSelected = true;
         public bool IsRedChannelSelected
@@ -113,7 +129,7 @@ namespace PrimalEditor.Editors
 
         Asset IAssetEditor.Asset => Texture;
 
-        private Texture _texture;
+        private Texture _texture = new();
         public Texture Texture
         {
             get => _texture;
@@ -122,12 +138,18 @@ namespace PrimalEditor.Editors
                 if (_texture != value)
                 {
                     _texture = value;
+                    if(_texture != null)
+                    {
+                        IAssetImportSettings.CopyImportSettings(_texture.ImportSettings, ImportSettings);
+                    }
                     OnPropertyChanged(nameof(Texture));
                     SetSelectedBitmap();
                     SetImageChannels();
                 }
             }
         }
+
+        public TextureImportSettings ImportSettings { get; } = new();
 
         public int MaxMipIndex => _sliceBitmaps.Any() && _sliceBitmaps.First().Any() ? _sliceBitmaps.First().Count - 1 : 0;
         public int MaxArrayIndex => _sliceBitmaps.Any() ? _sliceBitmaps.Count - 1 : 0;
@@ -186,7 +208,6 @@ namespace PrimalEditor.Editors
                 }
             }
         }
-
 
         public BitmapSource SelectedSliceBitmap => _sliceBitmaps.ElementAtOrDefault(ArrayIndex)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex);
         public Slice SelectedSlice => Texture?.Slices?.ElementAtOrDefault(ArrayIndex)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex);
@@ -317,11 +338,52 @@ namespace PrimalEditor.Editors
             OnPropertyChanged(nameof(MaxDepthIndex));
         }
 
+        private async Task OnReimportCommand(object obj)
+        {
+            if (Texture == null) return;
+
+            TextureImportSettings settingsBackup = new();
+            IAssetImportSettings.CopyImportSettings(Texture.ImportSettings, settingsBackup);
+            IAssetImportSettings.CopyImportSettings(ImportSettings, Texture.ImportSettings);
+
+            State = AssetEditorState.Importing;
+
+            bool result = false;
+            await Task.Run(() => result = Texture.Import(Texture.FullPath));
+
+            if(result)
+            {
+                State = AssetEditorState.Loading;
+                await SetMipmaps(Texture);
+                SetSelectedBitmap();
+                SetImageChannels();
+                CanSaveChanges = true;
+            }
+            else
+            {
+                IAssetImportSettings.CopyImportSettings(settingsBackup, Texture.ImportSettings);
+            }
+
+            State = AssetEditorState.Done;
+        }
+
+        private async Task OnSaveCommand(object obj)
+        {
+            if(!CanSaveChanges || Texture == null) return;
+
+            State = AssetEditorState.Saving;
+            CanSaveChanges = false;
+            await Task.Run(()=>Texture.Save(Texture.FullPath));
+            State = AssetEditorState.Done;
+        }
+
         public TextureEditor()
         {
             SetAllChannelsCommand = new RelayCommand<string>(OnSetAllChannelsCommand);
             SetChannelCommand = new RelayCommand<string>(OnSetChannelCommand);
             RegenerateBitmapsCommand = new RelayCommand<bool>(OnRegenerateBitmapsCommand);
-        }
+            ReimportCommand = new RelayCommand<object>(async x => await OnReimportCommand(x));
+            SaveCommand = new RelayCommand<object>(async x => await OnSaveCommand(x));
+        }        
     }
 }

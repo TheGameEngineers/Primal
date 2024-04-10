@@ -60,9 +60,7 @@ namespace PrimalEditor.Content
         }
 
         public GeometryProxy(string fileName, string destinationFolder)
-            : base(fileName, destinationFolder)
-        {
-        }
+            : base(fileName, destinationFolder) { }
 
     }
 
@@ -70,18 +68,82 @@ namespace PrimalEditor.Content
     {
         public override TextureImportSettings ImportSettings { get; } = new();
 
+        private readonly ObservableCollection<TextureProxy> _imageSources = new();
+        public ReadOnlyObservableCollection<TextureProxy> ImageSources { get; }
+
         public override void CopySettings(IAssetImportSettings settings)
         {
             Debug.Assert(settings is TextureImportSettings);
             if (settings is TextureImportSettings textureImportSettings)
             {
                 IAssetImportSettings.CopyImportSettings(textureImportSettings, ImportSettings);
+
+                // NOTE: there's always one item in ImageSources which is the texture proxy itself.
+                foreach (var source in ImageSources.Skip(1))
+                {
+                    source.CopySettings(settings);
+                }
+            }
+        }
+
+        public bool AddProxy(TextureProxy proxy)
+        {
+            if (!_imageSources.Any(x => x.FileInfo.FullName == proxy.FileInfo.FullName) && proxy.ImageSources.Count == 1)
+            {
+                _imageSources.Add(proxy);
+                return true;
+            }
+
+            return false;
+        }
+
+        public void RemoveProxy(TextureProxy proxy)
+        {
+            if (proxy != this)
+            {
+                _imageSources.Remove(proxy);
+            }
+        }
+
+        public void MoveUp(List<TextureProxy> proxies)
+        {
+            proxies.Remove(this);
+            if (proxies.Count == 0) return;
+
+            var toIndex = Math.Max(proxies.Select(x => _imageSources.IndexOf(x)).Min() - 1, 1);
+            foreach (var proxy in proxies)
+            {
+                var index = _imageSources.IndexOf(proxy);
+                if (index != toIndex)
+                {
+                    _imageSources.Move(index, toIndex);
+                }
+
+                ++toIndex;
+            }
+        }
+
+        public void MoveDown(List<TextureProxy> proxies)
+        {
+            proxies.Remove(this);
+            if (proxies.Count == 0) return;
+
+            var toIndex = Math.Min(proxies.Select(x => _imageSources.IndexOf(x)).Max() + 1, _imageSources.Count - 1);
+            foreach (var proxy in proxies)
+            {
+                var index = _imageSources.IndexOf(proxy);
+                if (index != toIndex)
+                {
+                    _imageSources.Move(index, toIndex);
+                }
             }
         }
 
         public TextureProxy(string fileName, string destinationFolder)
             : base(fileName, destinationFolder)
         {
+            _imageSources.Add(this);
+            ImageSources = new(_imageSources);
         }
 
     }
@@ -96,9 +158,7 @@ namespace PrimalEditor.Content
         }
 
         public AudioProxy(string fileName, string destinationFolder)
-            : base(fileName, destinationFolder)
-        {
-        }
+            : base(fileName, destinationFolder) { }
     }
 
     interface IImportSettingsConfigurator<T> where T : AssetProxy
@@ -146,9 +206,39 @@ namespace PrimalEditor.Content
         }
         public void RemoveFile(TextureProxy proxy) => _textureProxies.Remove(proxy);
 
+        public void MoveToTarget(TextureProxy proxy, TextureProxy target)
+        {
+            if(proxy != target && proxy.ImageSources.Count==1 && target.AddProxy(proxy))
+            {
+                _textureProxies.Remove(proxy);
+            }
+        }
+
+        public void MoveFromTarget(TextureProxy proxy, TextureProxy target)
+        { 
+            if(proxy != target)
+            {
+                Debug.Assert(proxy.ImageSources.Count == 1);
+                target.RemoveProxy(proxy);
+                if(!_textureProxies.Any(x=>x.FileInfo.FullName ==  proxy.FileInfo.FullName))
+                {
+                    _textureProxies.Add(proxy);
+                }
+            }
+        }
+
         public void Import()
         {
             if (!_textureProxies.Any()) return;
+
+            foreach (var proxy in _textureProxies)
+            {
+                proxy.ImportSettings.Sources.Clear();
+                foreach (var source in proxy.ImageSources)
+                {
+                    proxy.ImportSettings.Sources.Add(source.FileInfo.FullName);
+                }
+            }
 
             _ = ContentHelper.ImportFilesAsync(_textureProxies);
             _textureProxies.Clear();

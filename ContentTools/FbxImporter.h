@@ -16,7 +16,7 @@ public:
     fbx_context(const char* file, scene* scene, scene_data* data, progression *const progression)
         :_scene{ scene }, _scene_data{ data }, _progression{ progression }
     {
-        assert(file && _scene && _scene_data);
+        assert(file && _scene && _scene_data && _progression);
         if (initialize_fbx())
         {
             load_fbx_file(file);

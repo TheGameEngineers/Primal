@@ -19,7 +19,9 @@
             <TabItem Header="Geometry" Tag="{x:Static local:AssetType.Mesh}" MinWidth="96">
                 <local:ConfigureGeometryImportSettingsView />
             </TabItem>
-            <TabItem Header="Texture"  Tag="{x:Static local:AssetType.Texture}" MinWidth="96"/>
+            <TabItem Header="Texture"  Tag="{x:Static local:AssetType.Texture}" MinWidth="96">
+                <local:ConfigureTextureImportSettingsView />
+            </TabItem>
             <TabItem Header="Audio"    Tag="{x:Static local:AssetType.Audio}" MinWidth="96"/>
         </TabControl>
     </Grid>

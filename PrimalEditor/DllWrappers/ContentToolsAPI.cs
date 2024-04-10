@@ -111,7 +111,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public byte CalculateNormals = 0;
         public byte CalculateTangents = 1;
         public byte ReverseHandedness = 0;
-        public byte ImportEmbededTextures = 1;
+        public byte ImportEmbeddedTextures = 1;
         public byte ImportAnimations = 1;
         public byte CoalesceMeshes = 0;
 
@@ -125,7 +125,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
             CalculateNormals = ToByte(settings.CalculateNormals);
             CalculateTangents = ToByte(settings.CalculateTangents);
             ReverseHandedness = ToByte(settings.ReverseHandedness);
-            ImportEmbededTextures = ToByte(settings.ImportEmbeddedTextures);
+            ImportEmbeddedTextures = ToByte(settings.ImportEmbeddedTextures);
             ImportAnimations = ToByte(settings.ImportAnimations);
             CoalesceMeshes = ToByte(settings.CoalesceMeshes);
         }
@@ -154,9 +154,9 @@ namespace PrimalEditor.ContentToolsAPIStructs
     class PrimitiveInitInfo
     {
         public Content.PrimitiveMeshType Type;
-        public int SegmentX = 1;
-        public int SegmentY = 1;
-        public int SegmentZ = 1;
+        public int SegmentsX = 1;
+        public int SegmentsY = 1;
+        public int SegmentsZ = 1;
         public Vector3 Size = new(1f);
         public int LOD = 0;
     }
@@ -202,7 +202,7 @@ namespace PrimalEditor.DllWrappers
         {
             var subresourceData = SlicesToBinary(slices);
             data.SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
-            data.SubresourceSize= subresourceData.Length;
+            data.SubresourceSize = subresourceData.Length;
             Marshal.Copy(subresourceData, 0, data.SubresourceData, data.SubresourceSize);
         }
 
@@ -256,7 +256,7 @@ namespace PrimalEditor.DllWrappers
                 for (var j = 0; j < mipLevels; ++j)
                 {
                     var mipSlice = new List<Slice>();
-                    for (var k = 0; k < depthPerMipLevel[i]; ++k)
+                    for (var k = 0; k < depthPerMipLevel[j]; ++k)
                     {
                         var slice = new Slice();
                         slice.Width = reader.ReadInt32();
@@ -375,7 +375,11 @@ namespace PrimalEditor.DllWrappers
             {
                 sceneData.ImportSettings.FromContentSettings(geometry);
                 sceneDataGenerator(sceneData);
-                Debug.Assert(sceneData.Data != IntPtr.Zero && sceneData.DataSize > 0);
+                if (sceneData.Data == IntPtr.Zero || sceneData.DataSize == 0)
+                {
+                    throw new Exception(failureMessage);
+                }
+
                 var data = new byte[sceneData.DataSize];
                 Marshal.Copy(sceneData.Data, data, 0, sceneData.DataSize);
                 geometry.FromRawData(data);

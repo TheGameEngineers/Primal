@@ -81,7 +81,7 @@ fbx_context::get_scene(FbxNode* root /*= nullptr*/)
 
     const s32 num_nodes{ root->GetChildCount() };
 
-    if(_scene_data->settings.coalesce_meshes)
+    if (_scene_data->settings.coalesce_meshes)
     {
         lod_group lod{};
         for (s32 i{ 0 }; i < num_nodes; ++i)
@@ -96,7 +96,7 @@ fbx_context::get_scene(FbxNode* root /*= nullptr*/)
         {
             lod.name = lod.meshes[0].name;
             mesh combined_mesh{};
-            
+
             if (coalesce_meshes(lod, combined_mesh, _progression))
             {
                 lod.meshes.clear();
@@ -202,13 +202,13 @@ fbx_context::get_lod_group(FbxNodeAttribute* attribute)
     for (s32 i{ 0 }; i < num_nodes; ++i)
     {
         f32 lod_threshold{ -1.f };
-        if(i > 0)
+        if (i > 0)
         {
             FbxDistance threshold;
-            lod_grp->GetThreshold(i-1, threshold);
+            lod_grp->GetThreshold(i - 1, threshold);
             lod_threshold = threshold.value() * _scene_scale;
         }
-        
+
         get_meshes(node->GetChild(i), lod.meshes, (u32)lod.meshes.size(), lod_threshold);
     }
 
@@ -377,15 +377,15 @@ ImportFbx(const char* file, scene_data* data, progression::progress_callback cal
         {
             fbx_context.get_scene();
         }
-        else
-        {
-            // TODO: send failure log message to editor
-            return;
-        }
+    }
+
+    if (scene.lod_groups.empty())
+    {
+        // TODO: send failure log message to editor
+        return;
     }
 
     process_scene(scene, data->settings, &progression);
     pack_data(scene, *data);
 }
-
 } // namespace primal::tools

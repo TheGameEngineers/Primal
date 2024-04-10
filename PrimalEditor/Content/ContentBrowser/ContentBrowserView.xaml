@@ -253,32 +253,24 @@
             </local:PlainView.ItemContainerStyle>
         </local:PlainView>
 
-        <Style TargetType="{x:Type ToggleButton}" x:Key="ListViewToggleButtonStyle">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="Margin" Value="5,0"/>
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Template">
+        <Style TargetType="{x:Type ToggleButton}" x:Key="ListViewToggleButtonStyle" BasedOn="{StaticResource PrimalButtonStyle}">
+            <Setter Property="Content">
                 <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ToggleButton}">
-                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
-                            <Image x:Name="image" Source="pack://application:,,,/Resources/ContentBrowser/ListView.png" Width="16" Opacity="0.8"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Source" TargetName="image" Value="/PrimalEditor;component/Resources/ContentBrowser/TileView.png"/>
-                                <Setter Property="ToolTip" TargetName="border" Value="Tile view"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Editor.MouseOver.BorderBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
+                    <Image Width="32" Opacity="0.8" Source="pack://application:,,,/Resources/ContentBrowser/ListView.png"/>
                 </Setter.Value>
             </Setter>
+            <Setter Property="ToolTip" Value="Toggle list view"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Content">
+                        <Setter.Value>
+                            <Image Width="32" Opacity="0.8" Source="pack://application:,,,/Resources/ContentBrowser/TileView.png"/>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="ToolTip" Value="Toggle tile view"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <ContextMenu x:Key="contextMenu">
@@ -405,9 +397,26 @@
             </Border.Effect>
             <DockPanel>
                 <DockPanel Margin="5" DockPanel.Dock="Top">
-                    <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ListViewToggleButtonStyle}"
-                                  x:Name="listViewToggle"/>
-                    <TextBox />
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="5,0">
+
+                        <Button Padding="2" Margin="0,0,5,0" Focusable="False" Click="OnOpenImportSettingsConfigurator_Button_Click">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PrimalButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=AllowImport, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Content>
+                                <Image Width="32" Source="pack://application:,,,/Resources/ContentBrowser/OpenImportCfg.png"/>
+                            </Button.Content>
+                        </Button>
+                        <ToggleButton Padding="2" Focusable="False" x:Name="listViewToggle" 
+                                      Style="{StaticResource ListViewToggleButtonStyle}" d:IsChecked="True"/>
+                    </StackPanel>
+                    <TextBox VerticalAlignment="Stretch"/>
                 </DockPanel>
                 <StackPanel Orientation="Horizontal" x:Name="pathStack" Margin="0,0,0,5">
                     <StackPanel.Resources>
@@ -462,7 +471,7 @@
                             <Setter Property="VerticalAlignment" Value="Center"/>
                         </Style>
                     </StackPanel.Resources>
-                    <Image Source="pack://application:,,,/Resources/ContentBrowser/FolderSmall.png" Width="18" Margin="5,0,0,2"/>
+                    <Image Source="pack://application:,,,/Resources/ContentBrowser/FolderSmall.png" Width="24" Margin="5,0,0,2"/>
                 </StackPanel>
             </DockPanel>
         </Border>

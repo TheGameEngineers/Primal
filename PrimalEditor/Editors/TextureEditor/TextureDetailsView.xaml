@@ -18,9 +18,15 @@
         <primal:BooleanToYesNoConverter x:Key="booleanToYesNoConverter"/>
         <primal:EnumDescriptionConverter x:Key="enumDescriptionConverter"/>
         <content:DataSizeToStringConverter x:Key="dataSizeToStringConverter"/>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
     <Grid>
-        <StackPanel Orientation="Horizontal" Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
             <StackPanel.Resources>
                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
                     <Setter Property="Margin" Value="0,5"/>
@@ -70,5 +76,29 @@
                 <TextBlock d:Text="No" Text="{Binding Texture.IsHDR, Converter={StaticResource booleanToYesNoConverter}}"/>
             </StackPanel>
         </StackPanel>
+        <Rectangle Fill="{StaticResource Editor.Window.GrayBrush2}" Height="20" Grid.Row="1" VerticalAlignment="Top" Margin="0,3,0,0"/>
+        <Rectangle Fill="{StaticResource Editor.Selected.BackgroundBrush}" Height="3" Grid.Row="1" VerticalAlignment="Top" Margin="0,2,0,0"/>
+        <Expander Foreground="{StaticResource Editor.FontBrush}" IsExpanded="True" Grid.Row="1">
+            <Expander.Header>
+                <TextBlock Text="Import settings" FontWeight="Bold"/>
+            </Expander.Header>
+            <StackPanel Margin="5">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="IsEnabled" Value="False"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Done}">
+                                <Setter Property="IsEnabled" Value="True"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <content:TextureImportSettingsView DataContext="{Binding ImportSettings}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,25,0,0">
+                    <Button Content="Re-import" Width="96" Margin="0,0,25,0" Command="{Binding ReimportCommand}"/>
+                    <Button Content="Save" Width="96" Command="{Binding SaveCommand}" IsEnabled="{Binding CanSaveChanges}"/>
+                </StackPanel>
+            </StackPanel>
+        </Expander>
     </Grid>
 </UserControl>

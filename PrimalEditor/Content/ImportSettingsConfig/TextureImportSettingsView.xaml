@@ -1,0 +1,114 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Content.TextureImportSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Content"
+             xmlns:primal="clr-namespace:PrimalEditor"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type={x:Type local:TextureImportSettings}}"
+             Background="{StaticResource Editor.Window.GrayBrush3}"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter"/>
+        <primal:EnumDescriptionConverter x:Key="enumDescriptionConverter"/>
+        <local:TextureDimensionToBooleanConverter x:Key="textureDimensionToBooleanConverter"/>
+        
+        <Style x:Key="{x:Type TextBlock}" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <ObjectDataProvider x:Key="bcFormatEnumDataSource" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="local:BC_FORMAT"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+    <Grid VerticalAlignment="Top">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition MinHeight="28"/>
+            <RowDefinition MinHeight="28"/>
+            <RowDefinition MinHeight="28"/>
+            <RowDefinition MinHeight="28"/>
+            <RowDefinition MinHeight="28"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Dimension"/>
+        <WrapPanel VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" Margin="0,5" Orientation="Horizontal">
+            <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=0}"
+                         Margin="0,1,20,2" Content="1D" GroupName="Dimension" Foreground="{StaticResource Editor.FontBrush}"/>
+            <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=1}"
+                         Margin="0,1,20,2" Content="2D" GroupName="Dimension" d:IsChecked="True" Foreground="{StaticResource Editor.FontBrush}"/>
+            <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=2}"
+                         Margin="0,1,20,2" Content="3D" GroupName="Dimension" d:IsEnabled="False" Foreground="{StaticResource Editor.FontBrush}"/>
+            <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=3}"
+                         Margin="0,1,20,2" Content="Cubemap" GroupName="Dimension" Foreground="{StaticResource Editor.FontBrush}"/>
+        </WrapPanel>
+        
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mip Levels"/>
+        <Slider Grid.Row="1" Grid.Column="1" IsMoveToPointEnabled="True"
+                VerticalAlignment="Center" TickFrequency="1" TickPlacement="BottomRight"
+                Minimum="0" Maximum="{Binding Source={x:Static local:Texture.MaxMipLevels}}"
+                Value="{Binding MipLevels}" SmallChange="1"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Compress"/>
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+            <CheckBox x:Name="compressCheckBox" VerticalAlignment="Center" IsChecked="{Binding Compress}" d:IsChecked="True"/>
+            <StackPanel Orientation="Horizontal">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Compress}" Value="True"/>
+                                    <Condition Binding="{Binding FormatIndex}" Value="0"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Margin="30,0,5,0" Text="Prefer BC7"/>
+                <CheckBox VerticalAlignment="Center" IsChecked="{Binding PreferBC7}"/>
+            </StackPanel>
+        </StackPanel>
+        
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Output Format"/>
+        <Grid Grid.Row="3" Grid.Column="1">
+            <TextBlock Text="{Binding OutputFormat, Converter={StaticResource enumDescriptionConverter}}"/>
+            <ComboBox ItemsSource="{Binding Source={StaticResource bcFormatEnumDataSource}, Converter={StaticResource enumDescriptionConverter}}"
+                      x:Name="formatComboBox" VerticalAlignment="Center" SelectedIndex="{Binding FormatIndex}"
+                      Visibility="{Binding Compress, Converter={StaticResource booleanToVisibilityConverter}}"/>
+        </Grid>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Alpha Threshold" x:Name="alphaTextBlock" d:Visibility="Visible">
+            <TextBlock.Style>
+                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Compress}" Value="True"/>
+                                <Condition Binding="{Binding FormatIndex}" Value="1"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+        <Slider Grid.Row="4" Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding AlphaThreshold}"
+                VerticalAlignment="Center" LargeChange="0.1"
+                Visibility="{Binding Path=Visibility, ElementName=alphaTextBlock}"/>
+    </Grid>
+</UserControl>

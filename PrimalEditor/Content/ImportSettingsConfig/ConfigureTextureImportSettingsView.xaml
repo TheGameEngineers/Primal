@@ -2,7 +2,7 @@
     Copyright (c) Arash Khatami
     Distributed under the MIT license. See the LICENSE file in the project root for more information.
 -->
-<UserControl x:Class="PrimalEditor.Content.ConfigureGeometryImportSettingsView"
+<UserControl x:Class="PrimalEditor.Content.ConfigureTextureImportSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -11,7 +11,7 @@
              xmlns:primal="clr-namespace:PrimalEditor"
              d:DataContext="{d:DesignInstance Type={x:Type local:ConfigureImportSettings}}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="800" d:DesignWidth="1280">
     <UserControl.Resources>
         <AlternationConverter x:Key="alternationConverter">
             <SolidColorBrush Color="Transparent"/>
@@ -41,8 +41,40 @@
             <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
         </Style>
+
+        <Style x:Key="ArrowPathStyle" TargetType="{x:Type Path}">
+            <Setter Property="Margin" Value="5,10"/>
+            <Setter Property="Fill" Value="{StaticResource Editor.FontBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Fill" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="ImageSourceListBoxItemTemplate">
+            <Grid ToolTip="{Binding FileInfo.DirectoryName}" ToolTipService.InitialShowDelay="500"
+                  Background="Transparent">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0"
+                           Text="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, StringFormat='{}{0}. '}"/>
+                <TextBlock Text="{Binding FileInfo.Name}" Foreground="{StaticResource Editor.OrangeBrush}" TextTrimming="CharacterEllipsis"
+                           Margin="0,0,5,0" Grid.Row="0" Grid.Column="1"/>
+                <TextBlock Text="{Binding FileInfo.LastWriteTime}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
+                <TextBlock Text="{Binding FileInfo.Length, Converter={StaticResource dataSizeToStringConverter}}"
+                           Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
-    <Grid d:DataContext="{d:DesignInstance Type={x:Type local:GeometryImportSettingsConfigurator}}" DataContext="{Binding GeometryImportSettingsConfigurator}">
+    <Grid d:DataContext="{d:DesignInstance Type={x:Type local:TextureImportSettingsConfigurator}}" DataContext="{Binding TextureImportSettingsConfigurator}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition MinWidth="250"/>
             <ColumnDefinition MinWidth="300"/>
@@ -52,11 +84,11 @@
             <DockPanel Background="{StaticResource Editor.Window.GrayBrush3}" Margin="10">
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
                     <Button Content="Import" Width="64" Click="OnImport_Button_Click"
-                            IsEnabled="{Binding GeometryProxies.Count}"/>
+                            IsEnabled="{Binding TextureProxies.Count}"/>
                 </StackPanel>
-                <ListBox ItemsSource="{Binding GeometryProxies}" AlternationCount="{Binding GeometryProxies.Count}" SelectionMode="Extended"
+                <ListBox ItemsSource="{Binding TextureProxies}" AlternationCount="{Binding TextureProxies.Count}" SelectionMode="Extended"
                          ItemContainerStyle="{StaticResource AlternateColorListBoxItemStyle}"
-                         x:Name="geometryListBox" HorizontalContentAlignment="Stretch" BorderBrush="{StaticResource Editor.OrangeBrush}"
+                         x:Name="textureListBox" HorizontalContentAlignment="Stretch" BorderBrush="{StaticResource Editor.OrangeBrush}"
                          SelectedIndex="0" AllowDrop="True" Drop="OnListBox_Drop" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.Triggers>
                         <EventTrigger RoutedEvent="PreviewDragEnter">
@@ -90,22 +122,57 @@
                                   Background="Transparent">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition/>
                                     <RowDefinition/>
                                     <RowDefinition/>
+                                    <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                           Text="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, StringFormat='{}{0}. '}"/>
+
+                                <Border Background="{StaticResource Editor.GreenBrush}" Width="5" Margin="0,0,5,0" x:Name="hasImagesBorder"
+                                        Grid.Row="0" Grid.RowSpan="4" Grid.Column="0">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ImageSources.Count}" Value="1">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
                                 
+                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                           Text="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, StringFormat='{}{0}. '}"/>
+
                                 <TextBlock Text="{Binding FileInfo.Name}" Foreground="{StaticResource Editor.OrangeBrush}" TextTrimming="CharacterEllipsis"
-                                           Margin="0,0,20,0" Grid.Row="0" Grid.Column="1"/>
-                                <TextBlock Text="{Binding FileInfo.LastWriteTime}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
+                                           Margin="0,0,20,0" Grid.Row="0" Grid.Column="2"/>
+                                <TextBlock Text="{Binding FileInfo.LastWriteTime}" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"/>
                                 <TextBlock Text="{Binding FileInfo.Length, Converter={StaticResource dataSizeToStringConverter}}"
-                                           Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
-                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemove_Button_Click" Background="Transparent" Grid.Column="1"
+                                           Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                                <Expander Visibility="{Binding Path=Visibility, ElementName=hasImagesBorder}" Focusable="False" Margin="0,5,0,0"
+                                              Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2">
+                                    <Expander.Header>
+                                        <TextBlock Text="SOURCE IMAGES" FontWeight="Bold" Style="{StaticResource LightTextBlockStyle}"/>
+                                    </Expander.Header>
+                                    <ItemsControl ItemsSource="{Binding ImageSources}" Margin="23,5,0,10">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding FileInfo.Name}" Foreground="{StaticResource Editor.OrangeBrush}"
+                                                           TextTrimming="CharacterEllipsis" Margin="0,0,20,0"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Expander>
+                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemove_Button_Click" Background="Transparent" Grid.Column="2"
                                         x:Name="removeButton" Visibility="Collapsed">
                                     <Button.Content>
                                         <Grid>
@@ -131,7 +198,7 @@
                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
                     <Setter Property="Visibility" Value="Collapsed"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding Path=Items.Count, ElementName=geometryListBox}" Value="0">
+                        <DataTrigger Binding="{Binding Path=Items.Count, ElementName=textureListBox}" Value="0">
                             <Setter Property="Visibility" Value="Visible"/>
                         </DataTrigger>
                     </Style.Triggers>
@@ -141,8 +208,8 @@
         <GridSplitter HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" Background="Transparent"/>
 
         <Border Background="{StaticResource Editor.Window.GrayBrush3}" Grid.Column="1" Margin="0,0,5,0">
-            <Grid d:DataContext="{d:DesignInstance Type={x:Type local:GeometryProxy}}" d:Visibility="Visible"
-                  DataContext="{Binding Path=SelectedItem, ElementName=geometryListBox}">
+            <Grid d:DataContext="{d:DesignInstance Type={x:Type local:TextureProxy}}" d:Visibility="Visible"
+                  DataContext="{Binding Path=SelectedItem, ElementName=textureListBox}">
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
@@ -156,11 +223,12 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
                     <RowDefinition />
                 </Grid.RowDefinitions>
                 <TextBlock Text="{Binding FileInfo.Name, StringFormat='Import settings for {0}'}" TextTrimming="CharacterEllipsis"
-                           d:Text="Import settings for model.fbx" FontSize="16" Margin="10"/>
-                <local:GeometryImportSettingsView DataContext="{Binding ImportSettings}" Grid.Row="1" Margin="10,0,10,28"/>
+                           d:Text="Import settings for image.png" FontSize="16" Margin="10"/>
+                <local:TextureImportSettingsView Grid.Row="1" DataContext="{Binding ImportSettings}" Margin="10,0,10,28"/>
                 <Border Grid.Row="1" CornerRadius="5" BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="1" Background="#50000000"
                         Margin="5,-5,5,23" x:Name="lockBorder" ToolTipService.InitialShowDelay="100"
                         ToolTip="Import settings are locked when multiple sources are selected.&#13;Current settings can be applied to the selection.">
@@ -168,7 +236,7 @@
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="Visibility" Value="Visible"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=geometryListBox}" Value="1">
+                                <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=textureListBox}" Value="1">
                                     <Setter Property="Visibility" Value="Hidden"/>
                                 </DataTrigger>
                             </Style.Triggers>
@@ -191,6 +259,78 @@
 
                 <local:ChangeDestinationFolder Grid.Row="3" Margin="10,20,10,10" VerticalAlignment="Top" />
 
+                <Grid Grid.Row="4" Margin="10,0,10,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Top">
+                        <TextBlock Text="SOURCE IMAGES" FontWeight="Bold" Margin="-2,3,0,10">
+                            <TextBlock.LayoutTransform>
+                                <RotateTransform Angle="90"/>
+                            </TextBlock.LayoutTransform>
+                        </TextBlock>
+
+                        <Button Margin="0,0,5,5" Padding="0" Click="OnAddImageSource_Button_Click" Focusable="False"
+                                ToolTip="Add selected images to image source list.">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PrimalButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=textureListBox}" Value="1">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Path Data="M0,0 L8,4 0,8 2,4 z" Style="{StaticResource ArrowPathStyle}"/>
+                        </Button>
+                        <Button Margin="0,0,5,5" Padding="0" Click="OnRemoveImageSource_Button_Click" Focusable="False"
+                                ToolTip="Remove selected image sources">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PrimalButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=imageSourcesListBox}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Path Data="M0,4 L8,0 6,4 8,8 z" Style="{StaticResource ArrowPathStyle}"/>
+                        </Button>
+                        
+                        <RepeatButton Margin="0,10,5,5" Padding="0" Click="OnMoveSelectionUp_Button_Click" Focusable="False"
+                                      ToolTip="Move up selected image sources">
+                            <RepeatButton.Style>
+                                <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource PrimalButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=imageSourcesListBox}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </RepeatButton.Style>
+                            <Path Data="M0,8 L4,0 8,8 4,6 z" Style="{StaticResource ArrowPathStyle}"/>
+                        </RepeatButton>
+                        <RepeatButton Margin="0,0,5,5" Padding="0" Click="OnMoveSelectionDown_Button_Click" Focusable="False"
+                                      ToolTip="Move down selected image sources">
+                            <RepeatButton.Style>
+                                <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource PrimalButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=imageSourcesListBox}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </RepeatButton.Style>
+                            <Path Data="M0,0 L4,2 8,0 4,8 z" Style="{StaticResource ArrowPathStyle}"/>
+                        </RepeatButton>
+                    </StackPanel>
+
+                    <ListBox Grid.Column="1" ItemsSource="{Binding ImageSources}" AlternationCount="{Binding ImageSources.Count}" SelectionMode="Extended"
+                             ItemContainerStyle="{StaticResource AlternateColorListBoxItemStyle}"
+                             x:Name="imageSourcesListBox" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             SelectedIndex="0" ItemTemplate="{StaticResource ImageSourceListBoxItemTemplate}"/>
+                </Grid>
             </Grid>
         </Border>
 
