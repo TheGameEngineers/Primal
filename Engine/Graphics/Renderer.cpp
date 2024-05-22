@@ -438,9 +438,22 @@ add_submesh(const u8*& data)
     return gfx.resources.add_submesh(data);
 }
 
-void remove_submesh(id::id_type id)
+void
+remove_submesh(id::id_type id)
 {
     gfx.resources.remove_submesh(id);
+}
+
+id::id_type
+add_texture(const u8 *const data)
+{
+    return gfx.resources.add_texture(data);
+}
+
+void
+remove_texture(id::id_type id)
+{
+    gfx.resources.remove_texture(id);
 }
 
 id::id_type
@@ -462,7 +475,8 @@ add_render_item(id::id_type entity_id, id::id_type geometry_content_id,
     return gfx.resources.add_render_item(entity_id, geometry_content_id, material_count, material_ids);
 }
 
-void remove_render_item(id::id_type id)
+void
+remove_render_item(id::id_type id)
 {
     gfx.resources.remove_render_item(id);
 }

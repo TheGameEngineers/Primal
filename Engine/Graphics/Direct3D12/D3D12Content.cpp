@@ -5,6 +5,7 @@
 #include "Utilities/IOStream.h"
 #include "Content/ContentToEngine.h"
 #include "D3D12GPass.h"
+#include "D3D12Upload.h"
 
 namespace primal::graphics::d3d12::content {
 namespace {
@@ -38,6 +39,7 @@ utl::free_list<submesh_view>                    submesh_views{};
 std::mutex                                      submesh_mutex{};
 
 utl::free_list<d3d12_texture>                   textures;
+utl::free_list<u32>                             descriptor_indices;
 std::mutex                                      texture_mutex{};
 
 utl::vector<ID3D12RootSignature*>               root_signatures;
@@ -387,6 +389,179 @@ create_pso(id::id_type material_id, D3D12_PRIMITIVE_TOPOLOGY primitive_topology,
     return id_pair;
 }
 
+d3d12_texture
+create_resource_from_texture_data(const u8 *const data)
+{
+    assert(data);
+    utl::blob_stream_reader blob{ data };
+    const u32 width{ blob.read<u32>() };
+    const u32 height{ blob.read<u32>() };
+    u32 depth{ 1 };
+    u32 array_size{ blob.read<u32>() };
+    const u32 flags{ blob.read<u32>() };
+    const u32 mip_levels{ blob.read<u32>() };
+    const DXGI_FORMAT format{ (DXGI_FORMAT)blob.read<u32>() };
+    const bool is_3d{ (flags & primal::content::texture_flags::is_volume_map) != 0 };
+
+    assert(mip_levels <= d3d12_texture::max_mips);
+
+    u32 depth_per_mip_level[d3d12_texture::max_mips]{};
+    for (u32 i{ 0 }; i < d3d12_texture::max_mips; ++i)
+    {
+        depth_per_mip_level[i] = 1;
+    }
+
+    if (is_3d)
+    {
+        depth = array_size;
+        array_size = 1;
+        u32 depth_per_mip{ depth };
+
+        for (u32 i{ 0 }; i < mip_levels; ++i)
+        {
+            depth_per_mip_level[i] = depth_per_mip;
+            depth_per_mip = std::max(depth_per_mip >> 1, (u32)1);
+        }
+    }
+
+    utl::vector<D3D12_SUBRESOURCE_DATA> subresources{};
+
+    for (u32 i{ 0 }; i < array_size; ++i)
+    {
+        for (u32 j{ 0 }; j < mip_levels; ++j)
+        {
+            blob.skip(2 * sizeof(u32)); // skip width and height
+            const u32 row_pitch{ blob.read<u32>() };
+            const u32 slice_pitch{ blob.read<u32>() };
+
+            subresources.emplace_back(D3D12_SUBRESOURCE_DATA
+                                      {
+                                          blob.position(),
+                                          row_pitch,
+                                          slice_pitch
+                                      });
+
+            blob.skip(slice_pitch);
+
+            // skip the rest of the slices fo 3d textures with depth > 1
+            for (u32 k{ 1 }; k < depth_per_mip_level[j]; ++k)
+            {
+                blob.skip(4 * sizeof(u32) + slice_pitch);
+            }
+        }
+    }
+
+    D3D12_RESOURCE_DESC desc{};
+    // TODO: handle 1D textures.
+    desc.Dimension = is_3d ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.Alignment = 0;
+    desc.Width = width;
+    desc.Height = height;
+    desc.DepthOrArraySize = is_3d ? (u16)depth : (u16)array_size;
+    desc.MipLevels = (u16)mip_levels;
+    desc.Format = format;
+    desc.SampleDesc = { 1,0 };
+    desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    assert(!(flags & primal::content::texture_flags::is_cube_map && (array_size % 6)));
+    const u32 subresource_count{ array_size * mip_levels };
+    assert(subresource_count);
+
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const layouts
+    { (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * subresource_count) };
+    u32 *const num_rows{ (u32 *const)_alloca(sizeof(u32) * subresource_count) };
+    u64 *const row_sizes{ (u64 *const)_alloca(sizeof(u64) * subresource_count) };
+    u64 required_size{ 0 };
+    id3d12_device* device{ core::device() };
+
+    device->GetCopyableFootprints(&desc, 0, subresource_count, 0, layouts, num_rows, row_sizes, &required_size);
+
+    assert(required_size);
+    upload::d3d12_upload_context context{ (u32)required_size };
+    u8 *const cpu_address{ (u8 *const)context.cpu_address() };
+
+    for (u32 subresource_idx{ 0 }; subresource_idx < subresource_count; ++subresource_idx)
+    {
+        const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& layout{ layouts[subresource_idx] };
+        const u32 subresource_height{ num_rows[subresource_idx] };
+        const u32 subresource_depth{ layout.Footprint.Depth };
+        const D3D12_SUBRESOURCE_DATA& subresource{ subresources[subresource_idx] };
+
+        const D3D12_MEMCPY_DEST copy_dst
+        {
+            cpu_address + layout.Offset,
+            layout.Footprint.RowPitch,
+            layout.Footprint.RowPitch * subresource_height
+        };
+
+        for (u32 depth_idx{ 0 }; depth_idx < subresource_depth; ++depth_idx)
+        {
+            u8 *const src_slice{ (u8 *const)subresource.pData + subresource.SlicePitch * depth_idx };
+            u8 *const dst_slice{ (u8 *const)copy_dst.pData + copy_dst.SlicePitch * depth_idx };
+
+            for (u32 row_idx{ 0 }; row_idx < subresource_height; ++row_idx)
+            {
+                memcpy(dst_slice + copy_dst.RowPitch * row_idx, src_slice + subresource.RowPitch * row_idx, row_sizes[subresource_idx]);
+            }
+        }
+    }
+
+    ID3D12Resource* resource{ nullptr };
+    DXCall(device->CreateCommittedResource(&d3dx::heap_properties.default_heap, D3D12_HEAP_FLAG_NONE, &desc,
+                                           D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource)));
+
+    ID3D12Resource* upload_buffer{ context.upload_buffer() };
+    for (u32 i{ 0 }; i < subresource_count; ++i)
+    {
+        D3D12_TEXTURE_COPY_LOCATION src{};
+        src.pResource = upload_buffer;
+        src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        src.PlacedFootprint = layouts[i];
+
+        D3D12_TEXTURE_COPY_LOCATION dst{};
+        dst.pResource = resource;
+        dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dst.SubresourceIndex = i;
+
+        context.command_list()->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+    }
+
+    context.end_upload();
+
+    assert(resource);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
+    d3d12_texture_init_info info{};
+    info.resource = resource;
+
+    if (flags & primal::content::texture_flags::is_cube_map)
+    {
+        assert(array_size % 6 == 0);
+        srv_desc.Format = format;
+        srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+        if (array_size > 6)
+        {
+            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+            srv_desc.TextureCubeArray.MostDetailedMip = 0;
+            srv_desc.TextureCubeArray.MipLevels = mip_levels;
+            srv_desc.TextureCubeArray.NumCubes = array_size / 6;
+        }
+        else
+        {
+            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+            srv_desc.TextureCube.MostDetailedMip = 0;
+            srv_desc.TextureCube.MipLevels = mip_levels;
+            srv_desc.TextureCube.ResourceMinLODClamp = 0.0f;
+        }
+
+        info.srv_desc = &srv_desc;
+    }
+
+    return d3d12_texture{ info };
+}
+
 } // anonymous namespace
 
 bool
@@ -518,6 +693,32 @@ get_views(const id::id_type *const gpu_ids, u32 id_count, const views_cache& cac
 } // namespace submesh
 
 namespace texture {
+// NOTE: expects data to contain
+// struct {
+//     u32 width, height, array_size (or depth), flags, mip_levels, format,
+//     struct {
+//         u32 width, height, row_pitch, slice_pitch,
+//         u8 image[slice_pitch],
+//     } images[]
+// } texture
+id::id_type add(const u8* const data)
+{
+    assert(data);
+    d3d12_texture texture{ create_resource_from_texture_data(data) };
+
+    std::lock_guard lock{ texture_mutex };
+    const id::id_type id{ textures.add(std::move(texture)) };
+    descriptor_indices.add(textures[id].srv().index);
+    return id;
+}
+
+void remove(id::id_type id)
+{
+    std::lock_guard lock{ texture_mutex };
+    textures.remove(id);
+    descriptor_indices.remove(id);
+}
+
 void
 get_descriptor_indices(const id::id_type *const texture_ids, u32 id_count, u32 *const indices)
 {
@@ -525,7 +726,7 @@ get_descriptor_indices(const id::id_type *const texture_ids, u32 id_count, u32 *
     std::lock_guard lock{ texture_mutex };
     for (u32 i{ 0 }; i < id_count; ++i)
     {
-        indices[i] = textures[i].srv().index;
+        indices[i] = descriptor_indices[texture_ids[i]];
     }
 }
 } // namespace texture

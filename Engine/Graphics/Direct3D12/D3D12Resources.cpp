@@ -166,7 +166,7 @@ uav_clearable_buffer::uav_clearable_buffer(const d3d12_buffer_init_info& info)
     : _buffer{ info, false }
 {
     assert(info.size && info.alignment);
-    NAME_D3D12_OBJECT_INDEXED(buffer(), info.size, L"Structured Buffer - size");
+    NAME_D3D12_OBJECT_INDEXED(buffer(), info.size, L"UAV Clearable Buffer - size");
 
     assert(info.flags && D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     _uav = core::uav_heap().allocate();
@@ -209,16 +209,16 @@ d3d12_texture::d3d12_texture(d3d12_texture_init_info info)
         assert(!info.heap);
         _resource = info.resource;
     }
-    else if (info.heap && info.desc)
+    else if (info.heap)
     {
-        assert(!info.resource);
+        assert(info.desc);
         DXCall(device->CreatePlacedResource(
             info.heap, info.allocation_info.Offset, info.desc,
             info.initial_state, clear_value, IID_PPV_ARGS(&_resource)));
     }
-    else if (info.desc)
+    else
     {
-        assert(!info.heap && !info.resource);
+        assert(info.desc);
         DXCall(device->CreateCommittedResource(
             &d3dx::heap_properties.default_heap, D3D12_HEAP_FLAG_NONE, info.desc,
             info.initial_state, clear_value, IID_PPV_ARGS(&_resource)));

@@ -38,6 +38,8 @@ struct platform_interface
     struct {
         id::id_type(*add_submesh)(const u8*&);
         void (*remove_submesh)(id::id_type);
+        id::id_type(*add_texture)(const u8 *const);
+        void (*remove_texture)(id::id_type);
         id::id_type(*add_material)(material_init_info);
         void (*remove_material)(id::id_type);
         id::id_type(*add_render_item)(id::id_type, id::id_type, u32, const id::id_type *const);

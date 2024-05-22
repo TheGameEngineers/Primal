@@ -19,25 +19,42 @@ namespace {
 id::id_type fan_model_id{ id::invalid_id };
 id::id_type int_model_id{ id::invalid_id };
 id::id_type lab_model_id{ id::invalid_id };
+id::id_type fembot_model_id{ id::invalid_id };
 
 id::id_type fan_item_id{ id::invalid_id };
 id::id_type int_item_id{ id::invalid_id };
 id::id_type lab_item_id{ id::invalid_id };
+id::id_type fembot_item_id{ id::invalid_id };
 
 game_entity::entity_id fan_entity_id{ id::invalid_id };
 game_entity::entity_id int_entity_id{ id::invalid_id };
 game_entity::entity_id lab_entity_id{ id::invalid_id };
+game_entity::entity_id fembot_entity_id{ id::invalid_id };
 
+struct texture_usage {
+    enum usage : u32 {
+        ambient_occlusion = 0,
+        base_color,
+        emissive,
+        metal_rough,
+        normal,
+
+        count
+    };
+};
+
+id::id_type texture_ids[texture_usage::count];
 
 id::id_type vs_id{ id::invalid_id };
 id::id_type ps_id{ id::invalid_id };
-id::id_type mtl_id{ id::invalid_id };
+id::id_type default_mtl_id{ id::invalid_id };
 
 std::unordered_map<id::id_type, game_entity::entity_id> render_item_entity_map;
 
 [[nodiscard]] id::id_type
 load_model(const char* path)
 {
+    // load test model
     std::unique_ptr<u8[]> model;
     u64 size{ 0 };
     read_file(path, model, size);
@@ -45,6 +62,19 @@ load_model(const char* path)
     const id::id_type model_id{ content::create_resource(model.get(), content::asset_type::mesh) };
     assert(id::is_valid(model_id));
     return model_id;
+}
+
+[[nodiscard]] id::id_type
+load_texture(const char* path)
+{
+    // load test texture
+    std::unique_ptr<u8[]> texture;
+    u64 size{ 0 };
+    read_file(path, texture, size);
+
+    const id::id_type texture_id{ content::create_resource(texture.get(), content::asset_type::texture) };
+    assert(id::is_valid(texture_id));
+    return texture_id;
 }
 
 void
@@ -97,7 +127,7 @@ create_material()
     info.shader_ids[graphics::shader_type::vertex] = vs_id;
     info.shader_ids[graphics::shader_type::pixel] = ps_id;
     info.type = graphics::material_type::opaque;
-    mtl_id = content::create_resource(&info, content::asset_type::material);
+    default_mtl_id = content::create_resource(&info, content::asset_type::material);
 }
 
 void
@@ -124,37 +154,57 @@ remove_item(game_entity::entity_id entity_id, id::id_type item_id, id::id_type m
 void
 create_render_items()
 {
-    // NOTE: you can get these models if you're a patreon supporter of Primal Engine.
+    // NOTE: you can get these models if you're a patreon or ko-fi supporter of Primal Engine.
+    //       https://www.patreon.com/collection/270663
+    //       https://ko-fi.com/gameengineseries/shop
     //       Use the editor to import the scene and put the 3 models in this location.
     //       You can replace them with any model that's available to you.
     assert(std::filesystem::exists("..\\..\\x64\\lab_model.model"));
     assert(std::filesystem::exists("..\\..\\x64\\fan_model.model"));
     assert(std::filesystem::exists("..\\..\\x64\\int_model.model"));
-    auto _1 = std::thread{ [] { lab_model_id = load_model("..\\..\\x64\\lab_model.model"); } };
-    auto _2 = std::thread{ [] { fan_model_id = load_model("..\\..\\x64\\fan_model.model"); } };
-    auto _3 = std::thread{ [] { int_model_id = load_model("..\\..\\x64\\int_model.model"); } };
-    auto _4 = std::thread{ [] { load_shaders(); } };
+    assert(std::filesystem::exists("..\\..\\x64\\fembot_model.model"));
+
+    memset(&texture_ids[0], 0xff, sizeof(id::id_type) * _countof(texture_ids));
+
+    std::thread threads[]{
+        std::thread{ [] { texture_ids[texture_usage::ambient_occlusion] = load_texture("..\\..\\x64\\ambient_occlusion.texture"); }},
+        std::thread{ [] { texture_ids[texture_usage::base_color] = load_texture("..\\..\\x64\\base_color.texture"); }},
+        std::thread{ [] { texture_ids[texture_usage::emissive] = load_texture("..\\..\\x64\\emissive.texture"); }},
+        std::thread{ [] { texture_ids[texture_usage::metal_rough] = load_texture("..\\..\\x64\\metal_rough.texture"); }},
+        std::thread{ [] { texture_ids[texture_usage::normal] = load_texture("..\\..\\x64\\normal.texture"); }},
+
+        std::thread{ [] { lab_model_id = load_model("..\\..\\x64\\lab_model.model"); } },
+        std::thread{ [] { fan_model_id = load_model("..\\..\\x64\\fan_model.model"); } },
+        std::thread{ [] { int_model_id = load_model("..\\..\\x64\\int_model.model"); } },
+        std::thread{ [] { fembot_model_id = load_model("..\\..\\x64\\fembot_model.model"); } },
+        std::thread{ [] { load_shaders(); } },
+    };
+
+    for (auto& t : threads)
+    {
+        t.join();
+    }
 
     lab_entity_id = create_one_game_entity({}, {}, nullptr).get_id();
     fan_entity_id = create_one_game_entity({ -10.47f, 5.93f, -6.7f }, {}, "fan_script").get_id();
     int_entity_id = create_one_game_entity({ 0.f, 1.3f, -6.6f }, {}, "wibbly_wobbly_script").get_id();
-
-    _1.join();
-    _2.join();
-    _3.join();
-    _4.join();
+    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, {0.f, math::pi, 0.f}, nullptr).get_id();
+    
 
     // NOTE: we need shaders to be ready before creating materials
     create_material();
-    id::id_type materials[]{ mtl_id };
+    id::id_type materials[]{ default_mtl_id };
+    id::id_type fembot_materials[]{ default_mtl_id, default_mtl_id };
 
     lab_item_id = graphics::add_render_item(lab_entity_id, lab_model_id, _countof(materials), &materials[0]);
     fan_item_id = graphics::add_render_item(fan_entity_id, fan_model_id, _countof(materials), &materials[0]);
     int_item_id = graphics::add_render_item(int_entity_id, int_model_id, _countof(materials), &materials[0]);
+    fembot_item_id = graphics::add_render_item(fembot_entity_id, fembot_model_id, _countof(fembot_materials), &fembot_materials[0]);
 
     render_item_entity_map[lab_item_id] = lab_entity_id;
     render_item_entity_map[fan_item_id] = fan_entity_id;
     render_item_entity_map[int_item_id] = int_entity_id;
+    render_item_entity_map[fembot_item_id] = fembot_entity_id;
 }
 
 void
@@ -163,11 +213,21 @@ destroy_render_items()
     remove_item(lab_entity_id, lab_item_id, lab_model_id);
     remove_item(fan_entity_id, fan_item_id, fan_model_id);
     remove_item(int_entity_id, int_item_id, int_model_id);
+    remove_item(fembot_entity_id, fembot_item_id, fembot_model_id);
 
     // remove material
-    if (id::is_valid(mtl_id))
+    if (id::is_valid(default_mtl_id))
     {
-        content::destroy_resource(mtl_id, content::asset_type::material);
+        content::destroy_resource(default_mtl_id, content::asset_type::material);
+    }
+
+    // remove textures
+    for (id::id_type id : texture_ids)
+    {
+        if (id::is_valid(id))
+        {
+            content::destroy_resource(id, content::asset_type::texture);
+        }
     }
 
     // remove shaders and textures
@@ -185,8 +245,9 @@ destroy_render_items()
 void
 get_render_items(id::id_type* items, [[maybe_unused]] u32 count)
 {
-    assert(count == 3);
+    assert(count == 4);
     items[0] = lab_item_id;
     items[1] = fan_item_id;
     items[2] = int_item_id;
+    items[3] = fembot_item_id;
 }

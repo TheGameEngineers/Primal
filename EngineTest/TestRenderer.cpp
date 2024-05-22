@@ -218,7 +218,8 @@ create_camera_surface(camera_surface& surface, platform::window_init_info info)
 {
     surface.surface.window = platform::create_window(&info);
     surface.surface.surface = graphics::create_surface(surface.surface.window);
-    surface.entity = create_one_game_entity({ 13.76f, 3.f, -1.1f }, { -0.137f, -1.70f, 0.f }, "camera_script");
+    //surface.entity = create_one_game_entity({ 13.76f, 3.f, -1.1f }, { -0.137f, -1.70f, 0.f }, "camera_script");
+    surface.entity = create_one_game_entity({ -5.49f, 1.73f, 9.26f }, { 0.19f, 5.61f, 0.f }, "camera_script");
     surface.camera = graphics::create_camera(graphics::perspective_camera_init_info{ surface.entity.get_id() });
     surface.camera.aspect_ratio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -350,14 +351,14 @@ engine_test::run()
     {
         if (_surfaces[i].surface.surface.is_valid())
         {
-            f32 thresholds[3]{};
+            f32 thresholds[4]{};
 
-            id::id_type render_items[3]{};
-            get_render_items(&render_items[0], 3);
+            id::id_type render_items[4]{};
+            get_render_items(&render_items[0], 4);
 
             graphics::frame_info info{};
             info.render_item_ids = &render_items[0];
-            info.render_item_count = 3;
+            info.render_item_count = 4;
             info.thresholds = &thresholds[0];
             info.light_set_key = light_set_key;
             info.average_frame_time = dt;

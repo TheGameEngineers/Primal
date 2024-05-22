@@ -35,10 +35,10 @@ public:
 
     u32 lod_from_threshold(f32 threshold)
     {
-        assert(threshold > 0);
+        assert(threshold >= 0);
         if (_lod_count == 1) return 0;
 
-        for (u32 i{ _lod_count - 1 }; i > 0; --i)
+        for (u32 i{ _lod_count - 1 }; i >= 0; --i)
         {
             if (_thresholds[i] <= threshold) return i;
         }
@@ -230,7 +230,7 @@ gpu_id_from_fake_pointer(u8 *const pointer)
 //
 // (gpu_id << 32) | 0x01
 //
-id::id_type
+[[nodiscard]] id::id_type
 create_geometry_resource(const void *const data)
 {
     assert(data);
@@ -272,7 +272,7 @@ destroy_geometry_resource(id::id_type id)
 //  id::id_type         shader_ids[shader_type::count],
 //  id::id_type*        texture_ids;
 // } material_init_info
-id::id_type
+[[nodiscard]] id::id_type
 create_material_resource(const void *const data)
 {
     assert(data);
@@ -283,6 +283,27 @@ void
 destroy_material_resource(id::id_type id)
 {
     graphics::remove_material(id);
+}
+
+// NOTE: expects data to contain
+// struct {
+//     u32 width, height, array_size (or depth), flags, mip_levels, format,
+//     struct {
+//         u32 width, height, row_pitch, slice_pitch,
+//         u8 image[slice_pitch],
+//     } images[]
+// } texture
+[[nodiscard]] id::id_type
+create_texture_resource(const void *const data)
+{
+    assert(data);
+    return graphics::add_texture((const u8 *const)data);
+}
+
+void
+destroy_texture_resource(id::id_type id)
+{
+    graphics::remove_texture(id);
 }
 
 } // anonymous namespace
@@ -300,7 +321,7 @@ create_resource(const void *const data, asset_type::type type)
     case asset_type::material: id = create_material_resource(data); break;
     case asset_type::mesh:	id = create_geometry_resource(data); break;
     case asset_type::skeleton: break;
-    case asset_type::texture: break;
+    case asset_type::texture: id = create_texture_resource(data); break;
     }
 
     assert(id::is_valid(id));
@@ -318,7 +339,7 @@ destroy_resource(id::id_type id, asset_type::type type)
     case asset_type::material: destroy_material_resource(id);  break;
     case asset_type::mesh:	destroy_geometry_resource(id); break;
     case asset_type::skeleton: break;
-    case asset_type::texture: break;
+    case asset_type::texture: destroy_texture_resource(id); break;
     default:
         assert(false);
         break;
