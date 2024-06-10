@@ -47,7 +47,9 @@ id::id_type texture_ids[texture_usage::count];
 
 id::id_type vs_id{ id::invalid_id };
 id::id_type ps_id{ id::invalid_id };
+id::id_type textured_ps_id{ id::invalid_id };
 id::id_type default_mtl_id{ id::invalid_id };
+id::id_type fembot_mtl_id{ id::invalid_id };
 
 std::unordered_map<id::id_type, game_entity::entity_id> render_item_entity_map;
 
@@ -109,14 +111,25 @@ load_shaders()
     extra_args.clear();
     info.function = "TestShaderPS";
     info.type = shader_type::pixel;
+    utl::vector<std::unique_ptr<u8[]>> pixel_shaders;
 
-    auto pixel_shader = compile_shader(info, shader_path, extra_args);
-    assert(pixel_shader.get());
+    pixel_shaders.emplace_back(compile_shader(info, shader_path, extra_args));
+    assert(pixel_shaders.back().get());
+
+    defines[0] = L"TEXTURED_MTL=1";
+    extra_args.emplace_back(L"-D");
+    extra_args.emplace_back(defines[0]);
+
+    pixel_shaders.emplace_back(compile_shader(info, shader_path, extra_args));
+    assert(pixel_shaders.back().get());
 
     vs_id = content::add_shader_group(vertex_shader_pointers.data(), (u32)vertex_shader_pointers.size(), keys.data());
 
-    const u8* pixel_shaders[]{ pixel_shader.get() };
-    ps_id = content::add_shader_group(&pixel_shaders[0], 1, &u32_invalid_id);
+    const u8* pixel_shader_pointers[]{ pixel_shaders[0].get()};
+    ps_id = content::add_shader_group(pixel_shader_pointers, 1, &u32_invalid_id);
+
+    pixel_shader_pointers[0] = pixel_shaders[1].get();
+    textured_ps_id = content::add_shader_group(pixel_shader_pointers, 1, &u32_invalid_id);
 }
 
 void
@@ -128,6 +141,11 @@ create_material()
     info.shader_ids[graphics::shader_type::pixel] = ps_id;
     info.type = graphics::material_type::opaque;
     default_mtl_id = content::create_resource(&info, content::asset_type::material);
+
+    info.shader_ids[graphics::shader_type::pixel] = textured_ps_id;
+    info.texture_count = texture_usage::count;
+    info.texture_ids = &texture_ids[0];
+    fembot_mtl_id = content::create_resource(&info, content::asset_type::material);
 }
 
 void
@@ -188,13 +206,13 @@ create_render_items()
     lab_entity_id = create_one_game_entity({}, {}, nullptr).get_id();
     fan_entity_id = create_one_game_entity({ -10.47f, 5.93f, -6.7f }, {}, "fan_script").get_id();
     int_entity_id = create_one_game_entity({ 0.f, 1.3f, -6.6f }, {}, "wibbly_wobbly_script").get_id();
-    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, {0.f, math::pi, 0.f}, nullptr).get_id();
-    
+    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, "rotator_script").get_id();
+
 
     // NOTE: we need shaders to be ready before creating materials
     create_material();
     id::id_type materials[]{ default_mtl_id };
-    id::id_type fembot_materials[]{ default_mtl_id, default_mtl_id };
+    id::id_type fembot_materials[]{ fembot_mtl_id, fembot_mtl_id };
 
     lab_item_id = graphics::add_render_item(lab_entity_id, lab_model_id, _countof(materials), &materials[0]);
     fan_item_id = graphics::add_render_item(fan_entity_id, fan_model_id, _countof(materials), &materials[0]);
@@ -221,6 +239,11 @@ destroy_render_items()
         content::destroy_resource(default_mtl_id, content::asset_type::material);
     }
 
+    if (id::is_valid(fembot_mtl_id))
+    {
+        content::destroy_resource(fembot_mtl_id, content::asset_type::material);
+    }
+
     // remove textures
     for (id::id_type id : texture_ids)
     {
@@ -239,6 +262,11 @@ destroy_render_items()
     if (id::is_valid(ps_id))
     {
         content::remove_shader_group(ps_id);
+    }
+
+    if (id::is_valid(textured_ps_id))
+    {
+        content::remove_shader_group(textured_ps_id);
     }
 }
 

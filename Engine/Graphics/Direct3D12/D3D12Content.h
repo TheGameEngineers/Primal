@@ -36,11 +36,13 @@ struct materials_cache
 {
     ID3D12RootSignature* *const root_signatures;
     material_type::type *const  material_types;
+    u32* *const                 descriptor_indices;
+    u32 *const                  texture_count;
 };
 
 id::id_type add(material_init_info info);
 void remove(id::id_type id);
-void get_materials(const id::id_type *const material_ids, u32 material_count, const materials_cache& cache);
+void get_materials(const id::id_type *const material_ids, u32 material_count, const materials_cache& cache, u32& descriptor_index_count);
 } // namespace material
 
 namespace render_item{

@@ -22,7 +22,7 @@ public:
     constexpr explicit light(light_id id, u64 light_set_key) : _light_set_key{light_set_key}, _id { id } {}
     constexpr light() = default;
     constexpr light_id get_id() const { return _id; }
-    constexpr u64 ligh_set_key() const { return _light_set_key; }
+    constexpr u64 light_set_key() const { return _light_set_key; }
     constexpr bool is_valid() const { return id::is_valid(_id); }
 
     void is_enabled(bool is_enabled) const;

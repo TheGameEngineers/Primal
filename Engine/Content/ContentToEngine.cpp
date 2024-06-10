@@ -11,8 +11,7 @@ class geometry_hierarchy_stream
 {
 public:
     DISABLE_COPY_AND_MOVE(geometry_hierarchy_stream);
-    geometry_hierarchy_stream(u8 *const buffer, u32 lods = u32_invalid_id)
-        : _buffer{ buffer }
+    explicit geometry_hierarchy_stream(u8 *const buffer, u32 lods = u32_invalid_id)
     {
         assert(buffer && lods);
         if (lods != u32_invalid_id)
@@ -38,12 +37,11 @@ public:
         assert(threshold >= 0);
         if (_lod_count == 1) return 0;
 
-        for (u32 i{ _lod_count - 1 }; i >= 0; --i)
+        for (u32 i{ _lod_count - 1 }; i > 0; --i)
         {
             if (_thresholds[i] <= threshold) return i;
         }
 
-        assert(false); // shouldn't ever get here.
         return 0;
     }
 
@@ -53,7 +51,6 @@ public:
     [[nodiscard]] constexpr id::id_type* gpu_ids() const { return _gpu_ids; }
 
 private:
-    u8 *const       _buffer;
     f32*            _thresholds;
     lod_offset*     _lod_offsets;
     id::id_type*    _gpu_ids;
@@ -289,8 +286,8 @@ destroy_material_resource(id::id_type id)
 // struct {
 //     u32 width, height, array_size (or depth), flags, mip_levels, format,
 //     struct {
-//         u32 width, height, row_pitch, slice_pitch,
-//         u8 image[slice_pitch],
+//         u32 row_pitch, slice_pitch,
+//         u8 image[mip_level][slice_pitch * depth_per_mip],
 //     } images[]
 // } texture
 [[nodiscard]] id::id_type

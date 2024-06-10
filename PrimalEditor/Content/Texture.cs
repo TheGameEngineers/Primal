@@ -589,8 +589,8 @@ namespace PrimalEditor.Content
         /// struct {
         ///     u32 width, height, array_size (or depth), flags, mip_levels, format,
         ///     struct {
-        ///         u32 width, height, row_pitch, slice_pitch,
-        ///         u8 image[slice_pitch],
+        ///         u32 row_pitch, slice_pitch,
+        ///         u8 image[mip_level][slice_pitch * depth_per_mip],
         ///     } images[]
         /// } texture
         /// </returns>
@@ -610,12 +610,10 @@ namespace PrimalEditor.Content
             {
                 foreach (var mipLevel in arraySlice)
                 {
-                    foreach(var slice in mipLevel)
+                    writer.Write(mipLevel[0].RowPitch);
+                    writer.Write(mipLevel[0].SlicePitch);
+                    foreach (var slice in mipLevel)
                     {
-                        writer.Write(slice.Width);
-                        writer.Write(slice.Height);
-                        writer.Write(slice.RowPitch);
-                        writer.Write(slice.SlicePitch);
                         writer.Write(slice.RawContent);
                     }
                 }
@@ -682,6 +680,7 @@ namespace PrimalEditor.Content
         {
             Debug.Assert(Slices.First().Any() && Slices.First().Count == MipLevels);
             var data = ContentToolsAPI.SlicesToBinary(Slices);
+            Debug.Assert(data?.Length > 0);
 
             return CompressionHelper.Compress(data);
         }

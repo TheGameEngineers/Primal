@@ -229,6 +229,63 @@ constexpr struct {
     };
 } blend_state;
 
+constexpr struct {
+    const D3D12_STATIC_SAMPLER_DESC static_point
+    {
+        D3D12_FILTER_MIN_MAG_MIP_POINT,                 // Filter
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressU
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressV
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressW
+        0.f,                                            // MipLODBias
+        1,                                              // MaxAnisotropy
+        D3D12_COMPARISON_FUNC_ALWAYS,                   // ComparisonFunc
+        D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         // BorderColor
+        0.f, D3D12_FLOAT32_MAX,                         // MinLOD, MaxLOD
+        0, 0, D3D12_SHADER_VISIBILITY_PIXEL             // ShaderRegister, RegisterSpace, ShaderVisibility
+    };
+
+    const D3D12_STATIC_SAMPLER_DESC static_linear
+    {
+        D3D12_FILTER_MIN_MAG_MIP_LINEAR,                // Filter
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressU
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressV
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressW
+        0.f,                                            // MipLODBias
+        1,                                              // MaxAnisotropy
+        D3D12_COMPARISON_FUNC_ALWAYS,                   // ComparisonFunc
+        D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         // BorderColor
+        0.f, D3D12_FLOAT32_MAX,                         // MinLOD, MaxLOD
+        0, 0, D3D12_SHADER_VISIBILITY_PIXEL             // ShaderRegister, RegisterSpace, ShaderVisibility
+    };
+
+    const D3D12_STATIC_SAMPLER_DESC static_anisotropic
+    {
+        D3D12_FILTER_ANISOTROPIC,                       // Filter
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressU
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressV
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,                // AddressW
+        0.f,                                            // MipLODBias
+        1,                                              // MaxAnisotropy
+        D3D12_COMPARISON_FUNC_ALWAYS,                   // ComparisonFunc
+        D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         // BorderColor
+        0.f, D3D12_FLOAT32_MAX,                         // MinLOD, MaxLOD
+        0, 0, D3D12_SHADER_VISIBILITY_PIXEL             // ShaderRegister, RegisterSpace, ShaderVisibility
+    };
+
+} sampler_state;
+
+constexpr D3D12_STATIC_SAMPLER_DESC
+static_sampler(D3D12_STATIC_SAMPLER_DESC static_sampler, u32 shader_register, u32 register_space,
+               D3D12_SHADER_VISIBILITY visibility)
+{
+    D3D12_STATIC_SAMPLER_DESC sampler{ static_sampler };
+    sampler.ShaderRegister = shader_register;
+    sampler.RegisterSpace = register_space;
+    sampler.ShaderVisibility = visibility;
+
+    return sampler;
+}
+
 constexpr u64
 align_size_for_constant_buffer(u64 size)
 {

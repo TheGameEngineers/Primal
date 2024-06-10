@@ -62,7 +62,8 @@ struct {
 
 id::id_type create_root_signature(material_type::type type, shader_flags::flags flags);
 
-class d3d12_material_stream {
+class d3d12_material_stream
+{
 public:
     DISABLE_COPY_AND_MOVE(d3d12_material_stream);
     explicit d3d12_material_stream(u8 *const material_buffer)
@@ -132,7 +133,7 @@ public:
     [[nodiscard]] constexpr shader_flags::flags shader_flags() const { return _shader_flags; }
     [[nodiscard]] constexpr id::id_type root_signature_id() const { return _root_signature_id; }
     [[nodiscard]] constexpr id::id_type* texture_ids() const { return _texture_ids; }
-    [[nodiscard]] constexpr u32* dectriptor_indices() const { return _descriptor_indices; }
+    [[nodiscard]] constexpr u32* descriptor_indices() const { return _descriptor_indices; }
     [[nodiscard]] constexpr id::id_type* shader_ids() const { return _shader_ids; }
 
 private:
@@ -269,8 +270,18 @@ create_root_signature(material_type::type type, shader_flags::flags flags)
         parameters[params::cullable_lights].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 4);
         parameters[params::light_grid].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 5);
         parameters[params::light_index_list].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 6);
+        const D3D12_STATIC_SAMPLER_DESC samplers[]
+        {
+            d3dx::static_sampler(d3dx::sampler_state.static_point, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+            d3dx::static_sampler(d3dx::sampler_state.static_linear, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+            d3dx::static_sampler(d3dx::sampler_state.static_anisotropic, 2, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+        };
 
-        root_signature = d3dx::d3d12_root_signature_desc{ &parameters[0], _countof(parameters), get_root_signature_flags(flags) }.create();
+        root_signature = d3dx::d3d12_root_signature_desc
+        { 
+            &parameters[0], _countof(parameters), get_root_signature_flags(flags),
+            &samplers[0], _countof(samplers)
+        }.create();
     }
     break;
     }
@@ -388,7 +399,14 @@ create_pso(id::id_type material_id, D3D12_PRIMITIVE_TOPOLOGY primitive_topology,
 
     return id_pair;
 }
-
+// NOTE: expects data to contain
+// struct {
+//     u32 width, height, array_size (or depth), flags, mip_levels, format,
+//     struct {
+//         u32 row_pitch, slice_pitch,
+//         u8 image[mip_level][slice_pitch * depth_per_mip],
+//     } images[]
+// } texture
 d3d12_texture
 create_resource_from_texture_data(const u8 *const data)
 {
@@ -430,7 +448,6 @@ create_resource_from_texture_data(const u8 *const data)
     {
         for (u32 j{ 0 }; j < mip_levels; ++j)
         {
-            blob.skip(2 * sizeof(u32)); // skip width and height
             const u32 row_pitch{ blob.read<u32>() };
             const u32 slice_pitch{ blob.read<u32>() };
 
@@ -441,13 +458,8 @@ create_resource_from_texture_data(const u8 *const data)
                                           slice_pitch
                                       });
 
-            blob.skip(slice_pitch);
-
-            // skip the rest of the slices fo 3d textures with depth > 1
-            for (u32 k{ 1 }; k < depth_per_mip_level[j]; ++k)
-            {
-                blob.skip(4 * sizeof(u32) + slice_pitch);
-            }
+            // skip the rest of slices.
+            blob.skip(slice_pitch * depth_per_mip_level[j]);
         }
     }
 
@@ -468,10 +480,12 @@ create_resource_from_texture_data(const u8 *const data)
     const u32 subresource_count{ array_size * mip_levels };
     assert(subresource_count);
 
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const layouts
-    { (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * subresource_count) };
-    u32 *const num_rows{ (u32 *const)_alloca(sizeof(u32) * subresource_count) };
-    u64 *const row_sizes{ (u64 *const)_alloca(sizeof(u64) * subresource_count) };
+    const u32 footprints_data_size{ (sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(u32) + sizeof(u64)) * subresource_count };
+    std::unique_ptr<u8[]> footprints_data{ std::make_unique<u8[]>(footprints_data_size) };
+
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const layouts{ (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const)footprints_data.get() };
+    u32 *const num_rows{ (u32 *const)&layouts[subresource_count] };
+    u64 *const row_sizes{ (u64 *const)&num_rows[subresource_count] };
     u64 required_size{ 0 };
     id3d12_device* device{ core::device() };
 
@@ -697,11 +711,12 @@ namespace texture {
 // struct {
 //     u32 width, height, array_size (or depth), flags, mip_levels, format,
 //     struct {
-//         u32 width, height, row_pitch, slice_pitch,
-//         u8 image[slice_pitch],
+//         u32 row_pitch, slice_pitch,
+//         u8 image[mip_level][slice_pitch * depth_per_mip],
 //     } images[]
 // } texture
-id::id_type add(const u8* const data)
+id::id_type
+add(const u8* const data)
 {
     assert(data);
     d3d12_texture texture{ create_resource_from_texture_data(data) };
@@ -712,7 +727,8 @@ id::id_type add(const u8* const data)
     return id;
 }
 
-void remove(id::id_type id)
+void
+remove(id::id_type id)
 {
     std::lock_guard lock{ texture_mutex };
     textures.remove(id);
@@ -761,18 +777,26 @@ remove(id::id_type id)
     materials.remove(id);
 }
 
-void get_materials(const id::id_type *const material_ids, u32 material_count, const materials_cache& cache)
+void
+get_materials(const id::id_type *const material_ids, u32 material_count, const materials_cache& cache, u32& descriptor_index_count)
 {
     assert(material_ids && material_count);
     assert(cache.root_signatures && cache.material_types);
     std::lock_guard lock{ material_mutex };
+
+    u32 total_index_count{ 0 };
 
     for (u32 i{ 0 }; i < material_count; ++i)
     {
         const d3d12_material_stream stream{ materials[material_ids[i]].get() };
         cache.root_signatures[i] = root_signatures[stream.root_signature_id()];
         cache.material_types[i] = stream.material_type();
+        cache.descriptor_indices[i] = stream.descriptor_indices();
+        cache.texture_count[i] = stream.texture_count();
+        total_index_count += stream.texture_count();
     }
+
+    descriptor_index_count = total_index_count;
 }
 
 } // namespace material
@@ -810,11 +834,11 @@ add(id::id_type entity_id, id::id_type geometry_content_id,
     items[0] = geometry_content_id;
     id::id_type *const item_ids{ &items[1] };
 
-    std::lock_guard lock{ render_item_mutex };
+    d3d12_render_item *const d3d12_items{ (d3d12_render_item *const)alloca(material_count * sizeof(d3d12_render_item)) };
 
     for (u32 i{ 0 }; i < material_count; ++i)
     {
-        d3d12_render_item item{};
+        d3d12_render_item& item{ d3d12_items[i] };
         item.entity_id = entity_id;
         item.submesh_gpu_id = gpu_ids[i];
         item.material_id = material_ids[i];
@@ -823,7 +847,13 @@ add(id::id_type entity_id, id::id_type geometry_content_id,
         item.depth_pso_id = id_pair.depth_pso_id;
 
         assert(id::is_valid(item.submesh_gpu_id) && id::is_valid(item.material_id));
-        item_ids[i] = render_items.add(item);
+    }
+
+    std::lock_guard lock{ render_item_mutex };
+
+    for (u32 i{ 0 }; i < material_count; ++i)
+    {
+        item_ids[i] = render_items.add(d3d12_items[i]);
     }
 
     // mark the end of ids list.
@@ -887,7 +917,7 @@ get_d3d12_render_item_ids(const frame_info& info, utl::vector<id::id_type>& d3d1
         assert(item_index <= d3d12_render_item_count);
     }
 
-    assert(item_index <= d3d12_render_item_count);
+    assert(item_index == d3d12_render_item_count);
 }
 
 void
