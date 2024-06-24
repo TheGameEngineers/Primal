@@ -5,6 +5,7 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="PrimitiveMesh.h" />
     <ClInclude Include="FbxImporter.h" />
+    <ClInclude Include="MikkTSpace\mikktspace.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PrimitiveMesh.cpp" />
@@ -13,6 +14,7 @@
     <ClCompile Include="TextureImporter.cpp" />
     <ClCompile Include="NormalMapIdentification.cpp" />
     <ClCompile Include="ContentTools.cpp" />
+    <ClCompile Include="MikkTSpace\mikktspace.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

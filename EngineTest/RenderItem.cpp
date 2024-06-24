@@ -206,7 +206,7 @@ create_render_items()
     lab_entity_id = create_one_game_entity({}, {}, nullptr).get_id();
     fan_entity_id = create_one_game_entity({ -10.47f, 5.93f, -6.7f }, {}, "fan_script").get_id();
     int_entity_id = create_one_game_entity({ 0.f, 1.3f, -6.6f }, {}, "wibbly_wobbly_script").get_id();
-    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, "rotator_script").get_id();
+    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, nullptr).get_id();
 
 
     // NOTE: we need shaders to be ready before creating materials

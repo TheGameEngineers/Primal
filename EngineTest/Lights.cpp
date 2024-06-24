@@ -34,7 +34,7 @@ void create_light(math::v3 position, math::v3 rotation, graphics::light::type ty
     info.entity_id = entity_id;
     info.type = type;
     info.light_set_key = light_set_key;
-    info.intensity = 10.f;
+    info.intensity = 1.f;
 
     info.color = { random(0.2f), random(0.2f), random(0.2f) };
 

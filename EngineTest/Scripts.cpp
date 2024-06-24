@@ -18,7 +18,7 @@ public:
     void begin_play() override {}
     void update(f32 dt) override
     {
-        _angle += 0.25f * dt * math::two_pi;
+        _angle += 0.1f * dt * math::two_pi;
         if (_angle > math::two_pi) _angle -= math::two_pi;
         math::v3a rot{ 0.f, _angle, 0.f };
         DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };

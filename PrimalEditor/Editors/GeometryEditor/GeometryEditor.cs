@@ -239,7 +239,7 @@ namespace PrimalEditor.Editors
                             // Read normals
                             var nrmX = reader.ReadUInt16() * intervals - 1.0f;
                             var nrmY = reader.ReadUInt16() * intervals - 1.0f;
-                            var nrmZ = Math.Sqrt(Math.Clamp(1f - (nrmX * nrmX + nrmY * nrmY), 0f, 1f)) * ((signs & 0x2) - 1f);
+                            var nrmZ = Math.Sqrt(Math.Clamp(1f - (nrmX * nrmX + nrmY * nrmY), 0f, 1f)) * (((signs & 0x4) >> 1) - 1f);
                             var normal = new Vector3D(nrmX, nrmY, nrmZ);
                             normal.Normalize();
                             vertexData.Normals.Add(normal);

@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="FbxImporter.h" />
     <ClInclude Include="Geometry.h" />
+    <ClInclude Include="MikkTSpace\mikktspace.h" />
     <ClInclude Include="PrimitiveMesh.h" />
     <ClInclude Include="ToolsCommon.h" />
   </ItemGroup>
@@ -20,6 +21,10 @@
     <ClCompile Include="ContentTools.cpp" />
     <ClCompile Include="FbxImporter.cpp" />
     <ClCompile Include="Geometry.cpp" />
+    <ClCompile Include="MikkTSpace\mikktspace.c">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">/wd4456 /wd4201 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">/wd4456 /wd4201 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="NormalMapIdentification.cpp" />
     <ClCompile Include="PrimitiveMesh.cpp" />
     <ClCompile Include="TextureImporter.cpp" />
