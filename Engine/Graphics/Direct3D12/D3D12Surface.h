@@ -7,7 +7,8 @@ namespace primal::graphics::d3d12 {
 class d3d12_surface
 {
 public:
-    constexpr static DXGI_FORMAT default_back_buffer_format{ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB };
+    // NOTE: https://learn.microsoft.com/en-us/windows/win32/direct3darticles/high-dynamic-range#option-1-use-fp16-pixel-format-and-scrgb-color-space
+    constexpr static DXGI_FORMAT   default_back_buffer_format{ DXGI_FORMAT_R16G16B16A16_FLOAT };
     constexpr static u32 buffer_count{ 3 };
 
     explicit d3d12_surface(platform::window window)
@@ -24,8 +25,7 @@ public:
     {
         for (u32 i{ 0 }; i < buffer_count; ++i)
         {
-            _render_target_data[i].resource = o._render_target_data[i].resource;
-            _render_target_data[i].rtv = o._render_target_data[i].rtv;
+            _render_target_data[i] = o._render_target_data[i];
         }
 
         o.reset();

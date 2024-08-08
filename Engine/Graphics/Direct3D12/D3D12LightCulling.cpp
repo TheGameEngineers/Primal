@@ -76,7 +76,8 @@ create_root_signatures()
     return light_culling_root_signature != nullptr;
 }
 
-bool create_psos()
+bool
+create_psos()
 {
     {
         assert(!grid_frustum_pso);
@@ -310,19 +311,22 @@ cull_lights(id3d12_graphics_command_list *const cmd_list,
 }
 
 // TODO: temporary for visualizing light culling. Remove later.
-D3D12_GPU_VIRTUAL_ADDRESS frustums(id::id_type light_culling_id, u32 frame_index)
+D3D12_GPU_VIRTUAL_ADDRESS
+frustums(id::id_type light_culling_id, u32 frame_index)
 {
     assert(frame_index < frame_buffer_count && id::is_valid(light_culling_id));
     return light_cullers[light_culling_id].cullers[frame_index].frustums.gpu_address();
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS light_grid_opaque(id::id_type light_culling_id, u32 frame_index)
+D3D12_GPU_VIRTUAL_ADDRESS
+light_grid_opaque(id::id_type light_culling_id, u32 frame_index)
 {
     assert(frame_index < frame_buffer_count && id::is_valid(light_culling_id));
     return light_cullers[light_culling_id].cullers[frame_index].light_grid_and_index_list.gpu_address();
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS light_index_list_opaque(id::id_type light_culling_id, u32 frame_index)
+D3D12_GPU_VIRTUAL_ADDRESS
+light_index_list_opaque(id::id_type light_culling_id, u32 frame_index)
 {
     assert(frame_index < frame_buffer_count && id::is_valid(light_culling_id));
     return light_cullers[light_culling_id].cullers[frame_index].light_index_list_opaque_buffer;

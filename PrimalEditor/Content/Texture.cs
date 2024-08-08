@@ -164,7 +164,6 @@ namespace PrimalEditor.Content
         DXGI_FORMAT_BC7_UNORM = 98,
     }
 
-    [Flags]
     enum TextureDimension : int
     {
         [Description("1D Texture")]
@@ -178,6 +177,7 @@ namespace PrimalEditor.Content
     }
 
     // NOTE: should be the same as primal::content::texture_flags::flags enumeration in ContentToEngine.h
+    [Flags]
     enum TextureFlags : int
     {
         IsHdr = 0x01,

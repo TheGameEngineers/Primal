@@ -396,7 +396,7 @@ process_input_message(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         set(input_source::mouse, code, { pos.x, pos.y, 0.f });
     }
     break;
-    case WM_MOUSEHWHEEL:
+    case WM_MOUSEWHEEL:
     {
         set(input_source::mouse, input_code::mouse_wheel, { (f32)(GET_WHEEL_DELTA_WPARAM(wparam)), 0.f, 0.f });
     }

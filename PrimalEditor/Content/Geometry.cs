@@ -147,7 +147,7 @@ namespace PrimalEditor.Content
             get => _lodThreshold;
             set
             {
-                if (_lodThreshold != value)
+                if (!_lodThreshold.IsTheSameAs(value))
                 {
                     _lodThreshold = value;
                     OnPropertyChanged(nameof(LodThreshold));
@@ -280,7 +280,7 @@ namespace PrimalEditor.Content
         public GeometryImportSettings()
         {
             CalculateNormals = false;
-            CalculateTangents = false;
+            CalculateTangents = true;
             SmoothingAngle = 178f;
             ReverseHandedness = false;
             ImportEmbeddedTextures = true;

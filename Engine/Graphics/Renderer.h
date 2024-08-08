@@ -16,7 +16,7 @@ struct frame_info
     f32             last_frame_time{ 16.7f };
     f32             average_frame_time{ 16.7f };
     u32             render_item_count{ 0 };
-    camera_id       camer_id{ id::invalid_id };
+    camera_id       camera_id{ id::invalid_id };
 };
 
 DEFINE_TYPED_ID(surface_id);
@@ -199,12 +199,23 @@ struct material_type {
     };
 };
 
+struct material_surface
+{
+    math::v4    base_color{ 1.f, 1.f, 1.f, 1.f };
+    math::v3    emissive{ 0.f, 0.f, 0.f };
+    f32         emissive_intensity{ 1.f };
+    f32         ambient_occlusion{ 1.f };
+    f32         metallic{ 0.f };
+    f32         roughness{ 1.f };
+};
+
 struct material_init_info
 {
+    id::id_type*        texture_ids;
+    material_surface    surface;
     material_type::type type;
     u32                 texture_count; // NOTE: textures are optional, so, texture count may be 0 and texture_ids may be nullptr.
     id::id_type         shader_ids[shader_type::count]{ id::invalid_id, id::invalid_id, id::invalid_id, id::invalid_id, id::invalid_id, id::invalid_id, id::invalid_id, id::invalid_id };
-    id::id_type*        texture_ids;
 };
 
 struct primitive_topology {

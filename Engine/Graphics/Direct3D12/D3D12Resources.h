@@ -46,7 +46,7 @@ public:
     [[nodiscard]] constexpr bool is_shader_visible() const { return _gpu_start.ptr != 0; }
 
 private:
-    ID3D12DescriptorHeap*               _heap;
+    ID3D12DescriptorHeap*               _heap{ nullptr };
     D3D12_CPU_DESCRIPTOR_HANDLE         _cpu_start{};
     D3D12_GPU_DESCRIPTOR_HANDLE         _gpu_start{};
     std::unique_ptr<u32[]>              _free_handles{};
@@ -63,7 +63,7 @@ struct d3d12_buffer_init_info
     ID3D12Heap1*                        heap{ nullptr };
     const void*                         data{ nullptr };
     D3D12_RESOURCE_ALLOCATION_INFO1     allocation_info{};
-    D3D12_RESOURCE_STATES               initial_state{};
+    D3D12_RESOURCE_STATES               initial_state{ D3D12_RESOURCE_STATE_COMMON };
     D3D12_RESOURCE_FLAGS                flags{ D3D12_RESOURCE_FLAG_NONE };
     u32                                 size{ 0 };
     u32                                 alignment{ 0 };
@@ -73,7 +73,7 @@ class d3d12_buffer
 {
 public:
     d3d12_buffer() = default;
-    explicit d3d12_buffer(d3d12_buffer_init_info info, bool is_cpu_accessible);
+    explicit d3d12_buffer(const d3d12_buffer_init_info& info, bool is_cpu_accessible);
     DISABLE_COPY(d3d12_buffer);
     constexpr d3d12_buffer(d3d12_buffer&& o)
         : _buffer{ o._buffer }, _gpu_address{ o._gpu_address }, _size{ o._size }
@@ -125,7 +125,7 @@ class constant_buffer
 {
 public:
     constant_buffer() = default;
-    explicit constant_buffer(d3d12_buffer_init_info info);
+    explicit constant_buffer(const d3d12_buffer_init_info& info);
     DISABLE_COPY_AND_MOVE(constant_buffer);
     ~constant_buffer() { release(); }
 
@@ -140,7 +140,7 @@ public:
     [[nodiscard]] u8 *const allocate(u32 size);
 
     template<typename T>
-    [[nodiscard]] T *const allocate()
+    [[nodiscard]] constexpr T *const allocate()
     {
         return (T *const)allocate(sizeof(T));
     }

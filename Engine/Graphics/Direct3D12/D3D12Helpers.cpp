@@ -62,7 +62,7 @@ create_root_signature(const D3D12_ROOT_SIGNATURE_DESC1& desc)
 ID3D12PipelineState*
 create_pipeline_state(D3D12_PIPELINE_STATE_STREAM_DESC desc)
 {
-    assert(desc.pPipelineStateSubobjectStream && desc.SizeInBytes);
+    assert(desc.pPipelineStateSubobjectStream && desc.SizeInBytes >= sizeof(void*));
     ID3D12PipelineState* pso{ nullptr };
     DXCall(core::device()->CreatePipelineState(&desc, IID_PPV_ARGS(&pso)));
     assert(pso);
@@ -118,7 +118,7 @@ create_buffer(const void* data, u32 buffer_size, bool is_cpu_accessible /* = fal
     {
         DXCall(core::device()->CreateCommittedResource(
             is_cpu_accessible ? &heap_properties.upload_heap : &heap_properties.default_heap,
-            D3D12_HEAP_FLAG_NONE, &desc, resource_state,
+            D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc, resource_state,
             nullptr, IID_PPV_ARGS(&resource)));
     }
 

@@ -28,7 +28,7 @@ ID3D12RootSignature*        fx_root_sig{ nullptr };
 ID3D12PipelineState*        fx_pso{ nullptr };
 
 bool
-creat_fx_pos_and_root_signature()
+create_fx_pso_and_root_signature()
 {
     assert(!fx_root_sig && !fx_pso);
     // Create FX root signature
@@ -72,7 +72,7 @@ creat_fx_pos_and_root_signature()
 bool
 initialize()
 {
-    return creat_fx_pos_and_root_signature();
+    return create_fx_pso_and_root_signature();
 }
 
 void

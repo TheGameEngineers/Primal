@@ -9,7 +9,7 @@
     <ClInclude Include="Components\Transform.h" />
     <ClInclude Include="Utilities\Utilities.h" />
     <ClInclude Include="EngineAPI\GameEntity.h" />
-    <ClInclude Include="EngineAPI\TransfromComponent.h" />
+    <ClInclude Include="EngineAPI\TransformComponent.h" />
     <ClInclude Include="Utilities\MathTypes.h" />
     <ClInclude Include="EngineAPI\ScriptComponent.h" />
     <ClInclude Include="Components\Script.h" />
@@ -45,6 +45,8 @@
     <ClInclude Include="Input\Input.h" />
     <ClInclude Include="Input\InputWin32.h" />
     <ClInclude Include="Graphics\Direct3D12\D3D12LightCulling.h" />
+    <ClInclude Include="Components\Geometry.h" />
+    <ClInclude Include="EngineAPI\GeometryComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -72,6 +74,7 @@
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Input\InputWin32.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12LightCulling.cpp" />
+    <ClCompile Include="Components\Geometry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

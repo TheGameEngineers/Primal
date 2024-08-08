@@ -1,17 +1,17 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #pragma once
-
 #include "../Components/ComponentsCommon.h"
-#include "TransfromComponent.h"
+#include "TransformComponent.h"
 #include "ScriptComponent.h"
+#include "GeometryComponent.h"
 
-namespace primal {
-namespace game_entity {
+namespace primal::game_entity {
 
 DEFINE_TYPED_ID(entity_id);
 
-class entity {
+class entity
+{
 public:
     constexpr explicit entity(entity_id id) : _id{ id } {}
     constexpr entity() : _id{ id::invalid_id } {}
@@ -20,24 +20,26 @@ public:
 
     [[nodiscard]] transform::component transform() const;
     [[nodiscard]] script::component script() const;
+    [[nodiscard]] geometry::component geometry() const;
 
     [[nodiscard]] math::v4 rotation() const { return transform().rotation(); }
     [[nodiscard]] math::v3 orientation() const { return transform().orientation(); }
     [[nodiscard]] math::v3 position() const { return transform().position(); }
     [[nodiscard]] math::v3 scale() const { return transform().scale(); }
+
 private:
     entity_id _id;
 };
 } // namespace game_entity
 
-namespace script
+namespace primal::script
 {
 class entity_script : public game_entity::entity
 {
 public:
     virtual ~entity_script() = default;
     virtual void begin_play() {}
-    virtual void update(float) {}
+    virtual void update(f32) {}
 protected:
     constexpr explicit entity_script(game_entity::entity entity)
         : game_entity::entity{ entity.get_id() } {}
@@ -96,4 +98,3 @@ u8 add_script_name(const char* name);
 #endif // USE_WITH_EDITOR
 } // namespace detail
 } // namespace script
-}

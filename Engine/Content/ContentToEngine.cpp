@@ -25,14 +25,14 @@ public:
         _gpu_ids = (id::id_type*)(&_lod_offsets[_lod_count]);
     }
 
-    void gpu_ids(u32 lod, id::id_type*& ids, u32& id_count)
+    constexpr void gpu_ids(u32 lod, id::id_type*& ids, u32& id_count)
     {
         assert(lod < _lod_count);
         ids = &_gpu_ids[_lod_offsets[lod].offset];
         id_count = _lod_offsets[lod].count;
     }
 
-    u32 lod_from_threshold(f32 threshold)
+    [[nodiscard]] constexpr u32 lod_from_threshold(f32 threshold)
     {
         assert(threshold >= 0);
         if (_lod_count == 1) return 0;

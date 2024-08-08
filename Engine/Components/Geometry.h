@@ -3,15 +3,17 @@
 #pragma once
 #include "ComponentsCommon.h"
 
-namespace primal::script {
+namespace primal::geometry {
 
 struct init_info
 {
-    detail::script_creator script_creator;
+    id::id_type     geometry_content_id;
+    u32             material_count;
+    id::id_type*    material_ids;
 };
 
 component create(init_info info, game_entity::entity entity);
 void remove(component c);
-void update(f32 dt);
+void get_render_item_ids(id::id_type *const item_ids, u32 count);
 
 }

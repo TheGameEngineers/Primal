@@ -3,8 +3,7 @@
 #include "Transform.h"
 #include "Entity.h"
 
-namespace primal::transform
-{
+namespace primal::transform {
 namespace {
 
 utl::vector<math::m4x4> to_world;
@@ -47,7 +46,7 @@ calculate_orientation(math::v4 rotation)
     XMVECTOR rotation_quat{ XMLoadFloat4(&rotation) };
     XMVECTOR front{ XMVectorSet(0.f, 0.f, 1.f, 0.f) };
     math::v3 orientation;
-    XMStoreFloat3(&orientation, XMVector3Rotate(front, rotation_quat));
+    XMStoreFloat3(&orientation, XMVector3Normalize(XMVector3Rotate(front, rotation_quat)));
     return orientation;
 }
 

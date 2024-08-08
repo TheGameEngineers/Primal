@@ -9,6 +9,7 @@ namespace primal {
 
 INIT_INFO(transform);
 INIT_INFO(script);
+INIT_INFO(geometry);
 
 #undef INIT_INFO
 
@@ -17,6 +18,7 @@ struct entity_info
 {
     transform::init_info* transform{ nullptr };
     script::init_info* script{ nullptr };
+    geometry::init_info* geometry{ nullptr };
 };
 
 entity create(entity_info info);

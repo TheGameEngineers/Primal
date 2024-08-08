@@ -290,7 +290,7 @@ process_uvs(mesh& m)
 void
 process_tangents(mesh& m)
 {
-    if (m.tangents.size() != m.positions.size())
+    if (m.tangents.size() != m.raw_indices.size())
     {
         return;
     }
@@ -339,7 +339,7 @@ process_tangents(mesh& m)
 }
 
 u64
-get_vertex_element_size(elements::elements_type::type elements_type)
+get_vertex_elements_size(elements::elements_type::type elements_type)
 {
     using namespace elements;
     switch (elements_type)
@@ -417,7 +417,7 @@ pack_vertices(mesh& m)
         }
     }
 
-    m.element_buffer.resize(get_vertex_element_size(m.elements_type) * num_vertices);
+    m.element_buffer.resize(get_vertex_elements_size(m.elements_type) * num_vertices);
     using namespace elements;
 
     switch (m.elements_type)
@@ -603,7 +603,7 @@ get_mesh_size(const mesh& m)
     const u64 position_buffer_size{ m.position_buffer.size() };
     assert(position_buffer_size == sizeof(math::v3) * num_vertices);
     const u64 element_buffer_size{ m.element_buffer.size() };
-    assert(element_buffer_size == get_vertex_element_size(m.elements_type) * num_vertices);
+    assert(element_buffer_size == get_vertex_elements_size(m.elements_type) * num_vertices);
     const u64 index_size{ (num_vertices < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
     const u64 index_buffer_size{ index_size * m.indices.size() };
     constexpr u64 su32{ sizeof(u32) };
@@ -663,7 +663,7 @@ pack_mesh_data(const mesh& m, utl::blob_stream_writer& blob)
     // lod id
     blob.write(m.lod_id);
     // vertex element size
-    const u32 elements_size{ (u32)get_vertex_element_size(m.elements_type) };
+    const u32 elements_size{ (u32)get_vertex_elements_size(m.elements_type) };
     blob.write(elements_size);
     // elements type enumeration
     blob.write((u32)m.elements_type);

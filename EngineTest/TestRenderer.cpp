@@ -1,6 +1,5 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
-
 #include "Platform/PlatformTypes.h"
 #include "Platform/Platform.h"
 #include "Graphics/Renderer.h"
@@ -9,6 +8,7 @@
 #include "Components/Entity.h"
 #include "Components/Transform.h"
 #include "Components/Script.h"
+#include "Components/Geometry.h"
 #include "Input/Input.h"
 #include "TestRenderer.h"
 #include "ShaderCompilation.h"
@@ -63,20 +63,19 @@ struct camera_surface {
     graphics::render_surface surface{};
 };
 
-id::id_type item_id{ id::invalid_id };
-id::id_type model_id{ id::invalid_id };
-
 camera_surface _surfaces[4]{};
 time_it timer{};
 
 bool resized{ false };
 bool is_restarting{ false };
+
+utl::vector<id::id_type> render_item_id_cache;
+
 void destroy_camera_surface(camera_surface& surface);
 bool test_initialize();
 void test_shutdown();
 void create_render_items();
 void destroy_render_items();
-void get_render_items(id::id_type* items, u32 count);
 void generate_lights();
 void remove_lights();
 void test_lights(f32 dt);
@@ -163,7 +162,7 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 game_entity::entity
-create_one_game_entity(math::v3 position, math::v3 rotation, const char* script_name)
+create_one_game_entity(math::v3 position, math::v3 rotation, geometry::init_info* geometry_info, const char* script_name)
 {
     transform::init_info transform_info{};
     DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
@@ -182,6 +181,7 @@ create_one_game_entity(math::v3 position, math::v3 rotation, const char* script_
     game_entity::entity_info entity_info{};
     entity_info.transform = &transform_info;
     entity_info.script = &script_info;
+    entity_info.geometry = geometry_info;
     game_entity::entity ntt{ game_entity::create(entity_info) };
     assert(ntt.is_valid());
     return ntt;
@@ -218,8 +218,8 @@ create_camera_surface(camera_surface& surface, platform::window_init_info info)
 {
     surface.surface.window = platform::create_window(&info);
     surface.surface.surface = graphics::create_surface(surface.surface.window);
-    //surface.entity = create_one_game_entity({ 13.76f, 3.f, -1.1f }, { -0.137f, -1.70f, 0.f }, "camera_script");
-    surface.entity = create_one_game_entity({ -5.49f, 1.73f, 9.26f }, { 0.19f, 5.61f, 0.f }, "camera_script");
+    //surface.entity = create_one_game_entity({ 13.76f, 3.f, -1.1f }, { -0.137f, -1.70f, 0.f }, nullptr, "camera_script");
+    surface.entity = create_one_game_entity({ -5.49f, 1.73f, 9.26f }, { 0.19f, 5.61f, 0.f }, nullptr, "camera_script");
     surface.camera = graphics::create_camera(graphics::perspective_camera_init_info{ surface.entity.get_id() });
     surface.camera.aspect_ratio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -260,19 +260,15 @@ test_initialize()
     for (u32 i{ 0 }; i < _countof(_surfaces); ++i)
         create_camera_surface(_surfaces[i], info[i]);
 
-    // load test model
-    std::unique_ptr<u8[]> model;
-    u64 size{ 0 };
-    if (!read_file("..\\..\\enginetest\\model.model", model, size)) return false;
-
-    model_id = content::create_resource(model.get(), content::asset_type::mesh);
-    if (!id::is_valid(model_id)) return false;
 
     init_test_workers(buffer_test_worker);
 
     create_render_items();
 
     generate_lights();
+
+    render_item_id_cache.resize(4 + 12);
+    geometry::get_render_item_ids(render_item_id_cache.data(), (u32)render_item_id_cache.size());
 
     input::input_source source{};
     source.binding = std::hash<std::string>()("move");
@@ -317,11 +313,6 @@ test_shutdown()
     destroy_render_items();
     joint_test_workers();
 
-    if (id::is_valid(model_id))
-    {
-        content::destroy_resource(model_id, content::asset_type::mesh);
-    }
-
     for (u32 i{ 0 }; i < _countof(_surfaces); ++i)
         destroy_camera_surface(_surfaces[i]);
 
@@ -351,18 +342,15 @@ engine_test::run()
     {
         if (_surfaces[i].surface.surface.is_valid())
         {
-            f32 thresholds[4]{};
-
-            id::id_type render_items[4]{};
-            get_render_items(&render_items[0], 4);
+            f32 thresholds[4 + 12]{};
 
             graphics::frame_info info{};
-            info.render_item_ids = &render_items[0];
-            info.render_item_count = 4;
+            info.render_item_ids = render_item_id_cache.data();
+            info.render_item_count = 4 + 12;
             info.thresholds = &thresholds[0];
             info.light_set_key = light_set_key;
             info.average_frame_time = dt;
-            info.camer_id = _surfaces[i].camera.get_id();
+            info.camera_id = _surfaces[i].camera.get_id();
 
             assert(_countof(thresholds) >= info.render_item_count);
             _surfaces[i].surface.surface.render(info);

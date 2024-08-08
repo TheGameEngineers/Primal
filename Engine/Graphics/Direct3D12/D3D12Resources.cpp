@@ -21,7 +21,7 @@ descriptor_heap::initialize(u32 capacity, bool is_shader_visible)
 
     release();
 
-    auto *const device{ core::device() };
+    id3d12_device *const device{ core::device() };
     assert(device);
 
     D3D12_DESCRIPTOR_HEAP_DESC desc{};
@@ -36,7 +36,7 @@ descriptor_heap::initialize(u32 capacity, bool is_shader_visible)
     DXCall(hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap)));
     if (FAILED(hr)) return false;
 
-    _free_handles = std::move(std::make_unique<u32[]>(capacity));
+    _free_handles = std::make_unique<u32[]>(capacity);
     _capacity = capacity;
     _size = 0;
 
@@ -118,7 +118,7 @@ descriptor_heap::free(descriptor_handle& handle)
     handle = {};
 }
 //// D3D12 BUFFER /////////////////////////////////////////////////////////////////////////////////
-d3d12_buffer::d3d12_buffer(d3d12_buffer_init_info info, bool is_cpu_accessible)
+d3d12_buffer::d3d12_buffer(const d3d12_buffer_init_info& info, bool is_cpu_accessible)
 {
     assert(!_buffer && info.size && info.alignment);
     _size = (u32)math::align_size_up(info.size, info.alignment);
@@ -136,7 +136,7 @@ d3d12_buffer::release()
     _size = 0;
 }
 //// CONSTANT BUFFER //////////////////////////////////////////////////////////////////////////////
-constant_buffer::constant_buffer(d3d12_buffer_init_info info)
+constant_buffer::constant_buffer(const d3d12_buffer_init_info& info)
     : _buffer{ info, true }
 {
     NAME_D3D12_OBJECT_INDEXED(buffer(), size(), L"Constant Buffer - size");
@@ -168,7 +168,7 @@ uav_clearable_buffer::uav_clearable_buffer(const d3d12_buffer_init_info& info)
     assert(info.size && info.alignment);
     NAME_D3D12_OBJECT_INDEXED(buffer(), info.size, L"UAV Clearable Buffer - size");
 
-    assert(info.flags && D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    assert(info.flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     _uav = core::uav_heap().allocate();
     _uav_shader_visible = core::srv_heap().allocate();
     D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};

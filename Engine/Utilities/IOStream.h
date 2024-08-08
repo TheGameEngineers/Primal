@@ -19,7 +19,7 @@ public:
 
     // This template function is intended to read primitive types (e.g. int, float, bool)
     template<typename T>
-    [[nodiscard]] T read()
+    [[nodiscard]] constexpr T read()
     {
         static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitve type.");
         T value{ *((T*)_position) };
@@ -34,7 +34,7 @@ public:
         _position += length;
     }
 
-    void skip(size_t offset)
+    constexpr void skip(size_t offset)
     {
         _position += offset;
     }
@@ -61,7 +61,7 @@ public:
 
     // This template function is intended to write primitive types (e.g. int, float, bool)
     template<typename T>
-    void write(T value)
+    constexpr void write(T value)
     {
         static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitve type.");
         assert(&_position[sizeof(T)] <= &_buffer[_buffer_size]);
@@ -85,7 +85,7 @@ public:
         _position += length;
     }
 
-    void skip(size_t offset)
+    constexpr void skip(size_t offset)
     {
         assert(&_position[offset] <= &_buffer[_buffer_size]);
         _position += offset;

@@ -25,8 +25,8 @@ void get_views(const id::id_type *const gpu_ids, u32 id_count, const views_cache
 } // namespace submesh
 
 namespace texture {
-id::id_type add(const u8* const);
-void remove(id::id_type);
+id::id_type add(const u8* const data);
+void remove(id::id_type id);
 void get_descriptor_indices(const id::id_type *const texture_ids, u32 id_count, u32 *const indices);
 } // namespace texture
 
@@ -38,6 +38,7 @@ struct materials_cache
     material_type::type *const  material_types;
     u32* *const                 descriptor_indices;
     u32 *const                  texture_count;
+    material_surface* *const    material_surfaces;
 };
 
 id::id_type add(material_init_info info);

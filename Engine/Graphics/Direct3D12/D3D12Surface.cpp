@@ -112,8 +112,8 @@ d3d12_surface::finalize()
     // set viewport and scissor rect
     _viewport.TopLeftX = 0.f;
     _viewport.TopLeftY = 0.f;
-    _viewport.Width = (float)width;
-    _viewport.Height = (float)height;
+    _viewport.Width = (f32)width;
+    _viewport.Height = (f32)height;
     _viewport.MinDepth = 0.f;
     _viewport.MaxDepth = 1.f;
 

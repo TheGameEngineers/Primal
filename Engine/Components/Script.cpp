@@ -43,21 +43,24 @@ script_names()
 }
 #endif
 
+#if _DEBUG
 bool
 exists(script_id id)
 {
     assert(id::is_valid(id));
     const id::id_type index{ id::index(id) };
-    assert(index < generations.size() && id_mapping[index] < entity_scripts.size());
+    assert(index < generations.size() && !(id::is_valid(id_mapping[index]) && id_mapping[index] >= entity_scripts.size()));
     assert(generations[index] == id::generation(id));
-    return (generations[index] == id::generation(id)) &&
+    return (id::is_valid(id_mapping[index]) &&
+            generations[index] == id::generation(id)) &&
         entity_scripts[id_mapping[index]] &&
         entity_scripts[id_mapping[index]]->is_valid();
 }
+#endif
 
 #if USE_TRANSFORM_CACHE_MAP
 transform::component_cache *const
-get_chage_ptr(const game_entity::entity *const entity)
+get_cache_ptr(const game_entity::entity *const entity)
 {
     assert(game_entity::is_alive((*entity).get_id()));
     const transform::transform_id id{ (*entity).transform().get_id() };
@@ -173,12 +176,17 @@ remove(component c)
     utl::erase_unordered(entity_scripts, index);
     id_mapping[id::index(last_id)] = index;
     id_mapping[id::index(id)] = id::invalid_id;
+
+    if (generations[index] < id::max_generation)
+    {
+        free_ids.push_back(id);
+    }
 }
 
 void
-update(float dt)
+update(f32 dt)
 {
-    for (auto& ptr : entity_scripts)
+    for (const auto& ptr : entity_scripts)
     {
         ptr->update(dt);
     }

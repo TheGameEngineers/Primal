@@ -29,6 +29,14 @@ struct PerObjectData
     float4x4 World;
     float4x4 InvWorld;
     float4x4 WorldViewProjection;
+
+    float4      BaseColor;
+    float3      Emissive;
+    float       EmissiveIntensity;
+    float       AmbientOcclusion;
+    float       Metallic;
+    float       Roughness;
+    uint        _pad;
 };
 
 struct Plane

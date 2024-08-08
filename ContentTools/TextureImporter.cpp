@@ -213,10 +213,9 @@ texture_info_from_metadata(const TexMetadata& metadata, texture_info& info)
 void
 copy_subresources(const ScratchImage& scratch, texture_data *const data)
 {
-    const TexMetadata& metadata{ scratch.GetMetadata() };
     const Image *const images{ scratch.GetImages() };
     const u32 image_count{ (u32)scratch.GetImageCount() };
-    assert(images && metadata.mipLevels && metadata.mipLevels <= texture_data::max_mips);
+    assert(images && scratch.GetMetadata().mipLevels && scratch.GetMetadata().mipLevels <= texture_data::max_mips);
 
     u64 subresource_size{ 0 };
 

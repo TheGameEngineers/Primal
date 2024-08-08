@@ -63,7 +63,7 @@ D3D12_SHADER_BYTECODE
 get_engine_shader(engine_shader::id id)
 {
     assert(id < engine_shader::count);
-    const content::compiled_shader_ptr& shader{ engine_shaders[id] };
+    const content::compiled_shader_ptr shader{ engine_shaders[id] };
     assert(shader && shader->byte_code_size());
     return { shader->byte_code(), shader->byte_code_size() };
 }

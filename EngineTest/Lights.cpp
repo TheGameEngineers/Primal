@@ -2,14 +2,15 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "EngineAPI/GameEntity.h"
 #include "EngineAPI/Light.h"
-#include "EngineAPI/TransfromComponent.h"
+#include "EngineAPI/TransformComponent.h"
+#include "Components/Geometry.h"
 #include "Graphics/Renderer.h"
 
 #define RANDOM_LIGHTS 1
 
 using namespace primal;
 
-game_entity::entity create_one_game_entity(math::v3 position, math::v3 rotation, const char* script_name);
+game_entity::entity create_one_game_entity(math::v3 position, math::v3 rotation, geometry::init_info* geometry_info, const char* script_name);
 void remove_game_entity(game_entity::entity_id id);
 
 namespace {
@@ -28,7 +29,7 @@ f32 random(f32 min = 0.f) { return std::max(min, rand() * inv_rand_max); }
 void create_light(math::v3 position, math::v3 rotation, graphics::light::type type, u64 light_set_key)
 {
     const char* script_name{ nullptr }; // { type == graphics::light::spot ? "rotator_script" : nullptr };
-    game_entity::entity_id entity_id{ create_one_game_entity(position, rotation, script_name).get_id() };
+    game_entity::entity_id entity_id{ create_one_game_entity(position, rotation, nullptr, script_name).get_id() };
 
     graphics::light_init_info info{};
     info.entity_id = entity_id;
@@ -81,7 +82,7 @@ generate_lights()
 
     // LEFT_SET
     graphics::light_init_info info{};
-    info.entity_id = create_one_game_entity({}, { 0, 0, 0 }, nullptr).get_id();
+    info.entity_id = create_one_game_entity({}, { 0, 0, 0 }, nullptr, nullptr).get_id();
     info.type = graphics::light::directional;
     info.light_set_key = left_set;
     info.intensity = 1.f;
@@ -89,25 +90,25 @@ generate_lights()
 
     lights.emplace_back(graphics::create_light(info));
 
-    info.entity_id = create_one_game_entity({}, { math::pi * 0.5f, 0, 0 }, nullptr).get_id();
+    info.entity_id = create_one_game_entity({}, { math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
     info.color = rgb_to_color(17, 27, 48);
     lights.emplace_back(graphics::create_light(info));
 
-    info.entity_id = create_one_game_entity({}, { -math::pi * 0.5f, 0, 0 }, nullptr).get_id();
+    info.entity_id = create_one_game_entity({}, { -math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
     info.color = rgb_to_color(63, 47, 30);
     lights.emplace_back(graphics::create_light(info));
 
     // RIGHT_SET
-    info.entity_id = create_one_game_entity({}, { 0, 0, 0 }, nullptr).get_id();
+    info.entity_id = create_one_game_entity({}, { 0, 0, 0 }, nullptr, nullptr).get_id();
     info.light_set_key = right_set;
     info.color = rgb_to_color(150, 100, 200);
     lights.emplace_back(graphics::create_light(info));
 
-    info.entity_id = create_one_game_entity({}, { math::pi * 0.5f, 0, 0 }, nullptr).get_id();
+    info.entity_id = create_one_game_entity({}, { math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
     info.color = rgb_to_color(17, 27, 48);
     lights.emplace_back(graphics::create_light(info));
 
-    info.entity_id = create_one_game_entity({}, { -math::pi * 0.5f, 0, 0 }, nullptr).get_id();
+    info.entity_id = create_one_game_entity({}, { -math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
     info.color = rgb_to_color(163, 47, 30);
     lights.emplace_back(graphics::create_light(info));
 
