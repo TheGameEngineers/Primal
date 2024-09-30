@@ -12,6 +12,10 @@ using namespace Microsoft::WRL;
 namespace primal::tools {
 
 bool is_normal_map(const Image *const image);
+HRESULT equirectangular_to_cubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
+                                   bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
+HRESULT equirectangular_to_cubemap(const Image* env_maps, u32 env_map_count, u32 cubemap_size,
+                                   bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
 
 namespace {
 
@@ -50,6 +54,9 @@ struct texture_import_settings
     u32     prefer_bc7;
     u32     output_format;
     u32     compress;
+    u32     cubemap_size;
+    u32     mirror_cubemap;
+    u32     prefilter_cubemap;
 };
 
 struct texture_info
@@ -145,7 +152,7 @@ create_device()
 
     utl::vector<ComPtr<IDXGIAdapter>> adapters{ get_adapters_by_performance() };
     utl::vector<ComPtr<ID3D11Device>> devices(adapters.size(), nullptr);
-    constexpr D3D_FEATURE_LEVEL feature_levels[]{ D3D_FEATURE_LEVEL_11_0 };
+    constexpr D3D_FEATURE_LEVEL feature_levels[]{ D3D_FEATURE_LEVEL_11_1, };
 
     for (u32 i{ 0 }; i < adapters.size(); ++i)
     {
@@ -170,6 +177,47 @@ create_device()
     }
 }
 
+bool
+try_create_device()
+{
+    std::lock_guard lock{ device_creation_mutex };
+    static bool try_once = false;
+    if (!try_once)
+    {
+        try_once = true;
+        create_device();
+    }
+
+    return d3d11_devices.size() > 0;
+}
+
+template<typename T> bool
+run_on_gpu(T func)
+{
+    if (!try_create_device())
+    {
+        return false;
+    }
+
+    bool wait{ true };
+    while (wait)
+    {
+        for (u32 i{ 0 }; i < d3d11_devices.size(); ++i)
+        {
+            if (d3d11_devices[i].hw_compression_mutex.try_lock())
+            {
+                func(d3d11_devices[i].device.Get());
+                d3d11_devices[i].hw_compression_mutex.unlock();
+                wait = false;
+                break;
+            }
+        }
+        if (wait) std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    return true;
+}
+
 constexpr void
 set_or_clear_flag(u32& flags, u32 flag, bool set)
 {
@@ -192,6 +240,24 @@ get_max_mip_count(u32 width, u32 height, u32 depth)
     return mip_levels;
 }
 
+bool
+is_hdr(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+    case DXGI_FORMAT_BC6H_UF16:
+    case DXGI_FORMAT_BC6H_SF16:
+    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+        return true;
+    };
+
+    return false;
+}
+
 void
 texture_info_from_metadata(const TexMetadata& metadata, texture_info& info)
 {
@@ -203,7 +269,7 @@ texture_info_from_metadata(const TexMetadata& metadata, texture_info& info)
     info.array_size = metadata.IsVolumemap() ? (u32)metadata.depth : (u32)metadata.arraySize;
     info.mip_levels = (u32)metadata.mipLevels;
     set_or_clear_flag(info.flags, texture_flags::has_alpha, HasAlpha(format));
-    set_or_clear_flag(info.flags, texture_flags::is_hdr, format == DXGI_FORMAT_BC6H_UF16 || format == DXGI_FORMAT_BC6H_SF16);
+    set_or_clear_flag(info.flags, texture_flags::is_hdr, is_hdr(format));
     set_or_clear_flag(info.flags, texture_flags::is_premultiplied_alpha, metadata.IsPMAlpha());
     set_or_clear_flag(info.flags, texture_flags::is_cube_map, metadata.IsCubemap());
     set_or_clear_flag(info.flags, texture_flags::is_volume_map, metadata.IsVolumemap());
@@ -391,6 +457,35 @@ load_from_file(texture_data *const data, const char* file_name)
 }
 
 [[nodiscard]] ScratchImage
+generate_mipmaps(const ScratchImage& source, texture_info& info, u32 mip_levels, bool is_3d)
+{
+    const TexMetadata& metadata{ source.GetMetadata() };
+    mip_levels = math::clamp(mip_levels, (u32)0, get_max_mip_count((u32)metadata.width, (u32)metadata.height, (u32)metadata.depth));
+    HRESULT hr{ S_OK };
+
+    ScratchImage mip_scratch{};
+
+    if (!is_3d)
+    {
+        hr = GenerateMipMaps(source.GetImages(), source.GetImageCount(), source.GetMetadata(),
+                             TEX_FILTER_DEFAULT, mip_levels, mip_scratch);
+    }
+    else
+    {
+        hr = GenerateMipMaps3D(source.GetImages(), source.GetImageCount(), source.GetMetadata(),
+                               TEX_FILTER_DEFAULT, mip_levels, mip_scratch);
+    }
+
+    if (FAILED(hr))
+    {
+        info.import_error = import_error::mipmap_generation;
+        return {};
+    }
+
+    return mip_scratch;
+}
+
+[[nodiscard]] ScratchImage
 initialize_from_images(texture_data *const data, const utl::vector<Image>& images)
 {
     assert(data);
@@ -412,13 +507,30 @@ initialize_from_images(texture_data *const data, const utl::vector<Image>& image
         }
         else if (settings.dimension == texture_dimension::texture_cube)
         {
-            if (array_size % 6)
+            const Image& image{ images[0] };
+
+            if (math::is_equal((f32)image.width / (f32)image.height, 2.f))
+            {
+                if (!run_on_gpu([&](ID3D11Device* device)
+                                {
+                                    hr = equirectangular_to_cubemap(device, images.data(), array_size, settings.cubemap_size,
+                                                                    settings.prefilter_cubemap, settings.mirror_cubemap, working_scratch);
+                                }))
+                {
+                    hr = equirectangular_to_cubemap(images.data(), array_size, settings.cubemap_size,
+                                                    settings.prefilter_cubemap, settings.mirror_cubemap, working_scratch);
+                }
+
+            }
+            else if (array_size % 6 || image.width != image.height)
             {
                 data->info.import_error = import_error::need_six_images;
                 return {};
             }
-
-            hr = working_scratch.InitializeCubeFromImages(images.data(), images.size());
+            else
+            {
+                hr = working_scratch.InitializeCubeFromImages(images.data(), images.size());
+            }
         }
         else
         {
@@ -435,30 +547,10 @@ initialize_from_images(texture_data *const data, const utl::vector<Image>& image
         scratch = std::move(working_scratch);
     }
 
-    if (settings.mip_levels != 1)
+    if (settings.mip_levels != 1 || settings.prefilter_cubemap)
     {
-        ScratchImage mip_scratch;
-        const TexMetadata& metadata{ scratch.GetMetadata() };
-        u32 mip_levels{ math::clamp(settings.mip_levels, (u32)0, get_max_mip_count((u32)metadata.width, (u32)metadata.height, (u32)metadata.depth)) };
-
-        if (settings.dimension != texture_dimension::texture_3d)
-        {
-            hr = GenerateMipMaps(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(),
-                                 TEX_FILTER_DEFAULT, mip_levels, mip_scratch);
-        }
-        else
-        {
-            hr = GenerateMipMaps3D(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(),
-                                   TEX_FILTER_DEFAULT, mip_levels, mip_scratch);
-        }
-
-        if (FAILED(hr))
-        {
-            data->info.import_error = import_error::mipmap_generation;
-            return {};
-        }
-
-        scratch = std::move(mip_scratch);
+        scratch = generate_mipmaps(scratch, data->info, settings.prefilter_cubemap ? 0 : settings.mip_levels,
+                                   settings.dimension == texture_dimension::texture_3d);
     }
 
     return scratch;
@@ -527,15 +619,7 @@ can_use_gpu(DXGI_FORMAT format)
     case DXGI_FORMAT_BC7_UNORM:
     case DXGI_FORMAT_BC7_UNORM_SRGB:
     {
-        std::lock_guard lock{ device_creation_mutex };
-        static bool try_once = false;
-        if (!try_once)
-        {
-            try_once = true;
-            create_device();
-        }
-
-        return d3d11_devices.size() > 0;
+        return true;
     }
     }
 
@@ -557,26 +641,14 @@ compress_image(texture_data *const data, ScratchImage& scratch)
     const DXGI_FORMAT output_format{ determine_output_format(data, scratch, image) };
     HRESULT hr{ S_OK };
     ScratchImage bc_scratch;
-    if (can_use_gpu(output_format))
-    {
-        bool wait{ true };
-        while (wait)
-        {
-            for (u32 i{ 0 }; i < d3d11_devices.size(); ++i)
-            {
-                if (d3d11_devices[i].hw_compression_mutex.try_lock())
-                {
-                    hr = Compress(d3d11_devices[i].device.Get(), scratch.GetImages(), scratch.GetImageCount(),
-                                  scratch.GetMetadata(), output_format, TEX_COMPRESS_DEFAULT, 1.0f, bc_scratch);
-                    d3d11_devices[i].hw_compression_mutex.unlock();
-                    wait = false;
-                    break;
-                }
-            }
-            if (wait) std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        }
-    }
-    else
+
+    if (!(can_use_gpu(output_format) &&
+          run_on_gpu([&](ID3D11Device* device)
+                     {
+                         hr = Compress(device, scratch.GetImages(), scratch.GetImageCount(),
+                                       scratch.GetMetadata(), output_format, TEX_COMPRESS_DEFAULT, 1.f, bc_scratch);
+                     })))
+
     {
         hr = Compress(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(),
                       output_format, TEX_COMPRESS_PARALLEL, data->import_settings.alpha_threshold, bc_scratch);
@@ -589,6 +661,43 @@ compress_image(texture_data *const data, ScratchImage& scratch)
     }
 
     return bc_scratch;
+}
+
+[[nodiscard]] ScratchImage
+decompress_image(texture_data *const data)
+{
+    using namespace primal::content;
+    assert(data->import_settings.compress);
+    texture_info& info{ data->info };
+    const DXGI_FORMAT format{ (DXGI_FORMAT)info.format };
+    assert(IsCompressed(format));
+    utl::vector<Image> images = subresource_data_to_images(data);
+    const bool is_3d{ (info.flags & texture_flags::is_volume_map) != 0 };
+
+    TexMetadata metadata{};
+    metadata.width = info.width;
+    metadata.height = info.height;
+    metadata.depth = is_3d ? info.array_size : 1;
+    metadata.arraySize = is_3d ? 1 : info.array_size;
+    metadata.mipLevels = info.mip_levels;
+    metadata.miscFlags = info.flags & texture_flags::is_cube_map ? TEX_MISC_TEXTURECUBE : 0;
+    metadata.miscFlags2 = info.flags & texture_flags::is_premultiplied_alpha
+        ? TEX_ALPHA_MODE_PREMULTIPLIED
+        : info.flags & texture_flags::has_alpha ? TEX_ALPHA_MODE_STRAIGHT : TEX_ALPHA_MODE_OPAQUE;
+    metadata.format = format;
+    // TODO: handle 1D textures?
+    metadata.dimension = is_3d ? TEX_DIMENSION_TEXTURE3D : TEX_DIMENSION_TEXTURE2D;
+
+    ScratchImage scratch;
+    HRESULT hr{ Decompress(images.data(), (size_t)images.size(), metadata, DXGI_FORMAT_UNKNOWN, scratch) };
+
+    if (FAILED(hr))
+    {
+        data->info.import_error = import_error::decompress;
+        return {};
+    }
+
+    return scratch;
 }
 } // anonymous namespace
 
@@ -613,38 +722,11 @@ ShutDownTextureTools()
 EDITOR_INTERFACE void
 Decompress(texture_data *const data)
 {
-    using namespace primal::content;
-    assert(data->import_settings.compress);
-    texture_info& info{ data->info };
-    const DXGI_FORMAT format{ (DXGI_FORMAT)info.format };
-    assert(IsCompressed(format));
-    utl::vector<Image> images = subresource_data_to_images(data);
-    const bool is_3d{ (info.flags & texture_flags::is_volume_map) != 0 };
-
-    TexMetadata metadata{};
-    metadata.width = info.width;
-    metadata.height = info.height;
-    metadata.depth = is_3d ? info.array_size : 1;
-    metadata.arraySize = is_3d ? 1 : info.array_size;
-    metadata.mipLevels = info.mip_levels;
-    metadata.miscFlags = info.flags & texture_flags::is_cube_map ? TEX_MISC_TEXTURECUBE : 0;
-    metadata.miscFlags2 = info.flags & texture_flags::is_premultiplied_alpha
-        ? TEX_ALPHA_MODE_PREMULTIPLIED
-        : info.flags & texture_flags::has_alpha ? TEX_ALPHA_MODE_STRAIGHT : TEX_ALPHA_MODE_OPAQUE;
-    metadata.format = format;
-    // TODO: what about 1D?
-    metadata.dimension = is_3d ? TEX_DIMENSION_TEXTURE3D : TEX_DIMENSION_TEXTURE2D;
-
-    ScratchImage scratch;
-    HRESULT hr{ Decompress(images.data(), (size_t)images.size(), metadata, DXGI_FORMAT_UNKNOWN, scratch) };
-    if (SUCCEEDED(hr))
+    ScratchImage scratch{ decompress_image(data) };
+    if (!data->info.import_error)
     {
         copy_subresources(scratch, data);
         texture_info_from_metadata(scratch.GetMetadata(), data->info);
-    }
-    else
-    {
-        info.import_error = import_error::decompress;
     }
 }
 

@@ -38,7 +38,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
         FormatMismatch,
         [Description("Source image file not found")]
         FileNotFound,
-        [Description("Number of images for cube-maps should be a multiple of 6")]
+        [Description("Number of images for cube-maps should be a multiple of 6, or the source images should be equirectangular images with the same size and format.")]
         NeedSixImages,
     }
 
@@ -53,6 +53,9 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public int PreferBC7;
         public int OutputFormat;
         public int Compress;
+        public int CubeMapSize;
+        public int MirrorCubeMap;
+        public int PrefilterCubeMap;
 
         public void FromContentSettings(Texture texture)
         {
@@ -66,6 +69,9 @@ namespace PrimalEditor.ContentToolsAPIStructs
             PreferBC7 = settings.PreferBC7 ? 1 : 0;
             OutputFormat = (int)settings.OutputFormat;
             Compress = settings.Compress ? 1 : 0;
+            CubeMapSize = settings.CubeMapSize;
+            MirrorCubeMap = settings.MirrorCubeMap ? 1 : 0;
+            PrefilterCubeMap = settings.PrefilterCubeMap ? 1 : 0;
         }
     }
 
@@ -117,7 +123,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
 
         private byte ToByte(bool value) => value ? (byte)1 : (byte)0;
 
-        public void FromContentSettings(Content.Geometry geometry)
+        public void FromContentSettings(Geometry geometry)
         {
             var settings = geometry.ImportSettings;
 
@@ -153,7 +159,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
     [StructLayout(LayoutKind.Sequential)]
     class PrimitiveInitInfo
     {
-        public Content.PrimitiveMeshType Type;
+        public PrimitiveMeshType Type;
         public int SegmentsX = 1;
         public int SegmentsY = 1;
         public int SegmentsZ = 1;
@@ -173,7 +179,7 @@ namespace PrimalEditor.DllWrappers
         public static extern void ShutDownContentTools();
 
         #region Texture
-        private static List<List<List<Slice>>> GetSlices(TextureData data)
+        private static SliceArray3D GetSlices(TextureData data)
         {
             Debug.Assert(data.Info.MipLevels > 0);
             Debug.Assert(data.SubresourceData != IntPtr.Zero && data.SubresourceSize > 0);
@@ -198,7 +204,7 @@ namespace PrimalEditor.DllWrappers
             return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
         }
 
-        private static void SetSubresourceData(List<List<List<Slice>>> slices, TextureData data)
+        private static void SetSubresourceData(SliceArray3D slices, TextureData data)
         {
             var subresourceData = SlicesToBinary(slices);
             data.SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
@@ -221,16 +227,16 @@ namespace PrimalEditor.DllWrappers
         private static void GetTextureInfo(Texture texture, TextureData data)
         {
             var info = data.Info;
-
+            // NOTE: set the flags first, because some properties check flags when they're set.
+            texture.Flags = (TextureFlags)info.Flags;
             texture.Width = info.Width;
             texture.Height = info.Height;
             texture.ArraySize = info.ArraySize;
             texture.MipLevels = info.MipLevels;
             texture.Format = (DXGI_FORMAT)info.Format;
-            texture.Flags = (TextureFlags)info.Flags;
         }
 
-        public static List<List<List<Slice>>> SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
+        public static SliceArray3D SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
         {
             Debug.Assert(data?.Length > 0 && arraySize > 0);
             Debug.Assert(mipLevels > 0 && mipLevels < Texture.MaxMipLevels);
@@ -249,7 +255,7 @@ namespace PrimalEditor.DllWrappers
             }
 
             using var reader = new BinaryReader(new MemoryStream(data));
-            var slices = new List<List<List<Slice>>>();
+            var slices = new SliceArray3D();
             for (var i = 0; i < arraySize; ++i)
             {
                 var arraySlice = new List<List<Slice>>();
@@ -277,7 +283,7 @@ namespace PrimalEditor.DllWrappers
             return slices;
         }
 
-        public static byte[] SlicesToBinary(List<List<List<Slice>>> slices)
+        public static byte[] SlicesToBinary(SliceArray3D slices)
         {
             Debug.Assert(slices?.Any() == true && slices.First()?.Any() == true);
             using var writer = new BinaryWriter(new MemoryStream());
@@ -306,7 +312,7 @@ namespace PrimalEditor.DllWrappers
         [DllImport(_toolsDLL)]
         private static extern void Decompress([In, Out] TextureData data);
 
-        public static List<List<List<Slice>>> Decompress(Texture texture)
+        public static SliceArray3D Decompress(Texture texture)
         {
             Debug.Assert(texture.ImportSettings.Compress);
             using var textureData = new TextureData();
@@ -338,7 +344,7 @@ namespace PrimalEditor.DllWrappers
         [DllImport(_toolsDLL)]
         private static extern void Import([In, Out] TextureData data);
 
-        public static (List<List<List<Slice>>> slices, Slice icon) Import(Texture texture)
+        public static (SliceArray3D slices, Slice icon) Import(Texture texture)
         {
             Debug.Assert(texture.ImportSettings.Sources.Any());
             using var textureData = new TextureData();
@@ -367,7 +373,7 @@ namespace PrimalEditor.DllWrappers
 
         #endregion Texture
         #region Geometry
-        private static void GeometryFromSceneData(Content.Geometry geometry, Action<SceneData> sceneDataGenerator, string failureMessage)
+        private static void GeometryFromSceneData(Geometry geometry, Action<SceneData> sceneDataGenerator, string failureMessage)
         {
             Debug.Assert(geometry != null);
             using var sceneData = new SceneData();

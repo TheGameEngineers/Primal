@@ -16,10 +16,22 @@ using System.Windows.Media.Imaging;
 
 namespace PrimalEditor.Editors
 {
+    class CubeMap
+    {
+        public int ArrayIndex { get; set; }
+        public int MipIndex { get; set; }
+        public BitmapSource PositiveX { get; set; }
+        public BitmapSource NegativeX { get; set; }
+        public BitmapSource PositiveY { get; set; }
+        public BitmapSource NegativeY { get; set; }
+        public BitmapSource PositiveZ { get; set; }
+        public BitmapSource NegativeZ { get; set; }
+    }
+
     class TextureEditor : ViewModelBase, IAssetEditor
     {
         private readonly List<List<List<BitmapSource>>> _sliceBitmaps = new();
-        private List<List<List<Slice>>> _slices;
+        private SliceArray3D _slices;
 
         public ICommand SetAllChannelsCommand { get; init; }
         public ICommand SetChannelCommand { get; init; }
@@ -209,12 +221,64 @@ namespace PrimalEditor.Editors
             }
         }
 
+        private CubeMap _cubeMap;
+        public CubeMap CubeMap
+        {
+            get => _cubeMap;
+            private set
+            {
+                if (_cubeMap != value)
+                {
+                    _cubeMap = value;
+                    OnPropertyChanged(nameof(CubeMap));
+                }
+            }
+        }
+
+        private bool _viewAsCubeMap = true;
+        public bool ViewAsCubeMap
+        {
+            get => _viewAsCubeMap;
+            set
+            {
+                if (_viewAsCubeMap != value)
+                {
+                    _viewAsCubeMap = value;
+                    OnPropertyChanged(nameof(ViewAsCubeMap));
+                }
+            }
+        }
+
         public BitmapSource SelectedSliceBitmap => _sliceBitmaps.ElementAtOrDefault(ArrayIndex)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex);
         public Slice SelectedSlice => Texture?.Slices?.ElementAtOrDefault(ArrayIndex)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex);
         public long DataSize=>Texture?.Slices?.Sum(x=>x.Sum(y=>y.Sum(z=>z.RawContent.LongLength))) ?? 0;
 
+        private void SetCubeMap()
+        {
+            if (Texture?.IsCubeMap != true) return;
+
+            var index = (ArrayIndex / 6) * 6;
+            if (CubeMap == null || index != CubeMap.ArrayIndex || MipIndex != CubeMap.MipIndex)
+            {
+                Debug.Assert(index + 5 <= MaxArrayIndex);
+
+                CubeMap = new CubeMap()
+                {
+                    ArrayIndex = index,
+                    MipIndex = MipIndex,
+                    PositiveX = _sliceBitmaps.ElementAtOrDefault(index + 0)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex),
+                    NegativeX = _sliceBitmaps.ElementAtOrDefault(index + 1)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex),
+                    PositiveY = _sliceBitmaps.ElementAtOrDefault(index + 2)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex),
+                    NegativeY = _sliceBitmaps.ElementAtOrDefault(index + 3)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex),
+                    PositiveZ = _sliceBitmaps.ElementAtOrDefault(index + 4)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex),
+                    NegativeZ = _sliceBitmaps.ElementAtOrDefault(index + 5)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex),
+                };
+            }
+        }
+
         private void SetSelectedBitmap()
         {
+            SetCubeMap();
             OnPropertyChanged(nameof(SelectedSliceBitmap));
             OnPropertyChanged(nameof(SelectedSlice));
             OnPropertyChanged(nameof(DataSize));
@@ -301,7 +365,7 @@ namespace PrimalEditor.Editors
             try
             {
                 await Task.Run(() => _slices = texture.ImportSettings.Compress ? ContentToolsAPI.Decompress(texture) : texture.Slices);
-                Debug.Assert(_slices?.Any() == true && _slices.First()?.Any() == true);
+                Debug.Assert(_slices?.Any() == true && _slices.First().Any());
                 GenerateSliceBitMaps(texture.IsNormalMap);
                 OnPropertyChanged(nameof(Texture));
                 OnPropertyChanged(nameof(DataSize));
@@ -316,6 +380,7 @@ namespace PrimalEditor.Editors
         private void GenerateSliceBitMaps(bool isNormalMap)
         {
             _sliceBitmaps.Clear();
+            _cubeMap = null;
             foreach (var arraySlice in _slices)
             {
                 List<List<BitmapSource>> mipmapsBitmaps = new();
@@ -373,7 +438,7 @@ namespace PrimalEditor.Editors
 
             State = AssetEditorState.Saving;
             CanSaveChanges = false;
-            await Task.Run(()=>Texture.Save(Texture.FullPath));
+            await Task.Run(Texture.SaveAsset);
             State = AssetEditorState.Done;
         }
 

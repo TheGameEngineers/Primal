@@ -30,7 +30,7 @@
         </DockPanel>
         <DockPanel VerticalAlignment="Center">
             <TextBlock Text="Smoothing Angle" Width="150"/>
-            <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" VerticalAlignment="Center" Interval="1" IsSnapToTickEnabled="True"
+            <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                     x:Name="angleSlider" Value="{Binding SmoothingAngle}"  d:Value="65"/>
         </DockPanel>
         <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">

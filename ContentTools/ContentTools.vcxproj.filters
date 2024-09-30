@@ -15,6 +15,7 @@
     <ClCompile Include="NormalMapIdentification.cpp" />
     <ClCompile Include="ContentTools.cpp" />
     <ClCompile Include="MikkTSpace\mikktspace.c" />
+    <ClCompile Include="EnvMapProcessing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

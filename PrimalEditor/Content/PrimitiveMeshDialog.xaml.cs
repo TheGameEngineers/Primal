@@ -149,7 +149,8 @@ namespace PrimalEditor.Content
                 Debug.Assert(!string.IsNullOrEmpty(dlg.SaveFilePath));
                 var asset = (DataContext as IAssetEditor).Asset;
                 Debug.Assert(asset != null);
-                asset.Save(dlg.SaveFilePath);
+                asset.FullPath = dlg.SaveFilePath;
+                asset.SaveAsset();
 
                 // Note: you can choose to close this window after saving.
             }

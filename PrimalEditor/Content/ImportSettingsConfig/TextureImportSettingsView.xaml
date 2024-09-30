@@ -18,9 +18,12 @@
         <primal:EnumDescriptionConverter x:Key="enumDescriptionConverter"/>
         <local:TextureDimensionToBooleanConverter x:Key="textureDimensionToBooleanConverter"/>
         
-        <Style x:Key="{x:Type TextBlock}" TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
+        <Style x:Key="{x:Type TextBlock}" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <ObjectDataProvider x:Key="bcFormatEnumDataSource" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
@@ -52,6 +55,39 @@
                          Margin="0,1,20,2" Content="3D" GroupName="Dimension" d:IsEnabled="False" Foreground="{StaticResource Editor.FontBrush}"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=3}"
                          Margin="0,1,20,2" Content="Cubemap" GroupName="Dimension" Foreground="{StaticResource Editor.FontBrush}"/>
+            <StackPanel d:Visibility="Visible">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="IsEnabled" Value="False"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Dimension}" Value="{x:Static local:TextureDimension.TextureCube}">
+                                <Setter Property="IsEnabled" Value="True"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PrefilterCubeMap}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="Cubemap Size" Width="100"/>
+                    <TextBox Text="{Binding CubeMapSize}" Width="48" Padding="0" d:Text="1024"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Mirror Cubemap" Width="100"/>
+                    <CheckBox IsChecked="{Binding MirrorCubeMap}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Prefilter" Width="100"/>
+                    <CheckBox IsChecked="{Binding PrefilterCubeMap}"/>
+                </StackPanel>
+            </StackPanel>
         </WrapPanel>
         
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Mip Levels"/>
@@ -60,7 +96,7 @@
                 Minimum="0" Maximum="{Binding Source={x:Static local:Texture.MaxMipLevels}}"
                 Value="{Binding MipLevels}" SmallChange="1"/>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Compress"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,5,0" Text="Compress"/>
         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
             <CheckBox x:Name="compressCheckBox" VerticalAlignment="Center" IsChecked="{Binding Compress}" d:IsChecked="True"/>
             <StackPanel Orientation="Horizontal">
@@ -82,8 +118,8 @@
                 <CheckBox VerticalAlignment="Center" IsChecked="{Binding PreferBC7}"/>
             </StackPanel>
         </StackPanel>
-        
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Output Format"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,20,0" Text="Output Format"/>
         <Grid Grid.Row="3" Grid.Column="1">
             <TextBlock Text="{Binding OutputFormat, Converter={StaticResource enumDescriptionConverter}}"/>
             <ComboBox ItemsSource="{Binding Source={StaticResource bcFormatEnumDataSource}, Converter={StaticResource enumDescriptionConverter}}"
@@ -91,7 +127,7 @@
                       Visibility="{Binding Compress, Converter={StaticResource booleanToVisibilityConverter}}"/>
         </Grid>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Alpha Threshold" x:Name="alphaTextBlock" d:Visibility="Visible">
+        <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,5,0" Text="Alpha Threshold" x:Name="alphaTextBlock" d:Visibility="Visible">
             <TextBlock.Style>
                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
                     <Setter Property="Visibility" Value="Collapsed"/>

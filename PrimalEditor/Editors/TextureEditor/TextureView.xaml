@@ -8,6 +8,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ed="clr-namespace:PrimalEditor.Editors"
+             xmlns:primal="clr-namespace:PrimalEditor"
              d:DataContext="{d:DesignInstance Type=ed:TextureEditor}"
              d:DesignHeight="450" d:DesignWidth="800" mc:Ignorable="d">
     <Grid>
@@ -24,11 +25,108 @@
                         <ImageBrush x:Name="textureBackground" TileMode="Tile" Viewport="0,0,64,64" ViewportUnits="Absolute"
                                     ImageSource="/PrimalEditor;component/Resources/TextureEditor/Checker64.png"/>
                     </Border.Background>
-                    <Image x:Name="textureImage" Source="{Binding SelectedSliceBitmap}">
-                        <Image.Effect>
-                            <ed:ChannelSelectEffect Channels="{Binding Channels}" Stride="{Binding Stride}" />
-                        </Image.Effect>
-                    </Image>
+                    <Border.Resources>
+                        <primal:ReciprocalConverter x:Key="reciprocalConverter" />
+                        <ed:ArrayIndexToCubeFaceConverter x:Key="arrayIndexToCubeFaceConverter" />
+                        <ed:ChannelSelectEffect x:Key="channelEffect" Channels="{Binding Channels}" Stride="{Binding Stride}"/>
+                        <ScaleTransform x:Key="scaleTransform"
+                            ScaleX="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, Converter={StaticResource reciprocalConverter}}"
+                            ScaleY="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, Converter={StaticResource reciprocalConverter}}"/>
+
+                        <Image x:Key="singleImageView" Source="{Binding SelectedSliceBitmap}" Effect="{StaticResource channelEffect}"/>
+
+                        <Style TargetType="{x:Type Path}" x:Key="{x:Type Path}">
+                            <Setter Property="Fill" Value="{StaticResource Editor.OrangeBrush}"/>
+                            <Setter Property="Stroke" Value="#8f000000" />
+                            <Setter Property="StrokeThickness" Value="2"/>
+                            <Setter Property="StrokeLineJoin" Value="Round" />
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Margin" Value="-32"/>
+                        </Style>
+
+                        <Style TargetType="{x:Type Grid}" x:Key="gridStyle">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="0">
+                                    <Setter Property="Grid.Row" Value="1"/>
+                                    <Setter Property="Grid.Column" Value="2"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="1">
+                                    <Setter Property="Grid.Row" Value="1"/>
+                                    <Setter Property="Grid.Column" Value="0"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="2">
+                                    <Setter Property="Grid.Row" Value="0"/>
+                                    <Setter Property="Grid.Column" Value="1"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="3">
+                                    <Setter Property="Grid.Row" Value="2"/>
+                                    <Setter Property="Grid.Column" Value="1"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="4">
+                                    <Setter Property="Grid.Row" Value="1"/>
+                                    <Setter Property="Grid.Column" Value="1"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="5">
+                                    <Setter Property="Grid.Row" Value="1"/>
+                                    <Setter Property="Grid.Column" Value="3"/>
+                                </DataTrigger>
+                                <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                    <BeginStoryboard>
+                                        <Storyboard AutoReverse="True">
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:1" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Style.Triggers>
+                        </Style>
+
+                        <Grid x:Key="cubeMapView">
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <Image Source="{Binding CubeMap.PositiveX}" Grid.Row="1" Grid.Column="2" Effect="{StaticResource channelEffect}"/>
+                            <Image Source="{Binding CubeMap.NegativeX}" Grid.Row="1" Grid.Column="0" Effect="{StaticResource channelEffect}"/>
+                            <Image Source="{Binding CubeMap.PositiveY}" Grid.Row="0" Grid.Column="1" Effect="{StaticResource channelEffect}"/>
+                            <Image Source="{Binding CubeMap.NegativeY}" Grid.Row="2" Grid.Column="1" Effect="{StaticResource channelEffect}"/>
+                            <Image Source="{Binding CubeMap.PositiveZ}" Grid.Row="1" Grid.Column="1" Effect="{StaticResource channelEffect}"/>
+                            <Image Source="{Binding CubeMap.NegativeZ}" Grid.Row="1" Grid.Column="3" Effect="{StaticResource channelEffect}"/>
+
+                            <Grid Style="{StaticResource gridStyle}" LayoutTransform="{StaticResource scaleTransform}">
+                                <Path Data="M0,0 L32,16 0,32 8,16 z" HorizontalAlignment="Left"/>
+                                <Path Data="M0,16 L32,0 24,16 32,32 z" HorizontalAlignment="Right"/>
+                                <Path Data="M0,32 L16,0 32,32 16,24 z" VerticalAlignment="Bottom"/>
+                                <Path Data="M0,0 L16,8 32,0 16,32 z" VerticalAlignment="Top"/>
+                            </Grid>
+                        </Grid>
+
+                        <DataTemplate DataType="{x:Type ed:TextureEditor}" >
+                            <Grid>
+                                <ContentPresenter Content="{StaticResource singleImageView}" x:Name="singleImagePresenter"/>
+                                <ContentPresenter Content="{StaticResource cubeMapView}" x:Name="cubeMapPresenter" Visibility="Collapsed"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Texture.IsCubeMap}" Value="True"/>
+                                        <Condition Binding="{Binding ViewAsCubeMap}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" TargetName="singleImagePresenter" Value="Collapsed"/>
+                                    <Setter Property="Visibility" TargetName="cubeMapPresenter" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </Border.Resources>
+                    <ContentPresenter x:Name="textureImage" Content="{Binding}" />
                 </Border>
             </Canvas>
         </Grid>

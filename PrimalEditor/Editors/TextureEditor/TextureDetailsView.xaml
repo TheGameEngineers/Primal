@@ -37,7 +37,7 @@
                 <TextBlock Text="Dimension"/>
                 <TextBlock Text="Size"/>
                 <TextBlock Text="Format"/>
-                <TextBlock Text="Import Data"/>
+                <TextBlock Text="Import Date"/>
                 <TextBlock Text="Data Size"/>
                 <TextBlock Text="Mip Levels"/>
                 <TextBlock Text="Is Normal Map"/>

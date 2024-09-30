@@ -4,8 +4,10 @@ using PrimalEditor.Utilities;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -13,6 +15,21 @@ using System.Windows.Media.Effects;
 
 namespace PrimalEditor.Editors
 {
+    public class ArrayIndexToCubeFaceConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int index)
+            {
+                return index % 6;
+            }
+
+            return -1;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+
     public class ChannelSelectEffect : ShaderEffect
     {
         private static PixelShader _pixelShader = new() { UriSource = ContentHelper.GetPackUri("Resources/TextureEditor/ChannelSelectShader.cso", typeof(ChannelSelectEffect)) };
@@ -211,6 +228,11 @@ namespace PrimalEditor.Editors
 
         public void ZoomFit()
         {
+            if (textureImage.ActualWidth.IsTheSameAs(0.0) || textureImage.ActualHeight.IsTheSameAs(0.0))
+            {
+                return;
+            }
+
             var scaleX = RenderSize.Width / textureImage.ActualWidth;
             var scaleY = RenderSize.Height / textureImage.ActualHeight;
             var ratio = Math.Min(scaleX, scaleY);

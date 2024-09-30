@@ -166,8 +166,8 @@ float3 CookTorranceBRDF(Surface S, float3 L)
 
     float3 specularBRDF = (D * G) * F;
     float3 rho = 1.f - F;
-    //float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
-    float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
+    float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
+    //float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
 
     return (diffuseBRDF + specularBRDF) * NoL;
 }

@@ -9,7 +9,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ed="clr-namespace:PrimalEditor.Editors"
              xmlns:content="clr-namespace:PrimalEditor.Content"
-             d:DesignHeight="450" d:DesignWidth="800" mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="800" mc:Ignorable="d"
              FocusVisualStyle="{x:Null}" Focusable="True">
     <UserControl.CommandBindings>
         <CommandBinding Command="{x:Static ed:TextureViewCommands.CenterCommand}" Executed="OnCenterTexture"/>
@@ -54,7 +54,7 @@
                     <Rectangle Width="8" Fill="{StaticResource Editor.BlueBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
                 </ToggleButton>
                 <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
-                              CommandParameter="3" IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}"
+                              CommandParameter="3" IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}" d:Visibility="Visible"
                               Visibility="{Binding Texture.HasAlpha, Converter={StaticResource booleanToVisibilityConverter}}">
                     <Rectangle Width="8" Fill="{StaticResource Editor.FontBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
                 </ToggleButton>
@@ -76,8 +76,23 @@
                     </ToggleButton.Style>
                 </ToggleButton>
 
+                <ToggleButton Content="View as Cube Map" Padding="5" Margin="5,0" IsChecked="{Binding ViewAsCubeMap}" d:Visibility="Visible">
+                    <ToggleButton.Style>
+                        <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}">
+                            <Setter Property="IsEnabled" Value="False"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Texture.IsCubeMap}" Value="True">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+
                 <TextBlock Margin="5,0" Text="Layer:" Visibility="{Binding Path=Visibility, ElementName=arraySlider}"/>
-                <Slider x:Name="arraySlider" Width="200" VerticalAlignment="Center" Interval="1" IsSnapToTickEnabled="True"
+                <Slider x:Name="arraySlider" Width="200" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                         Maximum="{Binding MaxArrayIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding ArrayIndex}"
                         Margin="0,0,10,0" d:Visibility="Visible">
                     <Slider.Style>
@@ -97,7 +112,7 @@
                 </Slider>
 
                 <TextBlock Margin="5,0" Text="Depth:" Visibility="{Binding Path=Visibility, ElementName=depthSlider}"/>
-                <Slider x:Name="depthSlider" Width="200" VerticalAlignment="Center" Interval="1" IsSnapToTickEnabled="True"
+                <Slider x:Name="depthSlider" Width="200" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                         Maximum="{Binding MaxDepthIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding DepthIndex}"
                         Margin="0,0,10,0" d:Visibility="Visible">
                     <Slider.Style>
@@ -116,7 +131,7 @@
                 </Slider>
 
                 <TextBlock Margin="5,0" Text="Mip:" Visibility="{Binding Path=Visibility, ElementName=mipSlider}"/>
-                <Slider x:Name="mipSlider" Width="200" VerticalAlignment="Center" Interval="1" IsSnapToTickEnabled="True"
+                <Slider x:Name="mipSlider" Width="200" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                         Maximum="{Binding MaxMipIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding MipIndex}"
                         IsMoveToPointEnabled="True" d:Visibility="Visible">
                     <Slider.Style>

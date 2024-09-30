@@ -112,7 +112,7 @@ namespace PrimalEditor.Content
             IconSmall = smallIcon ?? icon;
             FullPath = fullPath;
 
-            RenameCommand = new RelayCommand<string>(x => Rename(x));
+            RenameCommand = new RelayCommand<string>(Rename);
         }
     }
 
@@ -163,7 +163,7 @@ namespace PrimalEditor.Content
             });
 
             _folderContent.Clear();
-            folderContent.ForEach(x => _folderContent.Add(x));
+            folderContent.ForEach(_folderContent.Add);
         }
 
         private static List<ContentInfo> GetFolderContent(string path)
