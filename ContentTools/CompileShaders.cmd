@@ -17,6 +17,7 @@ if not defined CompileShadersOutput set CompileShadersOutput=x64\Compiled
 @if not exist %CompileShadersOutput% mkdir "%CompileShadersOutput%"
 echo.
 call :CompileShader EnvMapProcessing EquirectangularToCubeMapCS
+call :CompileShader EnvMapProcessing PrefilterDiffuseEnvMapCS
 
 endlocal
 exit /b 0

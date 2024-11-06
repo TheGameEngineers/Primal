@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Content;
 using System;
+using System.Threading.Tasks;
 
 namespace PrimalEditor.Editors
 {
@@ -17,9 +18,8 @@ namespace PrimalEditor.Editors
     interface IAssetEditor
     {
         AssetEditorState State { get; }
-        Guid AssetGuid { get; }
         Asset Asset { get; }
-
-        void SetAsset(AssetInfo info);
+        bool CheckAssetGuid(Guid guid);
+        Task SetAsset(AssetInfo info);
     }
 }

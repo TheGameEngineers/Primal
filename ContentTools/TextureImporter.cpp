@@ -12,12 +12,20 @@ using namespace Microsoft::WRL;
 namespace primal::tools {
 
 bool is_normal_map(const Image *const image);
+HRESULT prefilter_diffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sample_count, ScratchImage& prefiltered_diffuse);
 HRESULT equirectangular_to_cubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
                                    bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
 HRESULT equirectangular_to_cubemap(const Image* env_maps, u32 env_map_count, u32 cubemap_size,
                                    bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
 
 namespace {
+
+struct ibl_filter {
+    enum type : u32 {
+        diffuse = 0,
+        specular,
+    };
+};
 
 struct import_error {
     enum error_code : u32 {
@@ -699,6 +707,69 @@ decompress_image(texture_data *const data)
 
     return scratch;
 }
+
+void
+prefilter_ibl(texture_data *const data, ibl_filter::type filter_type)
+{
+    assert(data->import_settings.prefilter_cubemap);
+    texture_info& info{ data->info };
+    const DXGI_FORMAT format{ (DXGI_FORMAT)info.format };
+    assert(!IsCompressed(format));
+    utl::vector<Image> images = subresource_data_to_images(data);
+    assert(!images.empty() && !IsCompressed(images[0].format));
+    assert(info.flags & content::texture_flags::is_cube_map);
+    assert(info.width == info.height);
+    const u32 cubemap_count{ info.array_size / 6 };
+    assert(info.mip_levels == (u8)(math::log2(info.width) + 1));
+
+    HRESULT hr{ S_OK };
+
+    ScratchImage cubemaps{};
+    hr = cubemaps.InitializeCube(format, info.width, info.height, cubemap_count, info.mip_levels);
+    if (FAILED(hr))
+    {
+        info.import_error = import_error::unknown;
+        return;
+    }
+
+    for (u32 img_idx{ 0 }; img_idx < cubemaps.GetImageCount(); ++img_idx)
+    {
+        const Image& image{ cubemaps.GetImages()[img_idx] };
+        assert(image.slicePitch == images[img_idx].slicePitch);
+        memcpy(image.pixels, images[img_idx].pixels, image.slicePitch);
+    }
+
+    constexpr u32 sample_count{ 1024 };
+
+    run_on_gpu([&](ID3D11Device* device)
+               {
+                   hr = filter_type == ibl_filter::diffuse ?
+                       prefilter_diffuse(device, cubemaps, sample_count, cubemaps) :
+                       S_OK; // prefilter_specular(device, cubemaps, sample_count, cubemaps);
+               });
+
+    if (FAILED(hr))
+    {
+        info.import_error = import_error::unknown;
+        return;
+    }
+
+    if (data->import_settings.compress)
+    {
+        ScratchImage bc_scratch{ compress_image(data, cubemaps) };
+        if (data->info.import_error) return;
+
+        // Decompress the first image to be used for the icon.
+        assert(bc_scratch.GetImages());
+        copy_icon(bc_scratch.GetImages()[0], data);
+
+        cubemaps = std::move(bc_scratch);
+    }
+
+    copy_subresources(cubemaps, data);
+    texture_info_from_metadata(cubemaps.GetMetadata(), data->info);
+}
+
 } // anonymous namespace
 
 void
@@ -717,6 +788,18 @@ ShutDownTextureTools()
         FreeLibrary(d3d11_module);
         d3d11_module = nullptr;
     }
+}
+
+EDITOR_INTERFACE void
+PrefilterDiffuseIBL(texture_data *const data)
+{
+    prefilter_ibl(data, ibl_filter::diffuse);
+}
+
+EDITOR_INTERFACE void
+PrefilterSpecularIBL(texture_data *const data)
+{
+    prefilter_ibl(data, ibl_filter::specular);
 }
 
 EDITOR_INTERFACE void
@@ -802,7 +885,9 @@ Import(texture_data *const data)
     ScratchImage scratch{ initialize_from_images(data, images) };
     if (data->info.import_error) return;
 
-    if (settings.compress)
+    // NOTE: don't compress if it's a cubemap that's going to be prefiltered. Compression is
+    //       postponed till after prefiltering is done.
+    if (settings.compress && !(scratch.GetMetadata().IsCubemap() && settings.prefilter_cubemap))
     {
         ScratchImage bc_scratch{ compress_image(data, scratch) };
         if (data->info.import_error) return;

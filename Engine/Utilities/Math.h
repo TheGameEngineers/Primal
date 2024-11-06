@@ -124,4 +124,19 @@ calc_crc32_u64(const u8 *const data, u64 size)
 
     return crc;
 }
+
+// TODO: _BitScan*() functions are Microsoft specific. 
+[[nodiscard]] inline u8
+log2(u64 value)
+{
+    unsigned long mssb; // most significant set bit
+    unsigned long lssb; // least significant set bit
+
+    // If perfect power of two (only one set bit), return index of bit. Otherwise round up
+    // fractional log by adding 1 to most significant set bit's index.
+    if (_BitScanReverse64(&mssb, value) > 0 && _BitScanForward64(&lssb, value) > 0)
+        return u8(mssb + (mssb == lssb ? 0 : 1));
+    else
+        return 0;
+}
 }

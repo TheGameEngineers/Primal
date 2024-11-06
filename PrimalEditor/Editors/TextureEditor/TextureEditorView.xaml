@@ -91,6 +91,25 @@
                     </ToggleButton.Style>
                 </ToggleButton>
 
+                <Button Padding="5" Margin="5,0" d:Visibility="Visible" d:Content="Diffuse" Width="64" Click="OnIBLPair_Button_Click">
+                    <Button.Style>
+                        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PrimalButtonStyle}">
+                            <Setter Property="IsEnabled" Value="True"/>
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Content" Value="Specular"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Texture.IBLPair.ImportSettings.Sources.Count}" Value="0">
+                                    <Setter Property="Content" Value="Diffuse"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Texture.IsPrefilteredIBL}" Value="False">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
                 <TextBlock Margin="5,0" Text="Layer:" Visibility="{Binding Path=Visibility, ElementName=arraySlider}"/>
                 <Slider x:Name="arraySlider" Width="200" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                         Maximum="{Binding MaxArrayIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding ArrayIndex}"

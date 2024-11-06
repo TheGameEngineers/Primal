@@ -12,6 +12,7 @@ namespace {
 
 namespace shaders {
 #include "EnvMapProcessing_EquirectangularToCubeMapCS.inc"
+#include "EnvMapProcessing_PrefilterDiffuseEnvMapCS.inc"
 };
 
 constexpr u32 prefiltered_diffuse_cubemap_size{ 64 };
@@ -456,4 +457,137 @@ equirectangular_to_cubemap(ID3D11Device* device, const Image* env_maps, u32 env_
     return download_texture_2d(ctx.Get(), cubemap_size, cubemap_size, array_size, 1, format, true,
                                cubemaps.Get(), cubemaps_cpu.Get(), cubemaps_out);
 }
+
+HRESULT
+prefilter_diffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sample_count, ScratchImage& prefiltered_diffuse)
+{
+    const TexMetadata& meta_data{ cubemaps.GetMetadata() };
+    const u32 array_size{ (u32)meta_data.arraySize };
+    const u32 cubemap_count{ array_size / 6 };
+    assert(device && meta_data.IsCubemap() && cubemap_count && !(array_size % 6));
+    ComPtr<ID3D11DeviceContext> ctx{};
+    device->GetImmediateContext(ctx.GetAddressOf());
+    assert(ctx.Get());
+
+    HRESULT hr{ S_OK };
+
+    // Upload source cubemaps and create output resources
+    ComPtr<ID3D11Texture2D> cubemaps_in{};
+    ComPtr<ID3D11Texture2D> cubemaps_out{};
+    ComPtr<ID3D11Texture2D> cubemaps_cpu{};
+    {
+        D3D11_TEXTURE2D_DESC desc{};
+        desc.Width = (u32)meta_data.width;
+        desc.Height = (u32)meta_data.height;
+        desc.MipLevels = (u32)meta_data.mipLevels;
+        desc.ArraySize = array_size;
+        desc.Format = meta_data.format;
+        desc.SampleDesc = { 1, 0 };
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        desc.CPUAccessFlags = 0;
+        desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+        {
+            const u32 image_count{ (u32)cubemaps.GetImageCount() };
+            const Image* images{ cubemaps.GetImages() };
+            utl::vector<D3D11_SUBRESOURCE_DATA> input_data(image_count);
+            for (u32 i{ 0 }; i < image_count; ++i)
+            {
+                input_data[i].pSysMem = images[i].pixels;
+                input_data[i].SysMemPitch = (u32)images[i].rowPitch;
+            }
+
+            hr = device->CreateTexture2D(&desc, input_data.data(), cubemaps_in.GetAddressOf());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
+        desc.Width = desc.Height = prefiltered_diffuse_cubemap_size;
+        desc.MipLevels = 1;
+        desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+        desc.MiscFlags = 0;
+        hr = device->CreateTexture2D(&desc, nullptr, cubemaps_out.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        desc.BindFlags = 0;
+        desc.Usage = D3D11_USAGE_STAGING;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        hr = device->CreateTexture2D(&desc, nullptr, cubemaps_cpu.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+    };
+
+    ComPtr<ID3D11ComputeShader> shader{};
+    hr = device->CreateComputeShader(shaders::EnvMapProcessing_PrefilterDiffuseEnvMapCS,
+                                     sizeof(shaders::EnvMapProcessing_PrefilterDiffuseEnvMapCS),
+                                     nullptr, shader.GetAddressOf());
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    ComPtr<ID3D11Buffer> constant_buffer{};
+    {
+        hr = create_constant_buffer(device, constant_buffer.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ShaderConstants constants{};
+        constants.CubeMapInSize = (u32)meta_data.width;
+        constants.CubeMapOutSize = prefiltered_diffuse_cubemap_size;
+        constants.SampleCount = sample_count;
+        hr = set_constants(ctx.Get(), constant_buffer.Get(), constants);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+    }
+
+    ComPtr<ID3D11SamplerState> linear_sampler{};
+    hr = create_linear_sampler(device, linear_sampler.GetAddressOf());
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    reset_d3d11_context(ctx.Get());
+
+    for (u32 i{ 0 }; i < cubemap_count; ++i)
+    {
+        ComPtr<ID3D11ShaderResourceView> cubemap_in_srv{};
+        hr = create_cubemap_srv(device, meta_data.format, i * 6, 1, cubemaps_in.Get(), cubemap_in_srv.ReleaseAndGetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ComPtr<ID3D11UnorderedAccessView> cubemap_out_uav{};
+        hr = create_texture_2d_uav(device, meta_data.format, 6, i * 6, 0, cubemaps_out.Get(), cubemap_out_uav.ReleaseAndGetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        const u32 block_size{ (prefiltered_diffuse_cubemap_size + 15) >> 4 };
+        dispatch(ctx.Get(), cubemap_in_srv.GetAddressOf(), cubemap_out_uav.GetAddressOf(), constant_buffer.GetAddressOf(),
+                 linear_sampler.GetAddressOf(), shader.Get(), { block_size, block_size, 6 });
+    }
+
+    reset_d3d11_context(ctx.Get());
+
+    return download_texture_2d(ctx.Get(), prefiltered_diffuse_cubemap_size, prefiltered_diffuse_cubemap_size,
+                               array_size, 1, meta_data.format, true,
+                               cubemaps_out.Get(), cubemaps_cpu.Get(), prefiltered_diffuse);
+}
+
 }

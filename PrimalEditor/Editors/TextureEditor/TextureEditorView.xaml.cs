@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -28,6 +29,12 @@ namespace PrimalEditor.Editors
         private void OnZoomFitTexture(object sender, ExecutedRoutedEventArgs e) => textureView.ZoomFit();
 
         private void OnActualSizeTexture(object sender, ExecutedRoutedEventArgs e) => textureView.ActualSize();
+
+        private async void OnIBLPair_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as TextureEditor;
+            await vm.SetAsset(vm.Texture.IBLPair);
+        }
 
         public TextureEditorView()
         {

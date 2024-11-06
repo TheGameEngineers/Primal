@@ -53,7 +53,7 @@ namespace PrimalEditor.Editors
             }
         }
 
-        public Guid AssetGuid { get; private set; }
+        private Guid _assetGuid;
 
         private bool _canSaveChanges;
         public bool CanSaveChanges
@@ -328,16 +328,29 @@ namespace PrimalEditor.Editors
 
         private void OnRegenerateBitmapsCommand(bool isNormalMap)
         {
-            GenerateSliceBitMaps(isNormalMap);
+            GenerateSliceBitmaps(isNormalMap, Texture?.Format ?? DXGI_FORMAT.DXGI_FORMAT_UNKNOWN);
             OnPropertyChanged(nameof(SelectedSliceBitmap));
             SetImageChannels();
         }
 
-        public async void SetAsset(AssetInfo info)
+        public bool CheckAssetGuid(Guid guid) => _assetGuid == guid || Texture?.Guid == guid || Texture?.IBLPair?.Guid == guid;
+
+        public async Task SetAsset(Asset asset)
+        {
+            Debug.Assert(asset is Texture);
+            if (asset is Texture texture)
+            {
+                _assetGuid = texture.Guid;
+                await SetMipmaps(texture);
+                Texture = texture;
+            }
+        }
+
+        public async Task SetAsset(AssetInfo info)
         {
             try
             {
-                AssetGuid = info.Guid;
+                _assetGuid = info.Guid;
                 Texture = null;
                 Debug.Assert(info != null && File.Exists(info.FullPath));
                 var texture = new Texture();
@@ -366,7 +379,7 @@ namespace PrimalEditor.Editors
             {
                 await Task.Run(() => _slices = texture.ImportSettings.Compress ? ContentToolsAPI.Decompress(texture) : texture.Slices);
                 Debug.Assert(_slices?.Any() == true && _slices.First().Any());
-                GenerateSliceBitMaps(texture.IsNormalMap);
+                GenerateSliceBitmaps(texture.IsNormalMap, texture.Format);
                 OnPropertyChanged(nameof(Texture));
                 OnPropertyChanged(nameof(DataSize));
             }
@@ -377,7 +390,7 @@ namespace PrimalEditor.Editors
             }
         }
 
-        private void GenerateSliceBitMaps(bool isNormalMap)
+        private void GenerateSliceBitmaps(bool isNormalMap, DXGI_FORMAT format)
         {
             _sliceBitmaps.Clear();
             _cubeMap = null;
@@ -389,7 +402,7 @@ namespace PrimalEditor.Editors
                     List<BitmapSource> sliceBitmap = new();
                     foreach (var slice in mipLevel)
                     {
-                        var image = BitmapHelper.ImageFromSlice(slice, isNormalMap);
+                        var image = BitmapHelper.ImageFromSlice(slice, format, isNormalMap);
                         Debug.Assert(image != null);
                         sliceBitmap.Add(image);
                     }

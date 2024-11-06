@@ -268,6 +268,60 @@ namespace PrimalEditor
 
     static class BitmapHelper
     {
+        public static int BytesPerChannel(DXGI_FORMAT format)
+        {
+            switch (format)
+            {
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R32_SINT:
+                    return 4;
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R16_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R16_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R16_SINT:
+                    return 2;
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8_SINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8_UINT:
+                case DXGI_FORMAT.DXGI_FORMAT_R8_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8_SINT:
+                    return 1;
+                default:
+                    break;
+            }
+
+            return -1;
+        }
+
         public static byte[] CreateThumbnail(BitmapSource image, int maxWidth, int maxHeight)
         {
             var scaleX = maxWidth / (double)image.PixelWidth;
@@ -286,11 +340,13 @@ namespace PrimalEditor
             return memStream.ToArray();
         }
 
-        internal static BitmapSource ImageFromSlice(Slice slice, bool isNormalMap = false)
+        public static BitmapSource ImageFromSlice(Slice slice, DXGI_FORMAT slice_format, bool isNormalMap = false)
         {
             var data = slice.RawContent;
             var bytesPerPixel = data.Length / (slice.Width * slice.Height);
-            var stride = slice.Width * bytesPerPixel; // This should be the same as slice.RowPitch
+            var bytesPerChannel = BytesPerChannel(slice_format);
+
+            var stride = slice.Width * bytesPerPixel;
             var format = PixelFormats.Default;
             byte[] bgrData = null;
 
@@ -304,43 +360,111 @@ namespace PrimalEditor
                 bgrData = new byte[data.Length];
                 Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
             }
-            else if (bytesPerPixel == 4 || bytesPerPixel == 3)
+            else if ((bytesPerPixel == 4 || bytesPerPixel == 3) && bytesPerChannel == 1)
             {
                 bgrData = new byte[data.Length];
                 Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
 
                 // swap R and B channels: RGB -> BGR
-                for (int i = 0; i < data.Length; i += bytesPerPixel)
+                for (int i = 0; i < bgrData.Length; i += bytesPerPixel)
                 {
-                    (bgrData[i], bgrData[i + 2]) = (bgrData[i + 2], bgrData[i]);
+                    var r = bgrData[i + 2];
+                    bgrData[i + 2] = bgrData[i];
+                    bgrData[i] = r;
+                }
+            }
+            else if (bytesPerPixel == 4)
+            {
+                if (bytesPerChannel == 2)
+                {
+                    int offset = 0;
+                    Half[] dataFloats =
+                        data.GroupBy(x => offset++ / bytesPerChannel)
+                        .Select(x => BitConverter.ToHalf(x.ToArray(), 0))
+                        .ToArray();
+                    using var writer = new BinaryWriter(new MemoryStream());
+                    for (int i = 0; i < dataFloats.Length; i += 2)
+                    {
+                        writer.Write((float)dataFloats[i + 0]);
+                        writer.Write((float)dataFloats[i + 1]);
+                        writer.Write(0.0f);
+                        writer.Write(1.0f);
+                    }
+                    writer.Flush();
+                    bgrData = (writer.BaseStream as MemoryStream).ToArray();
+                    format = PixelFormats.Rgba128Float;
+                    stride = slice.Width * 16;
+                }
+                else if (bytesPerChannel == 4)
+                {
+                    int offset = 0;
+                    float[] dataFloats =
+                        data.GroupBy(x => offset++ / bytesPerChannel)
+                        .Select(x => BitConverter.ToSingle(x.ToArray().Reverse().ToArray(), 0))
+                        .ToArray();
+                    using var writer = new BinaryWriter(new MemoryStream());
+                    foreach (var f in dataFloats)
+                    {
+                        writer.Write(f);
+                        writer.Write(0.0f);
+                        writer.Write(0.0f);
+                        writer.Write(1.0f);
+                    }
+                    writer.Flush();
+                    bgrData = (writer.BaseStream as MemoryStream).ToArray();
+                    format = PixelFormats.Rgba128Float;
+                    stride = slice.Width * 16;
                 }
             }
             else if (bytesPerPixel == 2)
             {
-                bgrData = new byte[slice.Width * slice.Height * 3];
-                stride = slice.Width * 3;
-                int index = 0;
-                for (int i = 0; i < data.Length; i += 2)
+                if (bytesPerChannel == 1)
                 {
-                    bgrData[index + 2] = data[i + 0];
-                    bgrData[index + 1] = data[i + 1];
-                    bgrData[index + 0] = 0;
-                    index += 3;
-                }
-
-                if (isNormalMap)
-                {
-                    var inv255 = 1.0 / 255.0;
-                    index = 0;
+                    bgrData = new byte[slice.Width * slice.Height * 3];
+                    stride = slice.Width * 3;
+                    int index = 0;
                     for (int i = 0; i < data.Length; i += 2)
                     {
-                        var r = data[i + 0] * inv255 * 2.0 - 1.0;
-                        var g = data[i + 1] * inv255 * 2.0 - 1.0;
-                        var b = (Math.Sqrt(Math.Clamp(1.0 - (r * r + g * g), 0.0, 1.0)) + 1.0) * 0.5 * 255.0;
-                        bgrData[index + 0] = (byte)b;
+                        bgrData[index + 2] = data[i + 0];
+                        bgrData[index + 1] = data[i + 1];
+                        bgrData[index + 0] = 0;
                         index += 3;
                     }
 
+                    if (isNormalMap)
+                    {
+                        var inv255 = 1.0 / 255.0;
+                        index = 0;
+
+                        for (int i = 0; i < data.Length; i += 2)
+                        {
+                            var r = data[i + 0] * inv255 * 2.0 - 1.0;
+                            var g = data[i + 1] * inv255 * 2.0 - 1.0;
+                            var b = (Math.Sqrt(Math.Clamp(1.0 - (r * r + g * g), 0.0, 1.0)) + 1.0) * 0.5 * 255.0;
+                            bgrData[index + 0] = (byte)b;
+                            index += 3;
+                        }
+                    }
+                }
+                else if (bytesPerChannel == 2)
+                {
+                    int offset = 0;
+                    Half[] dataFloats =
+                        data.GroupBy(x => offset++ / bytesPerChannel)
+                        .Select(x => BitConverter.ToHalf(x.ToArray(), 0))
+                        .ToArray();
+                    using var writer = new BinaryWriter(new MemoryStream());
+                    foreach (var f in dataFloats)
+                    {
+                        writer.Write(f);
+                        writer.Write(0.0f);
+                        writer.Write(0.0f);
+                        writer.Write(1.0f);
+                    }
+                    writer.Flush();
+                    bgrData = (writer.BaseStream as MemoryStream).ToArray();
+                    format = PixelFormats.Rgba128Float;
+                    stride = slice.Width * 16;
                 }
             }
             else if (bytesPerPixel == 1)

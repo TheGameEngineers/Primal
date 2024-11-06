@@ -65,10 +65,7 @@ namespace PrimalEditor.Content
             }
         }
 
-        private static async void OnContentModified(object sender, FileSystemEventArgs e)
-        {
-            await Application.Current.Dispatcher.BeginInvoke(new Action(() => _refreshTimer.Trigger(e)));
-        }
+        private static async void OnContentModified(object sender, FileSystemEventArgs e) => await Application.Current.Dispatcher.BeginInvoke(() => _refreshTimer.Trigger(e));
 
         private static void Refresh(object sender, DelayEventTimerArgs e)
         {

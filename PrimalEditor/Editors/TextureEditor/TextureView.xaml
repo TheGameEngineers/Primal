@@ -9,12 +9,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ed="clr-namespace:PrimalEditor.Editors"
              xmlns:primal="clr-namespace:PrimalEditor"
+             xmlns:opt="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
              d:DataContext="{d:DesignInstance Type=ed:TextureEditor}"
              d:DesignHeight="450" d:DesignWidth="800" mc:Ignorable="d">
     <Grid>
-        <Grid ClipToBounds="True" Background="{StaticResource TiledGridBackground}"
+        <Grid ClipToBounds="True"
               MouseRightButtonDown="OnGrid_Mouse_RBD" MouseRightButtonUp="OnGrid_Mouse_RBU"
               MouseWheel="OnGrid_Mouse_Wheel" PreviewMouseMove="OnGrid_Mouse_Move" x:Name="backgroundGrid">
+            <Grid.Background>
+                <VisualBrush TileMode="Tile" Viewport="0,0,200,200" ViewportUnits="Absolute" Visual="{StaticResource TiledGridBackground}" opt:Freeze="True"/>
+            </Grid.Background>
             <Grid.LayoutTransform>
                 <ScaleTransform />
             </Grid.LayoutTransform>

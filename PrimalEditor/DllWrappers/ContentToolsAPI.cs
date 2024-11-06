@@ -12,6 +12,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Markup;
 
 namespace PrimalEditor.ContentToolsAPIStructs
@@ -57,10 +58,8 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public int MirrorCubeMap;
         public int PrefilterCubeMap;
 
-        public void FromContentSettings(Texture texture)
+        public void FromContentSettings(Content.TextureImportSettings settings)
         {
-            var settings = texture.ImportSettings;
-
             Sources = string.Join(";", settings.Sources);
             SourceCount = settings.Sources.Count;
             Dimension = (int)settings.Dimension;
@@ -85,6 +84,20 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public int Format;
         public int ImportError;
         public int Flags;
+
+        public TextureInfo Clone()
+        {
+            return new TextureInfo
+            {
+                Width = Width,
+                Height = Height,
+                ArraySize = ArraySize,
+                MipLevels = MipLevels,
+                Format = Format,
+                ImportError = ImportError,
+                Flags = Flags,
+            };
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -96,145 +109,6 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public int IconSize;
         public TextureInfo Info = new();
         public TextureImportSettings ImportSettings = new();
-
-        public void Dispose()
-        {
-            Marshal.FreeCoTaskMem(SubresourceData);
-            Marshal.FreeCoTaskMem(Icon);
-            GC.SuppressFinalize(this);
-        }
-
-        ~TextureData()
-        {
-            Dispose();
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    class GeometryImportSettings
-    {
-        public float SmoothingAngle = 178f;
-        public byte CalculateNormals = 0;
-        public byte CalculateTangents = 1;
-        public byte ReverseHandedness = 0;
-        public byte ImportEmbeddedTextures = 1;
-        public byte ImportAnimations = 1;
-        public byte CoalesceMeshes = 0;
-
-        private byte ToByte(bool value) => value ? (byte)1 : (byte)0;
-
-        public void FromContentSettings(Geometry geometry)
-        {
-            var settings = geometry.ImportSettings;
-
-            SmoothingAngle = settings.SmoothingAngle;
-            CalculateNormals = ToByte(settings.CalculateNormals);
-            CalculateTangents = ToByte(settings.CalculateTangents);
-            ReverseHandedness = ToByte(settings.ReverseHandedness);
-            ImportEmbeddedTextures = ToByte(settings.ImportEmbeddedTextures);
-            ImportAnimations = ToByte(settings.ImportAnimations);
-            CoalesceMeshes = ToByte(settings.CoalesceMeshes);
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    class SceneData : IDisposable
-    {
-        public IntPtr Data;
-        public int DataSize;
-        public GeometryImportSettings ImportSettings = new();
-
-        public void Dispose()
-        {
-            Marshal.FreeCoTaskMem(Data);
-            GC.SuppressFinalize(this);
-        }
-
-        ~SceneData()
-        {
-            Dispose();
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    class PrimitiveInitInfo
-    {
-        public PrimitiveMeshType Type;
-        public int SegmentsX = 1;
-        public int SegmentsY = 1;
-        public int SegmentsZ = 1;
-        public Vector3 Size = new(1f);
-        public int LOD = 0;
-    }
-}
-
-namespace PrimalEditor.DllWrappers
-{
-    static class ContentToolsAPI
-    {
-        private const string _toolsDLL = "ContentTools.dll";
-        private delegate void ProgressCallback(int value, int maxValue);
-
-        [DllImport(_toolsDLL)]
-        public static extern void ShutDownContentTools();
-
-        #region Texture
-        private static SliceArray3D GetSlices(TextureData data)
-        {
-            Debug.Assert(data.Info.MipLevels > 0);
-            Debug.Assert(data.SubresourceData != IntPtr.Zero && data.SubresourceSize > 0);
-
-            var subresourceData = new byte[data.SubresourceSize];
-            Marshal.Copy(data.SubresourceData, subresourceData, 0, data.SubresourceSize);
-
-            return SlicesFromBinary(subresourceData, data.Info.ArraySize, data.Info.MipLevels,
-                ((TextureFlags)data.Info.Flags).HasFlag(TextureFlags.IsVolumeMap));
-        }
-
-        private static Slice GetIcon(TextureData data)
-        {
-            // Subresources are not compressed. Just use the first image for the icon.
-            if (data.ImportSettings.Compress == 0) return null;
-
-            Debug.Assert(data.Icon != IntPtr.Zero && data.IconSize > 0);
-
-            var icon = new byte[data.IconSize];
-            Marshal.Copy(data.Icon, icon, 0, data.IconSize);
-
-            return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
-        }
-
-        private static void SetSubresourceData(SliceArray3D slices, TextureData data)
-        {
-            var subresourceData = SlicesToBinary(slices);
-            data.SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
-            data.SubresourceSize = subresourceData.Length;
-            Marshal.Copy(subresourceData, 0, data.SubresourceData, data.SubresourceSize);
-        }
-
-        private static void GetTextureDataInfo(Texture texture, TextureData data)
-        {
-            var info = data.Info;
-
-            info.Width = texture.Width;
-            info.Height = texture.Height;
-            info.ArraySize = texture.ArraySize;
-            info.MipLevels = texture.MipLevels;
-            info.Format = (int)texture.Format;
-            info.Flags = (int)texture.Flags;
-        }
-
-        private static void GetTextureInfo(Texture texture, TextureData data)
-        {
-            var info = data.Info;
-            // NOTE: set the flags first, because some properties check flags when they're set.
-            texture.Flags = (TextureFlags)info.Flags;
-            texture.Width = info.Width;
-            texture.Height = info.Height;
-            texture.ArraySize = info.ArraySize;
-            texture.MipLevels = info.MipLevels;
-            texture.Format = (DXGI_FORMAT)info.Format;
-        }
 
         public static SliceArray3D SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
         {
@@ -309,6 +183,172 @@ namespace PrimalEditor.DllWrappers
             return data;
         }
 
+        public SliceArray3D GetSlices()
+        {
+            Debug.Assert(Info.MipLevels > 0);
+            Debug.Assert(SubresourceData != IntPtr.Zero && SubresourceSize > 0);
+
+            var subresourceData = new byte[SubresourceSize];
+            Marshal.Copy(SubresourceData, subresourceData, 0, SubresourceSize);
+
+            return SlicesFromBinary(subresourceData, Info.ArraySize, Info.MipLevels,
+                ((TextureFlags)Info.Flags).HasFlag(TextureFlags.IsVolumeMap));
+        }
+
+        public Slice GetIcon()
+        {
+            // Subresources are not compressed. Just use the first image for the icon.
+            if (ImportSettings.Compress == 0) return null;
+
+            Debug.Assert(Icon != IntPtr.Zero && IconSize > 0);
+
+            var icon = new byte[IconSize];
+            Marshal.Copy(Icon, icon, 0, IconSize);
+
+            return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
+        }
+
+        public void SetSubresourceData(SliceArray3D slices)
+        {
+            var subresourceData = SlicesToBinary(slices);
+            SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
+            SubresourceSize = subresourceData.Length;
+            Marshal.Copy(subresourceData, 0, SubresourceData, SubresourceSize);
+        }
+
+        public void GetTextureDataInfo(Texture texture)
+        {
+            Info.Width = texture.Width;
+            Info.Height = texture.Height;
+            Info.ArraySize = texture.ArraySize;
+            Info.MipLevels = texture.MipLevels;
+            Info.Format = (int)texture.Format;
+            Info.Flags = (int)texture.Flags;
+        }
+
+        public void GetTextureInfo(Texture texture)
+        {
+            // NOTE: set the flags first, because some properties check flags when they're set.
+            texture.Flags = (TextureFlags)Info.Flags;
+            texture.Width = Info.Width;
+            texture.Height = Info.Height;
+            texture.ArraySize = Info.ArraySize;
+            texture.MipLevels = Info.MipLevels;
+            texture.Format = (DXGI_FORMAT)Info.Format;
+        }
+
+        public TextureData Clone(Content.TextureImportSettings settings)
+        {
+            TextureData data = new TextureData();
+            if (SubresourceData != IntPtr.Zero && SubresourceSize > 0)
+            {
+                var bytes = new byte[SubresourceSize];
+                data.SubresourceData = Marshal.AllocCoTaskMem(SubresourceSize);
+                data.SubresourceSize = SubresourceSize;
+                Marshal.Copy(SubresourceData, bytes, 0, SubresourceSize);
+                Marshal.Copy(bytes, 0, data.SubresourceData, SubresourceSize);
+            }
+
+            if (Icon != IntPtr.Zero && IconSize > 0)
+            {
+                var bytes = new byte[IconSize];
+                data.Icon = Marshal.AllocCoTaskMem(IconSize);
+                data.IconSize = IconSize;
+                Marshal.Copy(Icon, bytes, 0, IconSize);
+                Marshal.Copy(bytes, 0, data.Icon, IconSize);
+            }
+
+            data.Info = Info.Clone();
+            data.ImportSettings.FromContentSettings(settings);
+
+            return data;
+        }
+
+        public void Dispose()
+        {
+            Marshal.FreeCoTaskMem(SubresourceData);
+            Marshal.FreeCoTaskMem(Icon);
+            GC.SuppressFinalize(this);
+        }
+
+        ~TextureData() { Dispose(); }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    class GeometryImportSettings
+    {
+        public float SmoothingAngle = 178f;
+        public byte CalculateNormals = 0;
+        public byte CalculateTangents = 1;
+        public byte ReverseHandedness = 0;
+        public byte ImportEmbeddedTextures = 1;
+        public byte ImportAnimations = 1;
+        public byte CoalesceMeshes = 0;
+
+        private byte ToByte(bool value) => value ? (byte)1 : (byte)0;
+
+        public void FromContentSettings(Geometry geometry)
+        {
+            var settings = geometry.ImportSettings;
+
+            SmoothingAngle = settings.SmoothingAngle;
+            CalculateNormals = ToByte(settings.CalculateNormals);
+            CalculateTangents = ToByte(settings.CalculateTangents);
+            ReverseHandedness = ToByte(settings.ReverseHandedness);
+            ImportEmbeddedTextures = ToByte(settings.ImportEmbeddedTextures);
+            ImportAnimations = ToByte(settings.ImportAnimations);
+            CoalesceMeshes = ToByte(settings.CoalesceMeshes);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    class SceneData : IDisposable
+    {
+        public IntPtr Data;
+        public int DataSize;
+        public GeometryImportSettings ImportSettings = new();
+
+        public void Dispose()
+        {
+            Marshal.FreeCoTaskMem(Data);
+            GC.SuppressFinalize(this);
+        }
+
+        ~SceneData()
+        {
+            Dispose();
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    class PrimitiveInitInfo
+    {
+        public PrimitiveMeshType Type;
+        public int SegmentsX = 1;
+        public int SegmentsY = 1;
+        public int SegmentsZ = 1;
+        public Vector3 Size = new(1f);
+        public int LOD = 0;
+    }
+}
+
+namespace PrimalEditor.DllWrappers
+{
+    static class ContentToolsAPI
+    {
+        private const string _toolsDLL = "ContentTools.dll";
+        private delegate void ProgressCallback(int value, int maxValue);
+
+        [DllImport(_toolsDLL)]
+        public static extern void ShutDownContentTools();
+
+        #region Texture       
+        [DllImport(_toolsDLL)]
+        private static extern void PrefilterDiffuseIBL([In, Out] TextureData data);
+
+        [DllImport(_toolsDLL)]
+        private static extern void PrefilterSpecularIBL([In, Out] TextureData data);
+
         [DllImport(_toolsDLL)]
         private static extern void Decompress([In, Out] TextureData data);
 
@@ -319,9 +359,9 @@ namespace PrimalEditor.DllWrappers
 
             try
             {
-                GetTextureDataInfo(texture, textureData);
-                textureData.ImportSettings.FromContentSettings(texture);
-                SetSubresourceData(texture.Slices, textureData);
+                textureData.GetTextureDataInfo(texture);
+                textureData.ImportSettings.FromContentSettings(texture.ImportSettings);
+                textureData.SetSubresourceData(texture.Slices);
 
                 Decompress(textureData);
 
@@ -331,7 +371,7 @@ namespace PrimalEditor.DllWrappers
                     throw new Exception($"Error while trying to decompress mipmaps. Error code {textureData.Info.ImportError}");
                 }
 
-                return GetSlices(textureData);
+                return textureData.GetSlices();
             }
             catch (Exception ex)
             {
@@ -344,14 +384,14 @@ namespace PrimalEditor.DllWrappers
         [DllImport(_toolsDLL)]
         private static extern void Import([In, Out] TextureData data);
 
-        public static (SliceArray3D slices, Slice icon) Import(Texture texture)
+        public static void Import(Texture texture)
         {
             Debug.Assert(texture.ImportSettings.Sources.Any());
             using var textureData = new TextureData();
 
             try
             {
-                textureData.ImportSettings.FromContentSettings(texture);
+                textureData.ImportSettings.FromContentSettings(texture.ImportSettings);
                 Import(textureData);
 
                 if (textureData.Info.ImportError != 0)
@@ -360,14 +400,35 @@ namespace PrimalEditor.DllWrappers
                     throw new Exception($"Error while trying to import image. Error code {textureData.Info.ImportError}");
                 }
 
-                GetTextureInfo(texture, textureData);
-                return (GetSlices(textureData), GetIcon(textureData));
+                Texture diffuseIBLCubemap = null;
+
+                if (texture.ImportSettings.PrefilterCubeMap &&
+                    ((TextureFlags)textureData.Info.Flags).HasFlag(TextureFlags.IsCubeMap))
+                {
+                    using var diffuseData = textureData.Clone(texture.ImportSettings);
+                    var diffuseResult = Task.Run(() => PrefilterDiffuseIBL(diffuseData));
+                    var specularResult = Task.Run(() => PrefilterSpecularIBL(textureData));
+
+                    diffuseIBLCubemap = texture.IBLPair ?? new();
+
+                    diffuseResult.Wait();
+
+                    diffuseData.GetTextureInfo(diffuseIBLCubemap);
+                    diffuseIBLCubemap.SetData(diffuseData.GetSlices(), diffuseData.GetIcon(), texture);
+
+                    IAssetImportSettings.CopyImportSettings(texture.ImportSettings, diffuseIBLCubemap.ImportSettings);
+                    diffuseIBLCubemap.ImportSettings.Sources.Clear();
+
+                    specularResult.Wait();
+                }
+
+                textureData.GetTextureInfo(texture);
+                texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap);
             }
             catch (Exception ex)
             {
                 Logger.Log(MessageType.Error, $"Failed to import from {texture.FileName}");
                 Debug.WriteLine(ex.Message);
-                return new();
             }
         }
 

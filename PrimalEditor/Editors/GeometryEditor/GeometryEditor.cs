@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -254,7 +253,7 @@ namespace PrimalEditor.Editors
                                 vertexData.UVs.Add(new Point(u, v));
                             }
 
-                            if(mesh.ElementsType.HasFlag(ElementsType.Joints) && mesh.ElementsType.HasFlag(ElementsType.Colors))
+                            if (mesh.ElementsType.HasFlag(ElementsType.Joints) && mesh.ElementsType.HasFlag(ElementsType.Colors))
                             {
                                 reader.BaseStream.Position += 4; // skip colors.
                             }
@@ -331,7 +330,7 @@ namespace PrimalEditor.Editors
             }
         }
 
-        public Guid AssetGuid {get; private set;}
+        private Guid _assetGuid;
 
         Asset IAssetEditor.Asset => Geometry;
 
@@ -353,7 +352,7 @@ namespace PrimalEditor.Editors
         public MeshRenderer MeshRenderer
         {
             get => _meshRenderer;
-            set
+            private set
             {
                 if (_meshRenderer != value)
                 {
@@ -424,12 +423,14 @@ namespace PrimalEditor.Editors
             }
         }
 
+        public bool CheckAssetGuid(Guid guid) => _assetGuid == guid;
+
         public void SetAsset(Asset asset)
         {
             Debug.Assert(asset is Content.Geometry);
             if (asset is Content.Geometry geometry)
             {
-                AssetGuid = asset.Guid;
+                _assetGuid = asset.Guid;
                 Geometry = geometry;
                 var numLods = geometry.GetLODGroup().LODs.Count;
                 if (LODIndex >= numLods)
@@ -438,16 +439,16 @@ namespace PrimalEditor.Editors
                 }
                 else
                 {
-                    MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[0], MeshRenderer);
+                    MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[LODIndex], MeshRenderer);
                 }
             }
         }
 
-        public async void SetAsset(AssetInfo info)
+        public async Task SetAsset(AssetInfo info)
         {
             try
             {
-                AssetGuid = info.Guid;
+                _assetGuid = info.Guid;
                 Debug.Assert(info != null && File.Exists(info.FullPath));
                 var geometry = new Content.Geometry();
                 await Task.Run(() =>
@@ -460,6 +461,7 @@ namespace PrimalEditor.Editors
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
+                Debug.WriteLine($"Failed to set geometry for use in geometry editor. File: {info.FullPath}");
             }
         }
     }
