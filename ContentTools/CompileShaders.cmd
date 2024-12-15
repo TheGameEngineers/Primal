@@ -18,6 +18,7 @@ if not defined CompileShadersOutput set CompileShadersOutput=x64\Compiled
 echo.
 call :CompileShader EnvMapProcessing EquirectangularToCubeMapCS
 call :CompileShader EnvMapProcessing PrefilterDiffuseEnvMapCS
+call :CompileShader EnvMapProcessing PrefilterSpecularEnvMapCS
 
 endlocal
 exit /b 0

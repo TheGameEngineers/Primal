@@ -12,6 +12,7 @@ using namespace Microsoft::WRL;
 namespace primal::tools {
 
 bool is_normal_map(const Image *const image);
+HRESULT prefilter_specular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sample_count, ScratchImage& prefiltered_specular);
 HRESULT prefilter_diffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sample_count, ScratchImage& prefiltered_diffuse);
 HRESULT equirectangular_to_cubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
                                    bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
@@ -208,13 +209,14 @@ run_on_gpu(T func)
     }
 
     bool wait{ true };
+    bool result{ false };
     while (wait)
     {
         for (u32 i{ 0 }; i < d3d11_devices.size(); ++i)
         {
             if (d3d11_devices[i].hw_compression_mutex.try_lock())
             {
-                func(d3d11_devices[i].device.Get());
+                result = func(d3d11_devices[i].device.Get());
                 d3d11_devices[i].hw_compression_mutex.unlock();
                 wait = false;
                 break;
@@ -223,7 +225,7 @@ run_on_gpu(T func)
         if (wait) std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    return true;
+    return result;
 }
 
 constexpr void
@@ -523,6 +525,7 @@ initialize_from_images(texture_data *const data, const utl::vector<Image>& image
                                 {
                                     hr = equirectangular_to_cubemap(device, images.data(), array_size, settings.cubemap_size,
                                                                     settings.prefilter_cubemap, settings.mirror_cubemap, working_scratch);
+                                    return SUCCEEDED(hr);
                                 }))
                 {
                     hr = equirectangular_to_cubemap(images.data(), array_size, settings.cubemap_size,
@@ -555,9 +558,12 @@ initialize_from_images(texture_data *const data, const utl::vector<Image>& image
         scratch = std::move(working_scratch);
     }
 
-    if (settings.mip_levels != 1 || settings.prefilter_cubemap)
+    const bool generate_full_mipchain{ settings.prefilter_cubemap && settings.dimension == texture_dimension::texture_cube };
+
+    if (settings.mip_levels != 1 || generate_full_mipchain)
     {
-        scratch = generate_mipmaps(scratch, data->info, settings.prefilter_cubemap ? 0 : settings.mip_levels,
+        scratch = generate_mipmaps(scratch, data->info,
+                                   generate_full_mipchain ? 0 : settings.mip_levels,
                                    settings.dimension == texture_dimension::texture_3d);
     }
 
@@ -655,6 +661,7 @@ compress_image(texture_data *const data, ScratchImage& scratch)
                      {
                          hr = Compress(device, scratch.GetImages(), scratch.GetImageCount(),
                                        scratch.GetMetadata(), output_format, TEX_COMPRESS_DEFAULT, 1.f, bc_scratch);
+                         return SUCCEEDED(hr);
                      })))
 
     {
@@ -745,7 +752,8 @@ prefilter_ibl(texture_data *const data, ibl_filter::type filter_type)
                {
                    hr = filter_type == ibl_filter::diffuse ?
                        prefilter_diffuse(device, cubemaps, sample_count, cubemaps) :
-                       S_OK; // prefilter_specular(device, cubemaps, sample_count, cubemaps);
+                       prefilter_specular(device, cubemaps, sample_count, cubemaps);
+                   return SUCCEEDED(hr);
                });
 
     if (FAILED(hr))

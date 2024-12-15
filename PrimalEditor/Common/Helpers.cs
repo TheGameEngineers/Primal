@@ -284,6 +284,10 @@ namespace PrimalEditor
                 case DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT:
                 case DXGI_FORMAT.DXGI_FORMAT_R32_UINT:
                 case DXGI_FORMAT.DXGI_FORMAT_R32_SINT:
+
+                case DXGI_FORMAT.DXGI_FORMAT_BC6H_SF16:
+                case DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16:
+
                     return 4;
                 case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT:
                 case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM:
@@ -314,6 +318,17 @@ namespace PrimalEditor
                 case DXGI_FORMAT.DXGI_FORMAT_R8_UINT:
                 case DXGI_FORMAT.DXGI_FORMAT_R8_SNORM:
                 case DXGI_FORMAT.DXGI_FORMAT_R8_SINT:
+
+                case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_BC4_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM_SRGB:
                     return 1;
                 default:
                     break;
@@ -352,15 +367,15 @@ namespace PrimalEditor
 
             if (bytesPerPixel == 16) format = PixelFormats.Rgba128Float;
             else if (bytesPerPixel == 4) format = PixelFormats.Bgra32;
-            else if (bytesPerPixel == 3 || bytesPerPixel == 2) format = PixelFormats.Bgr24;
+            else if (bytesPerPixel == 2) format = PixelFormats.Bgr24;
             else if (bytesPerPixel == 1) format = PixelFormats.Gray8;
 
-            if (bytesPerPixel == 16)
+            if (bytesPerPixel == 16 || bytesPerPixel == 1)
             {
                 bgrData = new byte[data.Length];
                 Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
             }
-            else if ((bytesPerPixel == 4 || bytesPerPixel == 3) && bytesPerChannel == 1)
+            else if ((bytesPerPixel == 4) && bytesPerChannel == 1)
             {
                 bgrData = new byte[data.Length];
                 Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
@@ -383,7 +398,7 @@ namespace PrimalEditor
                         .Select(x => BitConverter.ToHalf(x.ToArray(), 0))
                         .ToArray();
                     using var writer = new BinaryWriter(new MemoryStream());
-                    for (int i = 0; i < dataFloats.Length; i += 2)
+                    for (int i = 0; i < dataFloats.Length; i += bytesPerChannel)
                     {
                         writer.Write((float)dataFloats[i + 0]);
                         writer.Write((float)dataFloats[i + 1]);
@@ -466,11 +481,6 @@ namespace PrimalEditor
                     format = PixelFormats.Rgba128Float;
                     stride = slice.Width * 16;
                 }
-            }
-            else if (bytesPerPixel == 1)
-            {
-                bgrData = new byte[data.Length];
-                Buffer.BlockCopy(data, 0, bgrData, 0, data.Length);
             }
 
             BitmapSource image = null;

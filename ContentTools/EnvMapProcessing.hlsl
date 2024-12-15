@@ -34,6 +34,12 @@ float2 Hammersley(uint i, uint N)
     return float2(float(i) / float(N), RadicalInverse_VdC(i));
 }
 
+float Pow4(float x)
+{
+    float xx = x * x;
+    return xx * xx;
+}
+
 float3 GetSampleDirectionEquirectangular(uint face, float x, float y)
 {
     float3 direction[6] = {
@@ -71,6 +77,14 @@ float2 DirectionToEquirectangularUV(float3 dir)
     return float2(u, v);
 }
 
+// GGX / Trowbridge-Reitz
+// [Walter et al. 2007, "Microfacet models for refraction through rough surfaces"]
+float D_GGX(float NoH, float a)
+{
+    float d = (NoH * a - NoH) * NoH + 1.f;
+    return a / (PI * d * d);
+}
+
 float3x3 GetTangentFrame(float3 normal)
 {
     float3 up = abs(normal.z) < 0.999f ? float3(0, 0, 1) : float3(1, 0, 0);
@@ -78,6 +92,60 @@ float3x3 GetTangentFrame(float3 normal)
     float3 tangentY = cross(normal, tangentX);
 
     return float3x3(tangentX, tangentY, normal);
+}
+
+float3 ImportanceSampleGGX(float2 E, float a)
+{
+    float Phi = 2.f * PI * E.x;
+    float CosTheta = sqrt((1.f - E.y) / (1.f + (a - 1.f) * E.y));
+    float SinTheta = sqrt(1.f - CosTheta * CosTheta);
+
+    float3 H;
+    H.x = SinTheta * cos(Phi);
+    H.y = SinTheta * sin(Phi);
+    H.z = CosTheta;
+
+    return H;
+}
+
+float3 PrefilterEnvMap(float roughness, float3 R)
+{
+    float a4 = Pow4(roughness);
+    float3 N = R;
+    float3 V = R;
+
+    float3 PrefilteredColor = 0;
+    float TotalWeight = 0;
+    uint NumSamples = g_SampleCount;
+    float resolution = g_CubeMapInSize; // resolution of source cubemap (per face)
+    float invSaTexel = (6.f * resolution * resolution) * (1.f / 4.f * PI);
+    float mipLevel = 0;
+    float3x3 tangentFrame = GetTangentFrame(N);
+
+    for (uint i = 0; i < NumSamples; i++)
+    {
+        float2 Xi = Hammersley(i, NumSamples);
+        float3 H = mul(ImportanceSampleGGX(Xi, a4), tangentFrame);
+        float3 L = 2 * dot(V, H) * H - V;
+        float NoL = saturate(dot(N, L));
+
+        if (NoL > 0)
+        {
+#if 1       
+            float NoH = max(dot(N, H), 0.f);
+            float HoV = max(dot(H, V), 0.f);
+            float D = D_GGX(NoH, a4);
+            float pdf = D * NoH / (4.f * HoV + 0.0001f);
+            float saSample = 1.f / (float(NumSamples) * pdf + 0.0001f);
+
+            mipLevel = roughness == 0.f ? 0.f : 0.5f * log2(saSample * invSaTexel);
+#endif
+
+            PrefilteredColor += CubeMapIn.SampleLevel(LinearSampler, L, mipLevel).rgb * NoL;
+            TotalWeight += NoL;
+        }
+    }
+    return PrefilteredColor / TotalWeight;
 }
 
 float3 SampleHemisphereDiscrete(float3 normal)
@@ -88,7 +156,6 @@ float3 SampleHemisphereDiscrete(float3 normal)
 
     float delta = 0.02f;
     uint sampleCount = 0;
-
 
     for (float phi = 0; phi < 2 * PI; phi += delta)
     {
@@ -108,7 +175,7 @@ float3 SampleHemisphereDiscrete(float3 normal)
         }
     }
 
-    irradiance = PI * irradiance * (1.f / float(sampleCount));
+    irradiance *= PI / float(sampleCount);
     return irradiance;
 }
 
@@ -130,7 +197,7 @@ float3 SampleHemisphereRandom(float3 normal)
         float3 transform = float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
         float3 sampleDir = mul(transform, tangentFrame);
 
-        irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * cosTheta;
+        irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb;
     }
 
     irradiance *= (1.f / float(sampleCount));
@@ -156,7 +223,7 @@ float3 SampleHemisphereBrute(float3 normal)
                 {
                     float tmp = 1.f + pos.x * pos.x + pos.y * pos.y;
                     float weight = 4.f * cosTheta / (sqrt(tmp) * tmp);
-                    irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * cosTheta * weight;
+                    irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * weight;
                     sampleCount += weight;
                 }
             }
@@ -198,6 +265,22 @@ void PrefilterDiffuseEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
     float3 irradiance = SampleHemisphereBrute(sampleDirection);
     //float3 irradiance = SampleHemisphereRandom(sampleDirection);
     //float3 irradiance = SampleHemisphereDiscrete(sampleDirection);
+
+    Output[uint3(DispatchThreadID.x, DispatchThreadID.y, face)] = float4(irradiance, 1.f);
+}
+
+[numthreads(16, 16, 1)]
+void PrefilterSpecularEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 GroupID : SV_GroupID)
+{
+    uint face = GroupID.z;
+    uint size = g_CubeMapOutSize;
+
+    if (DispatchThreadID.x >= size || DispatchThreadID.y >= size || face >= 6) return;
+
+    float2 uv = (float2(DispatchThreadID.xy) + SAMPLE_OFFSET) / size;
+    float2 pos = 2.f * uv - 1.f;
+    float3 sampleDirection = GetSampleDirectionCubemap(face, pos.x, pos.y);
+    float3 irradiance = PrefilterEnvMap(g_Roughness, sampleDirection);
 
     Output[uint3(DispatchThreadID.x, DispatchThreadID.y, face)] = float4(irradiance, 1.f);
 }

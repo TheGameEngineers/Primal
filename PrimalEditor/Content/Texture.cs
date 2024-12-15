@@ -667,6 +667,11 @@ namespace PrimalEditor.Content
                             return false;
                         }
                     }
+                    else
+                    {
+                        Logger.Log(MessageType.Error, $"Unable to open IBL pair asset for {file}");
+                        return false;
+                    }
                 }
                 var compressedLength = reader.ReadInt32();
                 Debug.Assert(compressedLength > 0);

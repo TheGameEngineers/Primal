@@ -13,6 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
     <OutputPath>..\x64\DebugEditor\</OutputPath>
     <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
