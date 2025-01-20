@@ -2,11 +2,8 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.DllWrappers;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Windows.Input;
 using System.Windows.Interop;
 
 namespace PrimalEditor.Utilities

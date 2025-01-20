@@ -35,11 +35,21 @@ create_fx_pso_and_root_signature()
     using idx = fx_root_param_indices;
     d3dx::d3d12_root_parameter parameters[idx::count]{};
     parameters[idx::global_shader_data].as_cbv(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-    parameters[idx::root_constants].as_constants(1, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+    parameters[idx::root_constants].as_constants(2, D3D12_SHADER_VISIBILITY_PIXEL, 1);
     parameters[idx::frustums].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 0);
     parameters[idx::light_grid_opaque].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 
-    d3dx::d3d12_root_signature_desc root_signature{ &parameters[0], _countof(parameters) };
+    const D3D12_STATIC_SAMPLER_DESC samplers[]
+    {
+        d3dx::static_sampler(d3dx::sampler_state.static_point, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+        d3dx::static_sampler(d3dx::sampler_state.static_linear, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+    };
+
+    d3dx::d3d12_root_signature_desc root_signature
+    { 
+        &parameters[0], _countof(parameters), d3dx::d3d12_root_signature_desc::default_flags,
+        &samplers[0], _countof(samplers)
+    };
     root_signature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
     fx_root_sig = root_signature.create();
     assert(fx_root_sig);
@@ -96,6 +106,7 @@ post_process(id3d12_graphics_command_list* cmd_list,
     using idx = fx_root_param_indices;
     cmd_list->SetGraphicsRootConstantBufferView(idx::global_shader_data, d3d12_info.global_shader_data);
     cmd_list->SetGraphicsRoot32BitConstant(idx::root_constants, gpass::main_buffer().srv().index, 0);
+    cmd_list->SetGraphicsRoot32BitConstant(idx::root_constants, gpass::depth_buffer().srv().index, 1);
     cmd_list->SetGraphicsRootShaderResourceView(idx::frustums, delight::frustums(light_culling_id, frame_index));
     cmd_list->SetGraphicsRootShaderResourceView(idx::light_grid_opaque, delight::light_grid_opaque(light_culling_id, frame_index));
     cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

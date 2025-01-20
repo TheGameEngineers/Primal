@@ -9,8 +9,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Windows.Input;
 
 namespace PrimalEditor.Components
 {

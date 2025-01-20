@@ -12,6 +12,7 @@ using namespace Microsoft::WRL;
 namespace primal::tools {
 
 bool is_normal_map(const Image *const image);
+HRESULT brdf_integration_lut(ID3D11Device* device, u32 sample_count, ScratchImage& brdf_lut);
 HRESULT prefilter_specular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sample_count, ScratchImage& prefiltered_specular);
 HRESULT prefilter_diffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sample_count, ScratchImage& prefiltered_diffuse);
 HRESULT equirectangular_to_cubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
@@ -748,15 +749,13 @@ prefilter_ibl(texture_data *const data, ibl_filter::type filter_type)
 
     constexpr u32 sample_count{ 1024 };
 
-    run_on_gpu([&](ID3D11Device* device)
-               {
-                   hr = filter_type == ibl_filter::diffuse ?
-                       prefilter_diffuse(device, cubemaps, sample_count, cubemaps) :
-                       prefilter_specular(device, cubemaps, sample_count, cubemaps);
-                   return SUCCEEDED(hr);
-               });
-
-    if (FAILED(hr))
+    if (!run_on_gpu([&](ID3D11Device* device)
+                    {
+                        hr = filter_type == ibl_filter::diffuse ?
+                            prefilter_diffuse(device, cubemaps, sample_count, cubemaps) :
+                            prefilter_specular(device, cubemaps, sample_count, cubemaps);
+                        return SUCCEEDED(hr);
+                    }))
     {
         info.import_error = import_error::unknown;
         return;
@@ -808,6 +807,28 @@ EDITOR_INTERFACE void
 PrefilterSpecularIBL(texture_data *const data)
 {
     prefilter_ibl(data, ibl_filter::specular);
+}
+
+EDITOR_INTERFACE void
+ComputeBrdfIntegrationLut(texture_data *const data)
+{
+    assert(data);
+    constexpr u32 sample_count{ 1024 };
+    HRESULT hr{ S_OK };
+    ScratchImage brdf_lut{};
+
+    if (!run_on_gpu([&](ID3D11Device* device)
+                    {
+                        hr = brdf_integration_lut(device, sample_count, brdf_lut);
+                        return SUCCEEDED(hr);
+                    }))
+    {
+        data->info.import_error = import_error::unknown;
+        return;
+    }
+
+    copy_subresources(brdf_lut, data);
+    texture_info_from_metadata(brdf_lut.GetMetadata(), data->info);
 }
 
 EDITOR_INTERFACE void

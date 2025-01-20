@@ -5,17 +5,14 @@ using PrimalEditor.DllWrappers;
 using PrimalEditor.GameDev;
 using PrimalEditor.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Xml.Serialization;
 
 namespace PrimalEditor.GameProject
 {
@@ -170,7 +167,7 @@ namespace PrimalEditor.GameProject
         public void Unload()
         {
             UnloadGameCodeDLL();
-            VisualStudio.CloseVisualStudio();
+            Task.Run(VisualStudio.CloseVisualStudio);
             UndoRedo.Reset();
             Logger.Clear();
             DeleteTempFolder();
@@ -178,7 +175,7 @@ namespace PrimalEditor.GameProject
 
         private void DeleteTempFolder()
         {
-            if(Directory.Exists(TempFolder))
+            if (Directory.Exists(TempFolder))
             {
                 Directory.Delete(TempFolder, true);
             }
@@ -263,7 +260,7 @@ namespace PrimalEditor.GameProject
             ActiveScene.GameEntities.Where(x => x.GetComponent<Script>() != null).ToList().ForEach(x => x.IsActive = false);
             if (EngineAPI.UnloadGameCodeDll() != 0)
             {
-                Logger.Log(MessageType.Info, "Game code DLL unloaded");
+                Logger.Log(MessageType.Info, "Game code DLL unloaded.");
                 AvailableScripts = null;
             }
         }

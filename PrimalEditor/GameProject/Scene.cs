@@ -2,13 +2,9 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
 using PrimalEditor.Utilities;
-using System;
-using System.CodeDom;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Windows.Input;
 
 namespace PrimalEditor.GameProject
@@ -56,7 +52,7 @@ namespace PrimalEditor.GameProject
         public ICommand AddGameEntityCommand { get; private set; }
         public ICommand RemoveGameEntityCommand { get; private set; }
 
-        private void AddGameEnity(GameEntity entity, int index = -1)
+        private void AddGameEntity(GameEntity entity, int index = -1)
         {
             Debug.Assert(!_gameEntities.Contains(entity));
             entity.IsActive = IsActive;
@@ -70,7 +66,7 @@ namespace PrimalEditor.GameProject
             }
         }
 
-        private void RemoveGameEnity(GameEntity entity)
+        private void RemoveGameEntity(GameEntity entity)
         {
             Debug.Assert(_gameEntities.Contains(entity));
             entity.IsActive = false;
@@ -92,23 +88,23 @@ namespace PrimalEditor.GameProject
 
             AddGameEntityCommand = new RelayCommand<GameEntity>(x =>
             {
-                AddGameEnity(x);
+                AddGameEntity(x);
                 var entityIndex = _gameEntities.Count - 1;
 
                 Project.UndoRedo.Add(new UndoRedoAction(
-                    () => RemoveGameEnity(x),
-                    () => AddGameEnity(x, entityIndex),
+                    () => RemoveGameEntity(x),
+                    () => AddGameEntity(x, entityIndex),
                     $"Add {x.Name} to {Name}"));
             });
 
             RemoveGameEntityCommand = new RelayCommand<GameEntity>(x =>
             {
                 var entityIndex = _gameEntities.IndexOf(x);
-                RemoveGameEnity(x);
+                RemoveGameEntity(x);
 
                 Project.UndoRedo.Add(new UndoRedoAction(
-                    () => AddGameEnity(x, entityIndex),
-                    () => RemoveGameEnity(x),
+                    () => AddGameEntity(x, entityIndex),
+                    () => RemoveGameEntity(x),
                     $"Remove {x.Name}"));
             });
         }

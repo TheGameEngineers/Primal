@@ -10,16 +10,16 @@ DEFINE_TYPED_ID(light_id);
 class light
 {
 public:
-    enum type : u32
-    {
+    enum type : u32 {
         directional,
         point,
         spot,
+        ambient,
 
         count
     };
 
-    constexpr explicit light(light_id id, u64 light_set_key) : _light_set_key{light_set_key}, _id { id } {}
+    constexpr explicit light(light_id id, u64 light_set_key) : _light_set_key{ light_set_key }, _id{ id } {}
     constexpr light() = default;
     constexpr light_id get_id() const { return _id; }
     constexpr u64 light_set_key() const { return _light_set_key; }

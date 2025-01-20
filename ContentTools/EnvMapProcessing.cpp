@@ -14,6 +14,7 @@ namespace shaders {
 #include "EnvMapProcessing_EquirectangularToCubeMapCS.inc"
 #include "EnvMapProcessing_PrefilterDiffuseEnvMapCS.inc"
 #include "EnvMapProcessing_PrefilterSpecularEnvMapCS.inc"
+#include "EnvMapProcessing_ComputeBrdfIntegrationLutCS.inc"
 };
 
 constexpr u32 prefiltered_diffuse_cubemap_size{ 32 };
@@ -748,4 +749,97 @@ prefilter_specular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampl
     return hr;
 }
 
+HRESULT
+brdf_integration_lut(ID3D11Device* device, u32 sample_count, ScratchImage& brdf_lut)
+{
+    ComPtr<ID3D11DeviceContext> ctx{};
+    device->GetImmediateContext(ctx.GetAddressOf());
+    assert(ctx.Get());
+
+    HRESULT hr{ S_OK };
+    constexpr u32 lut_size{ brdf_integration_lut_size };
+    constexpr DXGI_FORMAT format{ DXGI_FORMAT_R16G16_FLOAT };
+
+    ComPtr<ID3D11Texture2D> output{};
+    ComPtr<ID3D11Texture2D> output_cpu{};
+    {
+        D3D11_TEXTURE2D_DESC desc{};
+        desc.Width = desc.Height = lut_size;
+        desc.MipLevels = 1;
+        desc.ArraySize = 1;
+        desc.Format = format;
+        desc.SampleDesc = { 1, 0 };
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+        desc.CPUAccessFlags = 0;
+        desc.MiscFlags = 0;
+
+        hr = device->CreateTexture2D(&desc, nullptr, output.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        desc.BindFlags = 0;
+        desc.Usage = D3D11_USAGE_STAGING;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        hr = device->CreateTexture2D(&desc, nullptr, output_cpu.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+    }
+
+    ComPtr<ID3D11ComputeShader> shader{};
+    hr = device->CreateComputeShader(shaders::EnvMapProcessing_ComputeBrdfIntegrationLutCS,
+                                     sizeof(shaders::EnvMapProcessing_ComputeBrdfIntegrationLutCS),
+                                     nullptr, shader.GetAddressOf());
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    ComPtr<ID3D11Buffer> constant_buffer{};
+    {
+        hr = create_constant_buffer(device, constant_buffer.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ShaderConstants constants{};
+        constants.CubeMapOutSize = lut_size;
+        constants.SampleCount = sample_count;
+        hr = set_constants(ctx.Get(), constant_buffer.Get(), constants);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+    }
+
+    ComPtr<ID3D11SamplerState> linear_sampler{};
+    hr = create_linear_sampler(device, linear_sampler.GetAddressOf());
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    reset_d3d11_context(ctx.Get());
+
+    ComPtr<ID3D11UnorderedAccessView> output_uav{};
+    hr = create_texture_2d_uav(device, format, 1, 0, 0, output.Get(), output_uav.ReleaseAndGetAddressOf());
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    ID3D11ShaderResourceView* srv{ nullptr };
+    const u32 block_size{ (lut_size + 15) >> 4 };
+    dispatch(ctx.Get(), &srv, output_uav.GetAddressOf(), constant_buffer.GetAddressOf(),
+             linear_sampler.GetAddressOf(), shader.Get(), { block_size, block_size, 1 });
+
+    reset_d3d11_context(ctx.Get());
+
+    return download_texture_2d(ctx.Get(), lut_size, lut_size, 1, 1, format, false, output.Get(), output_cpu.Get(), brdf_lut);
+}
 }

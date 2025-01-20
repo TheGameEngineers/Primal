@@ -46,6 +46,10 @@ struct texture_usage {
 
 id::id_type texture_ids[texture_usage::count];
 
+id::id_type ibl_brdf_lut_id{ id::invalid_id };
+id::id_type ibl_diffuse_id{ id::invalid_id };
+id::id_type ibl_specular_id{ id::invalid_id };
+
 id::id_type vs_id{ id::invalid_id };
 id::id_type ps_id{ id::invalid_id };
 id::id_type textured_ps_id{ id::invalid_id };
@@ -53,6 +57,8 @@ id::id_type default_mtl_id{ id::invalid_id };
 id::id_type fembot_mtl_id{ id::invalid_id };
 
 id::id_type pbr_mtl_ids[12];
+
+graphics::light ibl_light{};
 
 [[nodiscard]] id::id_type
 load_asset(const char* path, content::asset_type::type type)
@@ -166,6 +172,19 @@ create_material()
 }
 
 void
+create_ibl_light()
+{
+    graphics::light_init_info info{};
+    info.entity_id = 0;
+    info.type = graphics::light::ambient;
+    info.ambient_params.brdf_lut_texture_id = ibl_brdf_lut_id;
+    info.ambient_params.diffuse_texture_id = ibl_diffuse_id;
+    info.ambient_params.specular_texture_id = ibl_specular_id;
+
+    ibl_light = graphics::create_light(info);
+}
+
+void
 remove_model(id::id_type model_id)
 {
     if (id::is_valid(model_id))
@@ -197,6 +216,11 @@ create_render_items()
         std::thread{ [] { texture_ids[texture_usage::metal_rough] = load_texture("..\\..\\x64\\metal_rough.texture"); }},
         std::thread{ [] { texture_ids[texture_usage::normal] = load_texture("..\\..\\x64\\normal.texture"); }},
 
+        std::thread{ [] { ibl_brdf_lut_id = load_texture("..\\..\\x64\\ibl\\brdf_lut.texture"); } },
+
+        std::thread{ [] { ibl_diffuse_id = load_texture("..\\..\\x64\\ibl\\set4\\diffuse.texture"); } },
+        std::thread{ [] { ibl_specular_id = load_texture("..\\..\\x64\\ibl\\set4\\specular.texture"); } },
+
         std::thread{ [] { lab_model_id = load_model("..\\..\\x64\\lab_model.model"); } },
         std::thread{ [] { fan_model_id = load_model("..\\..\\x64\\fan_model.model"); } },
         std::thread{ [] { int_model_id = load_model("..\\..\\x64\\int_model.model"); } },
@@ -209,6 +233,8 @@ create_render_items()
     {
         t.join();
     }
+
+    create_ibl_light();
 
     // NOTE: we need shaders to be ready before creating materials
     create_material();
@@ -231,7 +257,7 @@ create_render_items()
     geometry_info.geometry_content_id = fembot_model_id;
     geometry_info.material_count = _countof(fembot_materials);
     geometry_info.material_ids = &fembot_materials[0];
-    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, &geometry_info, nullptr/*"rotator_script"*/).get_id();
+    fembot_entity_id = create_one_game_entity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, &geometry_info, "rotator_script").get_id();
 
     geometry_info.geometry_content_id = sphere_model_id;
     geometry_info.material_count = 1;
@@ -266,6 +292,11 @@ destroy_render_items()
     remove_model(fembot_model_id);
     remove_model(sphere_model_id);
 
+    if (ibl_light.is_valid())
+    {
+        graphics::remove_light(ibl_light.get_id(), 0);
+    }
+
     // remove material
     if (id::is_valid(default_mtl_id))
     {
@@ -292,6 +323,21 @@ destroy_render_items()
         {
             content::destroy_resource(id, content::asset_type::texture);
         }
+    }
+
+    if (id::is_valid(ibl_brdf_lut_id))
+    {
+        content::destroy_resource(ibl_brdf_lut_id, content::asset_type::texture);
+    }
+
+    if (id::is_valid(ibl_diffuse_id))
+    {
+        content::destroy_resource(ibl_diffuse_id, content::asset_type::texture);
+    }
+
+    if (id::is_valid(ibl_specular_id))
+    {
+        content::destroy_resource(ibl_specular_id, content::asset_type::texture);
     }
 
     // remove shaders and textures

@@ -48,45 +48,6 @@ bool ConeInsidePlane(Cone cone, Plane plane)
     return PointInsidePlane(cone.Tip, plane) && PointInsidePlane(Q, plane);
 }
 
-#if !USE_BOUNDING_SPHERES
-// Check to see of a light is partially contained within the frustum.
-bool SphereInsideFrustum(Sphere sphere, Frustum frustum, float zNear, float zFar)
-{
-    // First check depth
-    // Note: Here, the view vector points in the -Z axis so the 
-    // far depth value will be approaching -infinity.
-    return !((sphere.Center.z - sphere.Radius > zNear || sphere.Center.z + sphere.Radius < zFar) ||
-             SphereInsidePlane(sphere, frustum.Planes[0]) ||
-             SphereInsidePlane(sphere, frustum.Planes[1]) ||
-             SphereInsidePlane(sphere, frustum.Planes[2]) ||
-             SphereInsidePlane(sphere, frustum.Planes[3]));
-}
-
-bool ConeInsideFrustum(Cone cone, Frustum frustum, float zNear, float zFar)
-{
-    bool result = true;
-
-    Plane nearPlane = { float3(0, 0, -1), -zNear };
-    Plane farPlane = { float3(0, 0, 1), zFar };
-
-    // First check the near and far clipping planes.
-    if (ConeInsidePlane(cone, nearPlane) || ConeInsidePlane(cone, farPlane))
-    {
-        result = false;
-    }
-
-    // Then check frustum planes
-    for (int i = 0; i < 4 && result; i++)
-    {
-        if (ConeInsidePlane(cone, frustum.Planes[i]))
-        {
-            result = false;
-        }
-    }
-
-    return result;
-}
-#endif
 // Converts a normalized screen-space position to a 3D coordinate depending on "inverse" parameter.
 // uv is screen-space uv coordinate of the pixel
 // depth is z-buffer depth

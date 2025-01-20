@@ -23,26 +23,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ProjectTemplates\**" />
-    <EmbeddedResource Remove="ProjectTemplates\**" />
-    <None Remove="ProjectTemplates\**" />
-    <Page Remove="ProjectTemplates\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Resources\ContentBrowser\FolderLarge.png" />
-    <None Remove="Resources\ContentBrowser\FolderSmall.png" />
-    <None Remove="Resources\ContentBrowser\ListView.png" />
-    <None Remove="Resources\ContentBrowser\OpenImportCfg.png" />
-    <None Remove="Resources\ContentBrowser\Thumbs.db" />
-    <None Remove="Resources\ContentBrowser\TileView.png" />
-    <None Remove="Resources\PrimitiveMeshView\Checkermap.png" />
-    <None Remove="Resources\PrimitiveMeshView\PlaneTexture.png" />
-    <None Remove="Resources\TextureEditor\ChannelSelectShader.cso" />
-    <None Remove="Resources\TextureEditor\Checker64.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="envdte" Version="17.3.32804.24" />
     <PackageReference Include="envdte80" Version="17.3.32804.24" />
   </ItemGroup>
@@ -54,9 +34,14 @@
     <Resource Include="Resources\ContentBrowser\OpenImportCfg.png" />
     <Resource Include="Resources\ContentBrowser\TileView.png" />
     <Resource Include="Resources\PrimitiveMeshView\Checkermap.png" />
+    <Resource Include="Resources\PrimitiveMeshView\CubeCheckermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
     <Resource Include="Resources\TextureEditor\ChannelSelectShader.cso" />
     <Resource Include="Resources\TextureEditor\Checker64.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

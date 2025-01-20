@@ -4,15 +4,11 @@ using PrimalEditor.Components;
 using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace PrimalEditor.Editors

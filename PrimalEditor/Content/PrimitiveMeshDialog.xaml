@@ -111,6 +111,72 @@
                 <Button Content="Save" Width="96" Margin="5,0" Click="OnSave_Button_Click"/>
             </StackPanel>
             <!-- CUBE SETTINGS-->
+            <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}" Value="{x:Static local:PrimitiveMeshType.Cube}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                            Margin="5">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="X" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="xSliderCube" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Y" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="ySliderCube" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Z" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                        TickPlacement="BottomRight" x:Name="zSliderCube" ValueChanged="OnSlider_ValueChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Segments" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
+                           HorizontalAlignment="Left"  Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                            Margin="5">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="X" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="1" x:Name="xTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5,0">
+                                <TextBlock Text="Y" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="1" x:Name="yTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Z" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <TextBox Text="1" x:Name="zTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Size" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
+                           HorizontalAlignment="Left"  Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                            Margin="5">
+                        <TextBox Text="1" Margin="30,20,10,10" x:Name="lodTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                    </Border>
+                    <Label Content="LOD" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
+                           HorizontalAlignment="Left"  Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                </Grid>
+                <Button Content="Save" Click="OnSave_Button_Click" Width="80" Margin="5,0" VerticalAlignment="Bottom"/>
+            </StackPanel>
             <!-- UVSPHERE SETTINGS-->
             <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
                 <StackPanel.Style>

@@ -19,6 +19,7 @@ echo.
 call :CompileShader EnvMapProcessing EquirectangularToCubeMapCS
 call :CompileShader EnvMapProcessing PrefilterDiffuseEnvMapCS
 call :CompileShader EnvMapProcessing PrefilterSpecularEnvMapCS
+call :CompileShader EnvMapProcessing ComputeBrdfIntegrationLutCS
 
 endlocal
 exit /b 0
