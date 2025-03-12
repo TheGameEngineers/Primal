@@ -115,11 +115,14 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position,
     if(depth > 0.f)
     {
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-        return float4(gpassMain[Position.xy].xyz, 1.f);
+        return gpassMain[Position.xy];        
     }
     else
     {
-        float3 direction = UnprojectUV(UV, depth, GlobalData.InvViewProjection).xyz;
+        float4 clip = float4(2.f * UV.x - 1.f, -2.f * UV.y + 1.f, 0, 1.0f);
+        float3 view = mul(GlobalData.InvProjection, clip).xyz;
+        float3 direction = mul(view, (float3x3)GlobalData.View);
+    
         return TextureCube(ResourceDescriptorHeap[GlobalData.AmbientLight.SpecularSrvIndex])
                     .SampleLevel(LinearSampler, direction, 0.1f) * GlobalData.AmbientLight.Intensity;
     }

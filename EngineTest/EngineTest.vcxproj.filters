@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="TestRenderer.cpp" />
-    <ClCompile Include="ShaderCompilation.cpp" />
     <ClCompile Include="RenderItem.cpp" />
     <ClCompile Include="Lights.cpp" />
     <ClCompile Include="Scripts.cpp" />
@@ -13,6 +12,8 @@
     <ClInclude Include="TestEntityComponents.h" />
     <ClInclude Include="TestWindow.h" />
     <ClInclude Include="TestRenderer.h" />
-    <ClInclude Include="ShaderCompilation.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

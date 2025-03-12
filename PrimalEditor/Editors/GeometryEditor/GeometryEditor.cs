@@ -225,10 +225,10 @@ namespace PrimalEditor.Editors
                         minZ = Math.Min(minZ, posZ); maxZ = Math.Max(maxZ, posZ);
                     }
 
-                if (mesh.ElementsType.HasFlag(ElementsType.Normals))
+                if (mesh.ElementsType.HasFlag(ElementsType.SkeletalNormal))
                 {
                     var tSpaceOffset = 0;
-                    if (mesh.ElementsType.HasFlag(ElementsType.Joints)) tSpaceOffset = sizeof(short) * 4; // skip joint indices.
+                    if (mesh.ElementsType.HasFlag(ElementsType.Skeletal)) tSpaceOffset = sizeof(short) * 4; // skip joint indices.
                     // Read tangent space
                     using (var reader = new BinaryReader(new MemoryStream(mesh.Elements)))
                         for (int i = 0; i < mesh.VertexCount; ++i)
@@ -245,7 +245,7 @@ namespace PrimalEditor.Editors
                             avgNormal += normal;
 
                             // Read UVs
-                            if (mesh.ElementsType.HasFlag(ElementsType.TSpace))
+                            if (mesh.ElementsType.HasFlag(ElementsType.StaticNormalTexture))
                             {
                                 reader.BaseStream.Position += sizeof(short) * 2; // skip tangents.
                                 var u = reader.ReadSingle();
@@ -253,7 +253,7 @@ namespace PrimalEditor.Editors
                                 vertexData.UVs.Add(new Point(u, v));
                             }
 
-                            if (mesh.ElementsType.HasFlag(ElementsType.Joints) && mesh.ElementsType.HasFlag(ElementsType.Colors))
+                            if (mesh.ElementsType.HasFlag(ElementsType.SkeletalColor))
                             {
                                 reader.BaseStream.Position += 4; // skip colors.
                             }

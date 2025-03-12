@@ -2,9 +2,12 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.ContentToolsAPIStructs;
 using PrimalEditor.DllWrappers;
+using PrimalEditor.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Windows.Media.Media3D;
 
 namespace PrimalEditor.Content
 {
@@ -12,6 +15,7 @@ namespace PrimalEditor.Content
     {
         public static AssetInfo BrdfIntegrationLut { get; private set; }
         public static AssetInfo DefaultGeometry { get; private set; }
+        public static AssetInfo DefaultMaterial { get; private set; }
 
         /// <summary>
         ///     Generate default assets if necessary.
@@ -37,6 +41,18 @@ namespace PrimalEditor.Content
             {
                 CreateDefaultCube(cubeFileName);
             }
+
+            var mtlFileName = $@"{defaultAssetsPath}DefaultMaterial.asset";
+
+            if (!File.Exists(mtlFileName))
+            {
+                CreateDefaultMaterial(mtlFileName);
+            }
+
+            BrdfIntegrationLut = Asset.GetAssetInfo(brdfLutFileName);
+            DefaultGeometry = Asset.GetAssetInfo(cubeFileName);
+            //DefaultMaterial = Asset.GetAssetInfo(mtlFileName);
+
         }
 
         private static void ComputeBrdfIntegrationLut(string file)
@@ -46,7 +62,6 @@ namespace PrimalEditor.Content
                 var brdfLut = new Texture() { FullPath = file };
                 ContentToolsAPI.ComputeBrdfIntegrationLut(brdfLut);
                 brdfLut.Save(file);
-                BrdfIntegrationLut = Asset.GetAssetInfo(file);
             }
             catch (Exception ex)
             {
@@ -66,7 +81,50 @@ namespace PrimalEditor.Content
 
                 ContentToolsAPI.CreatePrimitiveMesh(cube, info);
                 cube.Save(file);
-                DefaultGeometry = Asset.GetAssetInfo(file);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private static ShaderGroup CompileShaderGroup(ShaderType type, string code, string functionName, string[] defines, uint[] keys)
+        {
+            var extraArgs = new List<List<string>>();
+
+            foreach (var def in defines)
+            {
+                extraArgs.Add(!string.IsNullOrEmpty(def.Trim()) ? new() { "-D", def } : new());
+            }
+
+            var shaderGroup = new ShaderGroup() { Type = type, Code = code, FunctionName = functionName, ExtraArgs = extraArgs, Keys = [.. keys] };
+            EngineAPI.CompileShader(shaderGroup);
+
+            return shaderGroup;
+        }
+
+        private static void CreateDefaultMaterial(string file)
+        {
+            var vsDefines = new[] { "ELEMENTS_TYPE=0", "ELEMENTS_TYPE=1", "ELEMENTS_TYPE=3" };
+            var vsKeys = new[] { (uint)ElementsType.PositionOnly, (uint)ElementsType.StaticNormal, (uint)ElementsType.StaticNormalTexture };
+            var psDefines = new[] { string.Empty };
+            var psKeys = new[] { (uint)ID.INVALID_ID };
+
+            try
+            {
+                var code = string.Empty;
+                var shaderUri = ContentHelper.GetPackUri(@"Resources/MaterialEditor/DefaultMaterialShaders.hlsl", typeof(DefaultAssets));
+                var info = System.Windows.Application.GetResourceStream(shaderUri);
+                using (var reader = new StreamReader(info.Stream))
+                    code = reader.ReadToEnd();
+
+                var vertexShaders = CompileShaderGroup(ShaderType.Vertex, code, "MainVS", vsDefines, vsKeys);
+                var pixelShaders = CompileShaderGroup(ShaderType.Pixel, code, "MainPS", psDefines, psKeys);
+
+                //var mtl = new Material() { MaterialMode = MaterialMode.Default };
+                //mtl.AddShaderGroup(vertexShaders);
+                //mtl.AddShaderGroup(pixelShaders);
+                //mtl.Save(file);
             }
             catch (Exception ex)
             {

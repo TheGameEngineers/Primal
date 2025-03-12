@@ -124,7 +124,7 @@ float3 ImportanceSampleGGX(float2 E, float a)
 
 float2 IntegrateBRDF(float NoV, float roughness)
 {
-    float a4 = Pow4(roughness);
+    float a4 = max(Pow4(roughness), 0.00001f); // avoid numeric instability for low roughness.
     float3 V;
     V.x = sqrt(1.0f - NoV * NoV); // sin
     V.y = 0.f;

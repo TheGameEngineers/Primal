@@ -4,8 +4,13 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="EngineAPI.cpp" />
     <ClCompile Include="EntityAPI.cpp" />
+    <ClCompile Include="ShaderCompilation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="ShaderCompilation.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

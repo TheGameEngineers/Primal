@@ -727,6 +727,7 @@ public:
                     {
                         assert(i * sizeof(hlsl::LightParameters) < needed_light_buffer_size);
                         assert(i * sizeof(hlsl::LightCullingLightInfo) < needed_culling_buffer_size);
+                        assert(i * sizeof(hlsl::Sphere) < needed_spheres_buffer_size);
                         u8 *const light_dst{ _buffers[light_buffer::cullable_light].cpu_address + (i * sizeof(hlsl::LightParameters)) };
                         u8 *const culling_dst{ _buffers[light_buffer::culling_info].cpu_address + (i * sizeof(hlsl::LightCullingLightInfo)) };
                         u8 *const bounding_dst{ _buffers[light_buffer::bounding_spheres].cpu_address + (i * sizeof(hlsl::Sphere)) };

@@ -24,13 +24,19 @@ namespace PrimalEditor.Content
         Capsule
     }
 
-    enum ElementsType
+    // NOTE: copy of element_type enum in ContentTools Geometry.h
+    enum ElementsType : UInt32
     {
-        Position = 0x00,
-        Normals = 0x01,
-        TSpace = 0x03,
-        Joints = 0x04,
-        Colors = 0x08
+        PositionOnly = 0x00,
+        StaticNormal = 0x01,
+        StaticNormalTexture = 0x03,
+        StaticColor = 0x04,
+        Skeletal = 0x08,
+        SkeletalColor = Skeletal | StaticColor,
+        SkeletalNormal = Skeletal | StaticNormal,
+        SkeletalNormalColor = SkeletalNormal | StaticColor,
+        SkeletalNormalTexture = Skeletal | StaticNormalTexture,
+        SkeletalNormalTextureColor = SkeletalNormalTexture | StaticColor,
     }
 
     enum PrimitiveTopology

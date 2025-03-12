@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+global using IdType = System.Int32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,8 +10,8 @@ namespace PrimalEditor.Utilities
 {
     public static class ID
     {
-        public static int INVALID_ID => -1;
-        public static bool IsValid(int id) => id != INVALID_ID;
+        public static IdType INVALID_ID => -1;
+        public static bool IsValid(IdType id) => id != INVALID_ID;
     }
 
     public static class MathUtil

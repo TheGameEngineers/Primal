@@ -23,8 +23,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="envdte" Version="17.3.32804.24" />
-    <PackageReference Include="envdte80" Version="17.3.32804.24" />
+    <PackageReference Include="envdte" Version="17.13.40008" />
+    <PackageReference Include="envdte80" Version="17.13.40008" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +33,7 @@
     <Resource Include="Resources\ContentBrowser\ListView.png" />
     <Resource Include="Resources\ContentBrowser\OpenImportCfg.png" />
     <Resource Include="Resources\ContentBrowser\TileView.png" />
+    <Resource Include="Resources\MaterialEditor\DefaultMaterialShaders.hlsl" />
     <Resource Include="Resources\PrimitiveMeshView\Checkermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\CubeCheckermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
@@ -42,6 +43,10 @@
 
   <ItemGroup>
     <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\MaterialEditor\DefaultMaterialShaders.hlsl" />
   </ItemGroup>
 
 </Project>

@@ -81,7 +81,7 @@ SamplerState                                    PointSampler        : register(s
 SamplerState                                    LinearSampler       : register(s1, space0);
 SamplerState                                    AnisotropicSampler  : register(s2, space0);
 
-VertexOut TestShaderVS(in uint VertexIdx: SV_VertexID)
+VertexOut MainVS(in uint VertexIdx: SV_VertexID)
 {
     VertexOut vsOut;
 
@@ -135,7 +135,6 @@ VertexOut TestShaderVS(in uint VertexIdx: SV_VertexID)
 }
 
 #define TILE_SIZE 32
-#define NO_LIGHT_ATTENUATION 0
 
 float4 Sample(uint index, SamplerState sampler, float2 uv)
 {
@@ -155,16 +154,6 @@ float4 SampleCube(uint index, SamplerState sampler, float3 n)
 float4 SampleCube(uint index, SamplerState sampler, float3 n, float mip)
 {
     return TextureCube(ResourceDescriptorHeap[index]).SampleLevel(sampler, n, mip);
-}
-
-float3 PhongBRDF(float3 N, float3 L, float3 V, float3 diffuseColor, float3 specularColor, float shininess)
-{
-    float3 color = diffuseColor;
-    const float3 R = reflect(-L, N);
-    const float VoR = max(dot(V, R), 0.f);
-    color += pow(VoR, max(shininess, 1.f)) * specularColor;
-
-    return color;
 }
 
 float3 CookTorranceBRDF(Surface S, float3 L)
@@ -197,15 +186,9 @@ float3 CookTorranceBRDF(Surface S, float3 L)
 
 float3 CalculateLighting(Surface S, float3 L, float3 lightColor)
 {
-#if 0 // PHONG
-    const float3 N = S.Normal;
-    const float NoL = saturate(dot(N, L));
-    return PhongBRDF(N, L, S.V, S.BaseColor, 1.f, (1 - S.PerceptualRoughness) * 100.f) * (NoL / PI) * lightColor;
-#else // PBR
     // We don't have light-units and therefore we don't know what intensity value of 1 corresponds to.
     // For now, let's multiply by PI to make a scene a bit lighter.
     return CookTorranceBRDF(S, L) * lightColor * PI;
-#endif
 }
 
 float3 PointLight(Surface S, float3 worldPosition, LightParameters light)
@@ -213,15 +196,7 @@ float3 PointLight(Surface S, float3 worldPosition, LightParameters light)
     float3 L = light.Position - worldPosition;
     const float dSq = dot(L, L);
     float3 color = 0.f;
-#if NO_LIGHT_ATTENUATION
-    float3 N = S.Normal;
-    if (dSq < light.Range * light.Range)
-    {
-        const float dRcp = rsqrt(dSq);
-        L *= dRcp;
-        color = saturate(dot(N, L)) * light.Color * light.Intensity * 0.05f;
-    }
-#else
+
     if (dSq < light.Range * light.Range)
     {
         const float dRcp = rsqrt(dSq);
@@ -229,7 +204,7 @@ float3 PointLight(Surface S, float3 worldPosition, LightParameters light)
         const float attenuation = 1.f - smoothstep(0.1f * light.Range, light.Range, rcp(dRcp));
         color = CalculateLighting(S, L, light.Color * light.Intensity * attenuation);
     }
-#endif
+
     return color;
 }
 
@@ -238,17 +213,7 @@ float3 Spotlight(Surface S, float3 worldPosition, LightParameters light)
     float3 L = light.Position - worldPosition;
     const float dSq = dot(L, L);
     float3 color = 0.f;
-#if NO_LIGHT_ATTENUATION
-    float3 N = S.Normal;
-    if (dSq < light.Range * light.Range)
-    {
-        const float dRcp = rsqrt(dSq);
-        L *= dRcp;
-        const float CosAngleToLight = saturate(dot(-L, light.Direction));
-        const float angularAttenuation = float(light.CosPenumbra < CosAngleToLight);
-        color = saturate(dot(N, L)) * light.Color * light.Intensity * angularAttenuation * 0.05f;
-    }
-#else
+
     if (dSq < light.Range * light.Range)
     {
         const float dRcp = rsqrt(dSq);
@@ -258,7 +223,7 @@ float3 Spotlight(Surface S, float3 worldPosition, LightParameters light)
         const float angularAttenuation = smoothstep(light.CosPenumbra, light.CosUmbra, CosAngleToLight);
         color = CalculateLighting(S, L, light.Color * light.Intensity * attenuation * angularAttenuation);
     }
-#endif
+
     return color;
 }
 
@@ -308,28 +273,6 @@ Surface GetSurface(VertexOut psIn, float3 V)
     S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
     S.AmbientOcclusion = PerObjectBuffer.AmbientOcclusion;
 
-#if TEXTURED_MTL
-    float2 uv = psIn.UV;
-    S.AmbientOcclusion = Sample(SrvIndices[0], LinearSampler, uv).r;
-    S.BaseColor = Sample(SrvIndices[1], LinearSampler, uv).rgb;
-    S.EmissiveColor = Sample(SrvIndices[2], LinearSampler, uv).rgb;
-    float2 metalRough = Sample(SrvIndices[3], LinearSampler, uv).rg;
-    S.Metallic = metalRough.r;
-    S.PerceptualRoughness = metalRough.g;
-    S.EmissiveIntensity = 1.f;
-    float3 n = Sample(SrvIndices[4], LinearSampler, uv).rgb;
-    n = n * 2.f - 1.f;
-    n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
-
-    const float3 N = psIn.WorldNormal;
-    const float3 T = psIn.WorldTangent.xyz;
-    const float3 B = cross(N, T) * psIn.WorldTangent.w;
-    const float3x3 TBN = float3x3(T, B, N);
-    // Transform from tangent-space to world-space.
-    S.Normal = normalize(mul(n, TBN));
-
-#endif
-
     S.V = V;
     S.PerceptualRoughness = max(S.PerceptualRoughness , 0.045f);
     const float roughness = S.PerceptualRoughness * S.PerceptualRoughness;
@@ -350,15 +293,14 @@ uint GetGridIndex(float2 posXY, float viewWidth)
 }
 
 [earlydepthstencil]
-PixelOut TestShaderPS(in VertexOut psIn)
+PixelOut MainPS(in VertexOut psIn)
 {
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
     Surface S = GetSurface(psIn, viewDir);
 
     float3 color = 0;
-#if 0
-
     uint i = 0;
+
     for (i = 0; i < GlobalData.NumDirectionalLights; ++i)
     {
         DirectionalLightParameters light = DirectionalLights[i];
@@ -385,23 +327,13 @@ PixelOut TestShaderPS(in VertexOut psIn)
         LightParameters light = CullableLights[lightIndex];
         color += Spotlight(S, psIn.WorldPosition, light);
     }
-#else
+
 
     if (GlobalData.AmbientLight.Intensity > 0)
     {
       color += EvaluateIBL(S);
     }
-
-#endif
     
-#if TEXTURED_MTL
-    float VoN = S.NoV * 1.3f;
-    float VoN2 = VoN * VoN;
-    float VoN4 = VoN2 * VoN2;
-    float3 e = S.EmissiveColor;
-    S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
-#endif
-
     PixelOut psOut;
     psOut.Color = float4(color * S.AmbientOcclusion + S.EmissiveColor * S.EmissiveIntensity, 1.f);
 
