@@ -48,6 +48,26 @@ namespace PrimalEditor.Content
         TriangleStrip,
     }
 
+    class MeshInfo
+    {
+        public string Name { get; init; }
+        public byte[] Icon { get; init; }
+        public int IndexCount { get; init; }
+        public int VertexCount { get; init; }
+        public int TriangleCount { get; init; }
+    }
+    class LodInfo
+    {
+        public string Name { get; init; }
+        public float Threshold { get; init; }
+        public List<MeshInfo> Meshes { get; init; }
+    }
+
+    class GeometryMetadata : AssetMetadata
+    {
+        public List<LodInfo> LODs { get; init; }
+    }
+
     class Mesh : ViewModelBase
     {
         public static int PositionSize => sizeof(float) * 3;
@@ -161,7 +181,7 @@ namespace PrimalEditor.Content
             }
         }
 
-        public ObservableCollection<Mesh> Meshes { get; } = new ObservableCollection<Mesh>();
+        public ObservableCollection<Mesh> Meshes { get; } = [];
     }
 
     class LODGroup : ViewModelBase
@@ -180,7 +200,7 @@ namespace PrimalEditor.Content
             }
         }
 
-        public ObservableCollection<MeshLOD> LODs { get; } = new ObservableCollection<MeshLOD>();
+        public ObservableCollection<MeshLOD> LODs { get; } = [];
     }
 
     class GeometryImportSettings : ViewModelBase, IAssetImportSettings
@@ -319,8 +339,10 @@ namespace PrimalEditor.Content
 
     class Geometry : Asset
     {
-        private readonly List<LODGroup> _lodGroups = new();
+        private readonly List<LODGroup> _lodGroups = [];
         private readonly object _lock = new();
+
+        public static AssetInfo Default => DefaultAssets.DefaultGeometry;
 
         public GeometryImportSettings ImportSettings { get; } = new();
 
@@ -728,7 +750,7 @@ namespace PrimalEditor.Content
             return lod;
         }
 
-        private static byte[] GenerateIcon(MeshLOD lod)
+        private static byte[] GenerateIcon(MeshLOD lod, int index = -1)
         {
             var width = ContentInfo.IconWidth * 4;
             byte[] icon = null;
@@ -738,11 +760,40 @@ namespace PrimalEditor.Content
             Application.Current.Dispatcher.Invoke(() =>
             {
                 // Create an image that's 4x larger, so it's softened when it's scaled down.
-                var bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(lod, null), width, width);
+                var bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(lod, null), width, width, index);
                 icon = BitmapHelper.CreateThumbnail(bmp, ContentInfo.IconWidth, ContentInfo.IconWidth);
             });
 
             return icon;
+        }
+
+        public override GeometryMetadata GetMetadata()
+        {
+            var lodGroup = GetLODGroup();
+
+            GeometryMetadata metadata = new() { LODs = [] };
+
+            foreach (var lod in lodGroup.LODs)
+            {
+                LodInfo lodInfo = new() { Name = lod.Name, Threshold = lod.LodThreshold, Meshes = [] };
+                metadata.LODs.Add(lodInfo);
+
+                foreach (var mesh in lod.Meshes)
+                {
+                    MeshInfo meshInfo = new()
+                    {
+                        Name = mesh.Name,
+                        Icon = GenerateIcon(lod, lod.Meshes.IndexOf(mesh)),
+                        IndexCount = mesh.IndexCount,
+                        TriangleCount = mesh.IndexCount / 3,
+                        VertexCount = mesh.VertexCount
+                    };
+
+                    lodInfo.Meshes.Add(meshInfo);
+                }
+            }
+
+            return metadata;
         }
 
         public Geometry() : base(AssetType.Mesh) { }
@@ -751,6 +802,13 @@ namespace PrimalEditor.Content
         {
             Debug.Assert(importSettings is GeometryImportSettings);
             ImportSettings = (GeometryImportSettings)importSettings;
+        }
+
+        public Geometry(AssetInfo assetInfo) : this()
+        {
+            Debug.Assert(assetInfo != null && assetInfo.Guid != Guid.Empty);
+            Debug.Assert(File.Exists(assetInfo.FullPath) && assetInfo.Type == Type);
+            Load(assetInfo.FullPath);
         }
     }
 }

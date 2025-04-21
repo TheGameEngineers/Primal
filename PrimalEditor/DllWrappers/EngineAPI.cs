@@ -100,9 +100,19 @@ namespace PrimalEditor.DllWrappers
         [DllImport(_engineDll)]
         public static extern void RemoveRenderSurface(IdType surfaceId);
         [DllImport(_engineDll)]
+        public static extern void ResizeRenderSurface(IdType surfaceId);
+        [DllImport(_engineDll)]
         public static extern IntPtr GetWindowHandle(IdType surfaceId);
         [DllImport(_engineDll)]
-        public static extern void ResizeRenderSurface(IdType surfaceId);
+        private static extern IdType CreateResource(IntPtr data, int type);
+
+        public static IdType CreateResource(byte[] resourceData, AssetType type)
+        {
+            throw new NotImplementedException();
+        }
+
+        [DllImport(_engineDll)]
+        public static extern void DestroyResource(IdType id, int type);
 
         [DllImport(_engineDll)]
         private static extern IdType AddShaderGroup([In] ShaderGroupData data);
@@ -226,7 +236,7 @@ namespace PrimalEditor.DllWrappers
         {
             [DllImport(_engineDll)]
             private static extern IdType CreateGameEntity(GameEntityDescriptor desc);
-            public static int CreateGameEntity(GameEntity entity)
+            public static IdType CreateGameEntity(GameEntity entity)
             {
                 GameEntityDescriptor desc = new();
 

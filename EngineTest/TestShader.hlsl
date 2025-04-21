@@ -306,7 +306,7 @@ Surface GetSurface(VertexOut psIn, float3 V)
     S.PerceptualRoughness = PerObjectBuffer.Roughness;
     S.EmissiveColor = PerObjectBuffer.Emissive;
     S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
-    S.AmbientOcclusion = PerObjectBuffer.AmbientOcclusion;
+    S.AmbientOcclusion = 1.f;
 
 #if TEXTURED_MTL
     float2 uv = psIn.UV;

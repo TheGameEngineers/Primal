@@ -212,7 +212,6 @@ struct material_surface
     math::v4    base_color{ 1.f, 1.f, 1.f, 1.f };
     math::v3    emissive{ 0.f, 0.f, 0.f };
     f32         emissive_intensity{ 1.f };
-    f32         ambient_occlusion{ 1.f };
     f32         metallic{ 0.f };
     f32         roughness{ 1.f };
 };

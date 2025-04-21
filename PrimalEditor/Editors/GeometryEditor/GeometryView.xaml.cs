@@ -144,11 +144,12 @@ namespace PrimalEditor.Editors
             vm.CameraPosition = new Point3D(v.X, v.Y, v.Z);
         }
 
-        internal static BitmapSource RenderToBitmap(MeshRenderer mesh, int width, int height)
+        internal static BitmapSource RenderToBitmap(MeshRenderer mesh, int width, int height, int index)
         {
             var bmp = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Default);
 
             _geometryView.DataContext = mesh;
+            _geometryView.SetGeometry(index);
             _geometryView.Width = width;
             _geometryView.Height = height;
             _geometryView.Measure(new Size(width, height));

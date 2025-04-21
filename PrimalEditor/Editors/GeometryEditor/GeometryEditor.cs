@@ -225,7 +225,7 @@ namespace PrimalEditor.Editors
                         minZ = Math.Min(minZ, posZ); maxZ = Math.Max(maxZ, posZ);
                     }
 
-                if (mesh.ElementsType.HasFlag(ElementsType.SkeletalNormal))
+                if (mesh.ElementsType.HasFlag(ElementsType.StaticNormal))
                 {
                     var tSpaceOffset = 0;
                     if (mesh.ElementsType.HasFlag(ElementsType.Skeletal)) tSpaceOffset = sizeof(short) * 4; // skip joint indices.

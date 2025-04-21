@@ -50,6 +50,22 @@ struct shader_group_data
     u32 data_size;
     u8* data;
 };
+
+u8*
+patch_material_data(u8* data)
+{
+    utl::blob_stream_reader blob{ data };
+    const u32 texture_count{ blob.read<u32>() };
+    if (texture_count)
+    {
+        id::id_type *const texture_ids{ (id::id_type *const)blob.position() };
+        blob.skip(sizeof(id::id_type) * texture_count);
+        *((id::id_type**)blob.position()) = texture_ids;
+    }
+
+    return (u8*)blob.position();
+}
+
 } // anonymous namespace
 
 EDITOR_INTERFACE u32
@@ -105,6 +121,13 @@ RemoveRenderSurface(u32 id)
     platform::remove_window(surfaces[id].window.get_id());
 }
 
+EDITOR_INTERFACE void
+ResizeRenderSurface(u32 id)
+{
+    assert(id < surfaces.size());
+    surfaces[id].window.resize(0, 0);
+}
+
 EDITOR_INTERFACE HWND
 GetWindowHandle(u32 id)
 {
@@ -112,12 +135,20 @@ GetWindowHandle(u32 id)
     return (HWND)surfaces[id].window.handle();
 }
 
-EDITOR_INTERFACE void
-ResizeRenderSurface(u32 id)
+EDITOR_INTERFACE id::id_type
+CreateResource(u8* data, content::asset_type::type type)
 {
-    assert(id < surfaces.size());
-    surfaces[id].window.resize(0, 0);
+    if (type == content::asset_type::material)
+    {
+        data = patch_material_data(data);
+    }
+
+    return id::invalid_id;
 }
+
+EDITOR_INTERFACE void
+DestroyResource(id::id_type id, content::asset_type::type type)
+{}
 
 EDITOR_INTERFACE id::id_type
 AddShaderGroup(shader_group_data* data)
