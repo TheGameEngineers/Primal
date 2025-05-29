@@ -179,7 +179,7 @@ namespace PrimalEditor.GameProject
             Debug.Assert(File.Exists(Path.Combine(template.TemplatePath, "MSVCProject")));
 
             var engineAPIPath = @"$(PRIMAL_ENGINE)Engine\EngineAPI\";
-            Debug.Assert(Directory.Exists(engineAPIPath));
+            //TODO: check if engineAPIPath exists.
 
             var _0 = ProjectName;
             var _1 = "{" + Guid.NewGuid().ToString().ToUpper() + "}";

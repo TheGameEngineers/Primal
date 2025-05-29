@@ -6,6 +6,7 @@ using PrimalEditor.EngineAPIStructs;
 using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -14,6 +15,18 @@ using System.Text;
 
 namespace PrimalEditor.EngineAPIStructs
 {
+    enum EngineInitError : int
+    {
+        [Description("Engine initialization succeeded")]
+        Succeeded = 0,
+        [Description("Unknown error occurred during engine initialization")]
+        Unknown,
+        [Description("Built-in shader compilation failed")]
+        ShaderCompilation,
+        [Description("Graphics module initialization failed")]
+        Graphics,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     class TransformComponent
     {
@@ -86,29 +99,53 @@ namespace PrimalEditor.DllWrappers
     static class EngineAPI
     {
         private const string _engineDll = "EngineDll.dll";
+
+        [DllImport(_engineDll)]
+        public static extern EngineInitError InitializeEngine();
+        [DllImport(_engineDll)]
+        public static extern void ShutdownEngine();
+
         [DllImport(_engineDll, CharSet = CharSet.Ansi)]
         public static extern int LoadGameCodeDll(string dllPath);
+
         [DllImport(_engineDll)]
         public static extern int UnloadGameCodeDll();
+
         [DllImport(_engineDll)]
         public static extern IntPtr GetScriptCreator(string name);
+
         [DllImport(_engineDll)]
         [return: MarshalAs(UnmanagedType.SafeArray)]
         public static extern string[] GetScriptNames();
+
         [DllImport(_engineDll)]
-        public static extern IdType CreateRenderSurface(IntPtr host, int width, int height);
+        public static extern int CreateRenderSurface(IntPtr host, int width, int height);
+
         [DllImport(_engineDll)]
-        public static extern void RemoveRenderSurface(IdType surfaceId);
+        public static extern void RemoveRenderSurface(int surfaceId);
+
         [DllImport(_engineDll)]
-        public static extern void ResizeRenderSurface(IdType surfaceId);
+        public static extern void ResizeRenderSurface(int surfaceId);
+
         [DllImport(_engineDll)]
-        public static extern IntPtr GetWindowHandle(IdType surfaceId);
+        public static extern IntPtr GetWindowHandle(int surfaceId);
+
         [DllImport(_engineDll)]
         private static extern IdType CreateResource(IntPtr data, int type);
 
         public static IdType CreateResource(byte[] resourceData, AssetType type)
         {
-            throw new NotImplementedException();
+            IntPtr data = IntPtr.Zero;
+            try
+            {
+                data = Marshal.AllocCoTaskMem(resourceData.Length);
+                Marshal.Copy(resourceData, 0, data, resourceData.Length);
+                return CreateResource(data, (int)type);
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(data);
+            }
         }
 
         [DllImport(_engineDll)]

@@ -52,7 +52,7 @@ namespace PrimalEditor.Content
         }
     }
 
-    class MaterialInputAsset : MaterialInput
+    class AppliedMaterialInput(MaterialInput input) : MaterialInput(input.Name)
     {
         private AssetInfo _asset;
         public AssetInfo Asset
@@ -67,8 +67,6 @@ namespace PrimalEditor.Content
                 }
             }
         }
-
-        public MaterialInputAsset(MaterialInput input) : base(input.Name) { }
     }
 
     class MaterialSurface : ViewModelBase
@@ -240,8 +238,8 @@ namespace PrimalEditor.Content
         private static readonly Dictionary<Guid, RefCountedMaterial> _loadedMaterials = [];
 
         private readonly Material _material;
-        private readonly ObservableCollection<MaterialInputAsset> _inputs = [];
-        public ReadOnlyObservableCollection<MaterialInputAsset> Inputs;
+        private readonly ObservableCollection<AppliedMaterialInput> _inputs = [];
+        public ReadOnlyObservableCollection<AppliedMaterialInput> Inputs { get; }
         private readonly List<IdType> _shaderIds = [];
         public MaterialSurface MaterialSurface { get; init; }
         public UploadedAsset UploadedAsset { get; private set; }
@@ -264,7 +262,7 @@ namespace PrimalEditor.Content
             foreach (var shaderType in Enum.GetValues<ShaderType>())
             {
                 var shaderGroup = _material.GetShaderGroup(shaderType);
-                _shaderIds.Add(shaderGroup != null ? shaderGroup.UploadToEngine() : ID.INVALID_ID);
+                _shaderIds.Add(shaderGroup?.UploadToEngine() ?? ID.INVALID_ID);
             }
 
             Debug.Assert(_loadedMaterials.ContainsKey(_material.Guid));
@@ -383,7 +381,7 @@ namespace PrimalEditor.Content
             }
         }
 
-        public override AssetMetadata GetMetadata() => new MaterialMetadata() { PackedData = _packedData };
+        public override MaterialMetadata GetMetadata() => new() { PackedData = _packedData };
 
         public override bool Import(string file) => throw new NotImplementedException();
 
@@ -407,7 +405,7 @@ namespace PrimalEditor.Content
 
             writer.Write(referencedAssets.Count);
 
-            if(referencedAssets.Count > 0)
+            if (referencedAssets.Count > 0)
             {
                 foreach (var input in referencedAssets)
                 {
@@ -429,7 +427,7 @@ namespace PrimalEditor.Content
 
             writer.Flush();
             var data = (writer.BaseStream as MemoryStream)?.ToArray();
-            Debug.Assert(data?.Length>0);
+            Debug.Assert(data?.Length > 0);
             return data;
         }
 
