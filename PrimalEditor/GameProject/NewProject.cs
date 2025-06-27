@@ -90,7 +90,7 @@ namespace PrimalEditor.GameProject
             }
         }
 
-        private readonly ObservableCollection<ProjectTemplate> _projectTemplates = new();
+        private readonly ObservableCollection<ProjectTemplate> _projectTemplates = [];
         public ReadOnlyObservableCollection<ProjectTemplate> ProjectTemplates
         { get; }
 
@@ -133,7 +133,7 @@ namespace PrimalEditor.GameProject
 
         public string CreateProject(ProjectTemplate template)
         {
-            if(!ValidateProjectPath())
+            if (!ValidateProjectPath())
             {
                 return string.Empty;
             }
@@ -199,7 +199,7 @@ namespace PrimalEditor.GameProject
             ProjectTemplates = new ReadOnlyObservableCollection<ProjectTemplate>(_projectTemplates);
             try
             {
-                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @".\Resources\ProjectTemplates\");
+                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\ProjectTemplates\");
                 var templatesFiles = Directory.GetFiles(templatesPath, "template.xml", SearchOption.AllDirectories);
                 Debug.Assert(templatesFiles.Any());
                 foreach (var file in templatesFiles)

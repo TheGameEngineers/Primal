@@ -15,13 +15,14 @@ namespace PrimalEditor.Components
     [DataContract]
     [KnownType(typeof(Transform))]
     [KnownType(typeof(Script))]
+    [KnownType(typeof(Geometry))]
     class GameEntity : ViewModelBase
     {
-        private int _entityId = ID.INVALID_ID;
-        public int EntityId
+        private IdType _entityId = ID.INVALID_ID;
+        public IdType EntityId
         {
             get => _entityId;
-            set
+            private set
             {
                 if (_entityId != value)
                 {
@@ -42,12 +43,14 @@ namespace PrimalEditor.Components
                     _isActive = value;
                     if (_isActive)
                     {
+                        _components.ToList().ForEach(x => x.Load());
                         EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
                         Debug.Assert(ID.IsValid(_entityId));
                     }
                     else if (ID.IsValid(EntityId))
                     {
                         EngineAPI.EntityAPI.RemoveGameEntity(this);
+                        _components.ToList().ForEach(x => x.Unload());
                         EntityId = ID.INVALID_ID;
                     }
 
@@ -90,7 +93,7 @@ namespace PrimalEditor.Components
         public Scene ParentScene { get; private set; }
 
         [DataMember(Name = nameof(Components))]
-        private readonly ObservableCollection<Component> _components = new();
+        private readonly ObservableCollection<Component> _components = [];
         public ReadOnlyObservableCollection<Component> Components { get; private set; }
 
         public Component GetComponent(Type type) => Components.FirstOrDefault(c => c.GetType() == type);
@@ -101,12 +104,14 @@ namespace PrimalEditor.Components
             Debug.Assert(component != null);
             if (!Components.Any(x => x.GetType() == component.GetType()))
             {
+                // Adding a component to an inactive entity should not activate it.
+                var wasActive = IsActive;
                 IsActive = false;
                 _components.Add(component);
-                IsActive = true;
+                IsActive = wasActive;
                 return true;
             }
-            Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component");
+            Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component.");
             return false;
         }
 
@@ -174,7 +179,7 @@ namespace PrimalEditor.Components
             }
         }
 
-        private readonly ObservableCollection<IMSComponent> _components = new();
+        private readonly ObservableCollection<IMSComponent> _components = [];
         public ReadOnlyObservableCollection<IMSComponent> Components { get; }
 
         public T GetMSComponent<T>() where T : IMSComponent
@@ -201,16 +206,22 @@ namespace PrimalEditor.Components
             }
         }
 
+        public static int? GetMixedValue<T>(List<T> objects, Func<T, int> getProperty)
+        {
+            var value = getProperty(objects.First());
+            return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
+        }
+
         public static float? GetMixedValue<T>(List<T> objects, Func<T, float> getProperty)
         {
             var value = getProperty(objects.First());
-            return objects.Skip(1).Any(x => !getProperty(x).IsTheSameAs(value)) ? (float?)null : value;
+            return objects.Skip(1).Any(x => !getProperty(x).IsTheSameAs(value)) ? null : value;
         }
 
         public static bool? GetMixedValue<T>(List<T> objects, Func<T, bool> getProperty)
         {
             var value = getProperty(objects.First());
-            return objects.Skip(1).Any(x => value != getProperty(x)) ? (bool?)null : value;
+            return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
         }
 
         public static string GetMixedValue<T>(List<T> objects, Func<T, string> getProperty)

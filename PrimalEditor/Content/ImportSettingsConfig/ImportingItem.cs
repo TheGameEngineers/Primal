@@ -5,6 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Threading;
@@ -142,7 +143,7 @@ namespace PrimalEditor.Content
 
         public static CollectionViewSource FilteredItems { get; private set; }
 
-        private static readonly object _lockObject = new();
+        private static readonly Lock _lockObject = new();
         private static AssetType _itemFilter = AssetType.Mesh;
 
         public static void SetItemFilter(AssetType assetType)

@@ -5,12 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace PrimalEditor.Content
 {
     static class ContentInfoCache
     {
-        private static readonly object _lock = new();
+        private static readonly Lock _lock = new();
         private static readonly Dictionary<string, ContentInfo> _contentInfoCache = new();
         private static bool _isDirty;
         private static string _cacheFilePath = string.Empty;

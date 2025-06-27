@@ -19,9 +19,9 @@ u8                      read_write_flag;
 void
 calculate_transform_matrices(id::id_type index)
 {
-    assert(rotations.size() >= index);
-    assert(positions.size() >= index);
-    assert(scales.size() >= index);
+    assert(rotations.size() > index);
+    assert(positions.size() > index);
+    assert(scales.size() > index);
 
     using namespace DirectX;
     XMVECTOR r{ XMLoadFloat4(&rotations[index]) };

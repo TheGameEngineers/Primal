@@ -177,6 +177,8 @@ namespace PrimalEditor.GameProject
         {
             if (Directory.Exists(TempFolder))
             {
+                // Set attributes to normal to delete read-only files.
+                _ = new DirectoryInfo(TempFolder) { Attributes = FileAttributes.Normal };
                 Directory.Delete(TempFolder, true);
             }
         }

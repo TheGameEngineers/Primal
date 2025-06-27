@@ -19,6 +19,9 @@ namespace PrimalEditor.Components
         public abstract IMSComponent GetMultiselectionComponent(MSEntity msEntity);
         public abstract void WriteToBinary(BinaryWriter bw);
 
+        public virtual void Load() { }
+        public virtual void Unload() { }
+
         public Component(GameEntity owner)
         {
             Debug.Assert(owner != null);
@@ -26,7 +29,7 @@ namespace PrimalEditor.Components
         }
     }
 
-    abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component 
+    abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
     {
         private bool _enableUpdates = true;
         public List<T> SelectedComponents { get; }
@@ -44,7 +47,7 @@ namespace PrimalEditor.Components
         public MSComponent(MSEntity msEntity)
         {
             Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
-            SelectedComponents = msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>()).ToList();
+            SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
             PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
         }
     }

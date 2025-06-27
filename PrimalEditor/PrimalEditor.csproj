@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <XamlDebuggingInformation>True</XamlDebuggingInformation>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Configurations>DebugEditor;ReleaseEditor</Configurations>
     <Platforms>x64</Platforms>
-    <UseAppHost>False</UseAppHost>
+    <ApplicationIcon>Resources\Icons\Primal.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
@@ -44,15 +44,11 @@
 
   <ItemGroup>
     <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\DefaultAssets\**" Link=".\Resources\DefaultAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <PropertyGroup>
-      <NetHostDir>$(NetCoreTargetingPackRoot)/Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)/$(BundledNETCoreAppPackageVersion)/runtimes/$(NETCoreSdkRuntimeIdentifier)/native</NetHostDir>
-    </PropertyGroup>
-    <Delete Files="$(OutDir)$(TargetName).exe" />
-    <Exec Command="&quot;$(MSBuildBinPath)\msbuild.exe&quot; -noAutoRsp -nologo -verbosity:minimal -p:SolutionDir=$(SolutionDir) -p:Configuration=$(Configuration) -p:Platform=$(Platform) -p:NetHostDir=&quot;$(NetHostDir)&quot; -p:AppName=$(TargetName) &quot;$(ProjectDir)EditorHost\NativeHost.vcxproj&quot;" />
-    <Copy SourceFiles="$(NetHostDir)/nethost.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
-  </Target>
+  <ItemGroup>
+    <Content Include="Resources\Icons\Primal.ico" />
+  </ItemGroup>
 
 </Project>

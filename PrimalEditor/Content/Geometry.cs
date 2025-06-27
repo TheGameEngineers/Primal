@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 
 namespace PrimalEditor.Content
@@ -65,6 +66,7 @@ namespace PrimalEditor.Content
 
     class GeometryMetadata : AssetMetadata
     {
+        public string Name { get; init; }
         public List<LodInfo> LODs { get; init; }
     }
 
@@ -340,7 +342,7 @@ namespace PrimalEditor.Content
     class Geometry : Asset
     {
         private readonly List<LODGroup> _lodGroups = [];
-        private readonly object _lock = new();
+        private static readonly Lock _lock = new();
 
         public static AssetInfo Default => DefaultAssets.DefaultGeometry;
 

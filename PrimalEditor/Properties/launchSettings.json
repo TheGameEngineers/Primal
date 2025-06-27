@@ -1,8 +1,7 @@
 {
   "profiles": {
-    "Profile 1": {
-      "commandName": "Executable",
-      "executablePath": ".\\PrimalEditor.exe",
+    "PrimalEditor": {
+      "commandName": "Project",
       "nativeDebugging": true
     }
   }
