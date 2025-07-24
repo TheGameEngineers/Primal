@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
+using PrimalEditor.Content;
 using PrimalEditor.DllWrappers;
 using PrimalEditor.GameDev;
 using PrimalEditor.Utilities;
@@ -69,7 +70,7 @@ namespace PrimalEditor.GameProject
 
 
         [DataMember(Name = nameof(Scenes))]
-        private readonly ObservableCollection<Scene> _scenes = new();
+        private readonly ObservableCollection<Scene> _scenes = [];
         public ReadOnlyObservableCollection<Scene> Scenes
         { get; private set; }
 
@@ -168,6 +169,7 @@ namespace PrimalEditor.GameProject
         {
             UnloadGameCodeDLL();
             Task.Run(VisualStudio.CloseVisualStudio);
+            AssetRegistry.Save();
             UndoRedo.Reset();
             Logger.Clear();
             DeleteTempFolder();

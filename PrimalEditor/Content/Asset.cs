@@ -300,7 +300,7 @@ class UploadedAsset
 
     public static IdType GetContentId(Guid id)
     {
-        Debug.Assert(id != Guid.Empty);
+        //Debug.Assert(id != Guid.Empty);
         lock (_lock) { return _uploadedAssets.TryGetValue(id, out var uploadedAsset) ? uploadedAsset.ContentId : ID.INVALID_ID; }
     }
 

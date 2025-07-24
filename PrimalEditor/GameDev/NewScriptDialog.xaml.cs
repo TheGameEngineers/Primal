@@ -175,7 +175,7 @@ private:
                 sw.Write(string.Format(_hCode, name, _namespace));
             }
 
-            string[] files = new string[] { cpp, h };
+            string[] files = [cpp, h];
 
             VisualStudio.AddFilesToSolution(solution, projectName, files);
         }

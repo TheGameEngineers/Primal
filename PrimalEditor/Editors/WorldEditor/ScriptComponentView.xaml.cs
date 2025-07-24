@@ -5,11 +5,11 @@ using System.Windows.Controls;
 namespace PrimalEditor.Editors
 {
     /// <summary>
-    /// Interaction logic for ScriptView.xaml
+    /// Interaction logic for ScriptComponentView.xaml
     /// </summary>
-    public partial class ScriptView : UserControl
+    public partial class ScriptComponentView : UserControl
     {
-        public ScriptView()
+        public ScriptComponentView()
         {
             InitializeComponent();
         }

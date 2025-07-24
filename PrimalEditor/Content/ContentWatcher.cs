@@ -59,7 +59,7 @@ namespace PrimalEditor.Content
                 Debug.Assert(Directory.Exists(contentFolder));
                 _contentWatcher.Path = contentFolder;
                 _contentWatcher.EnableRaisingEvents = true;
-                AssetRegistry.Reset(contentFolder);
+                AssetRegistry.Reset(contentFolder, projectPath);
             }
         }
 

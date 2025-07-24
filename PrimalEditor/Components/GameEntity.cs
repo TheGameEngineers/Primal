@@ -189,6 +189,8 @@ namespace PrimalEditor.Components
 
         public List<GameEntity> SelectedEntities { get; }
 
+        public static MSEntity CurrentSelection { get; private set; }
+
         private void MakeComponentList()
         {
             _components.Clear();
@@ -259,6 +261,7 @@ namespace PrimalEditor.Components
         public MSEntity(List<GameEntity> entities)
         {
             Debug.Assert(entities?.Any() == true);
+            CurrentSelection = this;
             Components = new ReadOnlyObservableCollection<IMSComponent>(_components);
             SelectedEntities = entities;
             PropertyChanged += (s, e) => { if (_enableUpdates) UpdateGameEntities(e.PropertyName); };

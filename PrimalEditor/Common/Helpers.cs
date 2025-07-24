@@ -61,9 +61,9 @@ namespace PrimalEditor
 
     public static class ContentHelper
     {
-        public static string[] MeshFileExtensions { get; } = { ".fbx" };
-        public static string[] ImageFileExtensions { get; } = { ".bmp", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr" };
-        public static string[] AudioFileExtensions { get; } = { ".ogg", ".wav" };
+        public static string[] MeshFileExtensions { get; } = [".fbx"];
+        public static string[] ImageFileExtensions { get; } = [".bmp", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr"];
+        public static string[] AudioFileExtensions { get; } = [".ogg", ".wav"];
 
         public static string GetRandomString(int length = 8)
         {
@@ -147,7 +147,7 @@ namespace PrimalEditor
 
         internal static async Task<List<Asset>> ImportFilesAsync(IEnumerable<AssetProxy> proxies)
         {
-            List<Asset> assets = new();
+            List<Asset> assets = [];
             try
             {
                 ImportingItemCollection.Init();

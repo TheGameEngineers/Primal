@@ -8,11 +8,11 @@ namespace PrimalEditor.Editors
 {
     public static class TextureViewCommands
     {
-        public static RoutedCommand CenterCommand { get; } = new(nameof(CenterCommand), typeof(TextureEditorView), new() { new KeyGesture(Key.Home) });
-        public static RoutedCommand ZoomInCommand { get; } = new(nameof(ZoomInCommand), typeof(TextureEditorView), new() { new KeyGesture(Key.OemPlus, ModifierKeys.Control) });
-        public static RoutedCommand ZoomOutCommand { get; } = new(nameof(ZoomOutCommand), typeof(TextureEditorView), new() { new KeyGesture(Key.OemMinus, ModifierKeys.Control) });
-        public static RoutedCommand ZoomFitCommand { get; } = new(nameof(ZoomFitCommand), typeof(TextureEditorView), new() { new KeyGesture(Key.D0, ModifierKeys.Alt) });
-        public static RoutedCommand ActualSizeCommand { get; } = new(nameof(ActualSizeCommand), typeof(TextureEditorView), new() { new KeyGesture(Key.D0, ModifierKeys.Control) });
+        public static RoutedCommand CenterCommand { get; } = new(nameof(CenterCommand), typeof(TextureEditorView), [new KeyGesture(Key.Home)]);
+        public static RoutedCommand ZoomInCommand { get; } = new(nameof(ZoomInCommand), typeof(TextureEditorView), [new KeyGesture(Key.OemPlus, ModifierKeys.Control)]);
+        public static RoutedCommand ZoomOutCommand { get; } = new(nameof(ZoomOutCommand), typeof(TextureEditorView), [new KeyGesture(Key.OemMinus, ModifierKeys.Control)]);
+        public static RoutedCommand ZoomFitCommand { get; } = new(nameof(ZoomFitCommand), typeof(TextureEditorView), [new KeyGesture(Key.D0, ModifierKeys.Alt)]);
+        public static RoutedCommand ActualSizeCommand { get; } = new(nameof(ActualSizeCommand), typeof(TextureEditorView), [new KeyGesture(Key.D0, ModifierKeys.Control)]);
     }
 
     /// <summary>

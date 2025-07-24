@@ -8,11 +8,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Content"
+             xmlns:controls="clr-namespace:PrimalEditor.Utilities.Controls"
              d:DataContext="{d:DesignInstance Type=local:ContentBrowser}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <local:DataSizeToStringConverter x:Key="dataSizeToStringConverter"/>
+        <local:ImageToRectConverter x:Key="imageToRectConverter"/>
 
         <Style x:Key="SmallIconStyle" TargetType="{x:Type Image}">
             <Setter Property="Source" Value="{Binding IconSmall}"/>
@@ -25,6 +27,9 @@
 
         <Style x:Key="LargeIconStyle" TargetType="{x:Type Image}">
             <Setter Property="Source" Value="{Binding Icon}"/>
+            <Setter Property="Width" Value="{StaticResource AssetIconWidth}"/>
+            <Setter Property="Height" Value="{StaticResource AssetIconWidth}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsDirectory}" Value="True">
                     <Setter Property="Source" Value="pack://application:,,,/Resources/ContentBrowser/FolderLarge.png"/>
@@ -133,7 +138,7 @@
             </Style.Triggers>
         </Style>
 
-        <Style TargetType="{x:Type ListViewItem}">
+        <Style TargetType="{x:Type controls:ListViewItemEx}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -144,7 +149,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                    <ControlTemplate TargetType="{x:Type controls:ListViewItemEx}">
                         <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}"
                                 Background="{TemplateBinding Background}" CornerRadius="0" SnapsToDevicePixels="true">
                             <GridViewRowPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -228,10 +233,14 @@
         </GridView>
 
         <DataTemplate x:Key="tileTemplate">
-            <StackPanel Width="96" HorizontalAlignment="Center" Margin="-4,0,0,0">
+            <StackPanel Width="{StaticResource AssetIconWidth}" HorizontalAlignment="Center">
                 <Border MinHeight="{StaticResource AssetIconWidth}">
-                    <Image Style="{StaticResource LargeIconStyle}" HorizontalAlignment="Center"
-                           Width="{StaticResource AssetIconWidth}" Height="{StaticResource AssetIconWidth}"/>
+                    <Image Style="{StaticResource LargeIconStyle}">
+                        <Image.Clip>
+                            <RectangleGeometry Rect="{Binding Child, RelativeSource={RelativeSource AncestorType={x:Type Border}}, Converter={StaticResource imageToRectConverter}}"
+                                               RadiusX="5" RadiusY="5"/>
+                        </Image.Clip>
+                    </Image>
                 </Border>
                 <Grid>
                     <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
@@ -246,7 +255,8 @@
 
         <local:PlainView x:Key="tileView" ItemTemplate="{StaticResource tileTemplate}">
             <local:PlainView.ItemContainerStyle>
-                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource ListBoxItemStyle}">
+                <Style TargetType="{x:Type controls:ListViewItemEx}" BasedOn="{StaticResource ListBoxItemStyle}">
+                    <Setter Property="Padding" Value="2"/>
                     <EventSetter Event="MouseDoubleClick" Handler="OnContent_Item_MouseDoubleClick"/>
                     <EventSetter Event="KeyDown" Handler="OnContent_Item_KeyDown"/>
                 </Style>
@@ -289,11 +299,11 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <ListView ItemsSource="{Binding FolderContent}" Grid.Row="1" x:Name="folderListView"
+        <controls:ListViewEx ItemsSource="{Binding FolderContent}" Grid.Row="1" x:Name="folderListView"
                   ContextMenu="{StaticResource contextMenu}" IsTextSearchEnabled="True"
                   TextSearch.TextPath="FileName">
-            <ListView.Style>
-                <Style TargetType="{x:Type ListView}">
+            <controls:ListViewEx.Style>
+                <Style TargetType="{x:Type controls:ListViewEx}">
                     <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
                     <Setter Property="ListBox.BorderThickness" Value="0"/>
                     <Setter Property="AllowDrop" Value="{Binding Path=AllowImport, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}"/>
@@ -301,14 +311,17 @@
                     <Setter Property="SelectionMode" Value="{Binding Path=SelectionMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}"/>
                     <EventSetter Event="DragEnter" Handler="OnFolderContent_ListView_DragEnter"/>
                     <EventSetter Event="SelectionChanged" Handler="OnFolderContent_ListView_SelectionChanged"/>
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnFolderContent_ListView_PreviewMouse_LBD"/>
+                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="OnFolderContent_ListView_PreviewMouse_LBU"/>
+                    <EventSetter Event="MouseMove" Handler="OnFolderContent_ListView_MouseMove"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Path=IsChecked, ElementName=listViewToggle}" Value="False">
                             <Setter Property="View" Value="{StaticResource tileView}"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </ListView.Style>
-        </ListView>
+            </controls:ListViewEx.Style>
+        </controls:ListViewEx>
 
         <Border Visibility="Collapsed" d:Visibility="Visible" Background="Transparent"
                 x:Name="dropBorder" AllowDrop="{Binding Path=AllowDrop, ElementName=folderListView}" Grid.Row="1"

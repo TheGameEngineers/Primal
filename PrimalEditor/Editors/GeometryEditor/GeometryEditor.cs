@@ -78,10 +78,10 @@ namespace PrimalEditor.Editors
         }
 
         public string Name { get; set; }
-        public Point3DCollection Positions { get; } = new Point3DCollection();
-        public Vector3DCollection Normals { get; } = new Vector3DCollection();
-        public PointCollection UVs { get; } = new PointCollection();
-        public Int32Collection Indices { get; } = new Int32Collection();
+        public Point3DCollection Positions { get; } = [];
+        public Vector3DCollection Normals { get; } = [];
+        public PointCollection UVs { get; } = [];
+        public Int32Collection Indices { get; } = [];
     }
 
     // NOTE: the purpose of this class is to enable viewing 3D geometry in WPF while
@@ -89,7 +89,7 @@ namespace PrimalEditor.Editors
     //       renderer, this class and the WPF viewer will become obsolete.
     class MeshRenderer : ViewModelBase
     {
-        public ObservableCollection<MeshRendererVertexData> Meshes { get; } = new ObservableCollection<MeshRendererVertexData>();
+        public ObservableCollection<MeshRendererVertexData> Meshes { get; } = [];
 
         private Vector3D _cameraDirection = new(0, 0, -10);
         public Vector3D CameraDirection

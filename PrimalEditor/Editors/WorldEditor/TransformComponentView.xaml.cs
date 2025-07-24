@@ -14,13 +14,13 @@ using System.Windows.Input;
 namespace PrimalEditor.Editors
 {
     /// <summary>
-    /// Interaction logic for TransformView.xaml
+    /// Interaction logic for TransformComponentView.xaml
     /// </summary>
-    public partial class TransformView : UserControl
+    public partial class TransformComponentView : UserControl
     {
         private Action _undoAction = null;
         private bool _propertyChanged = false;
-        public TransformView()
+        public TransformComponentView()
         {
             InitializeComponent();
             Loaded += OnTransformViewLoaded;

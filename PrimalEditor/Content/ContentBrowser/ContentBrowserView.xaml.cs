@@ -2,7 +2,9 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Editors;
 using PrimalEditor.GameProject;
+using PrimalEditor.Utilities.Controls;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -17,528 +19,590 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+class DataSizeToStringConverter : IValueConverter
 {
-    class DataSizeToStringConverter : IValueConverter
+    private static readonly string[] _sizeSuffixes =
+               ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+    private static string SizeSuffix(long value, int decimalPlaces = 1)
     {
-        static readonly string[] _sizeSuffixes =
-                   { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+        if (value <= 0 || decimalPlaces < 0) return string.Empty;
 
-        static string SizeSuffix(long value, int decimalPlaces = 1)
+        // mag is 0 for bytes, 1 for KB, 2, for MB, etc.
+        int mag = (int)Math.Log(value, 1024);
+
+        // 1L << (mag * 10) == 2 ^ (10 * mag) 
+        // [i.e. the number of bytes in the unit corresponding to mag]
+        decimal adjustedSize = (decimal)value / (1L << (mag * 10));
+
+        // make adjustment when the value is large enough that
+        // it would round up to 1000 or more
+        if (Math.Round(adjustedSize, decimalPlaces) >= 1000)
         {
-            if (value <= 0 || decimalPlaces < 0) return string.Empty;
+            mag += 1;
+            adjustedSize /= 1024;
+        }
 
-            // mag is 0 for bytes, 1 for KB, 2, for MB, etc.
-            int mag = (int)Math.Log(value, 1024);
+        return string.Format("{0:n" + decimalPlaces + "} {1}", adjustedSize, _sizeSuffixes[mag]);
+    }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return (value is long size) ? SizeSuffix(size, 0) : null;
+    }
 
-            // 1L << (mag * 10) == 2 ^ (10 * mag) 
-            // [i.e. the number of bytes in the unit corresponding to mag]
-            decimal adjustedSize = (decimal)value / (1L << (mag * 10));
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
 
-            // make adjustment when the value is large enough that
-            // it would round up to 1000 or more
-            if (Math.Round(adjustedSize, decimalPlaces) >= 1000)
+class ImageToRectConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is Image img)
+        {
+            return new Rect(0, 0, img.ActualWidth, img.ActualHeight);
+        }
+
+        return new Rect(0, 0, ContentInfo.IconWidth, ContentInfo.IconWidth);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+class PlainView : ViewBase
+{
+    public static readonly DependencyProperty ItemContainerStyleProperty =
+      ItemsControl.ItemContainerStyleProperty.AddOwner(typeof(PlainView));
+
+    public Style ItemContainerStyle
+    {
+        get { return (Style)GetValue(ItemContainerStyleProperty); }
+        set { SetValue(ItemContainerStyleProperty, value); }
+    }
+
+    public static readonly DependencyProperty ItemTemplateProperty =
+        ItemsControl.ItemTemplateProperty.AddOwner(typeof(PlainView));
+
+    public DataTemplate ItemTemplate
+    {
+        get { return (DataTemplate)GetValue(ItemTemplateProperty); }
+        set { SetValue(ItemTemplateProperty, value); }
+    }
+
+    public static readonly DependencyProperty ItemWidthProperty =
+        WrapPanel.ItemWidthProperty.AddOwner(typeof(PlainView));
+
+    public double ItemWidth
+    {
+        get { return (double)GetValue(ItemWidthProperty); }
+        set { SetValue(ItemWidthProperty, value); }
+    }
+
+    public static readonly DependencyProperty ItemHeightProperty =
+        WrapPanel.ItemHeightProperty.AddOwner(typeof(PlainView));
+
+    public double ItemHeight
+    {
+        get { return (double)GetValue(ItemHeightProperty); }
+        set { SetValue(ItemHeightProperty, value); }
+    }
+
+    protected override object DefaultStyleKey => new ComponentResourceKey(GetType(), "PlainViewResourceId");
+}
+
+/// <summary>
+/// Interaction logic for ContentBrowserView.xaml
+/// </summary>
+public partial class ContentBrowserView : UserControl, IDisposable
+{
+    private string _sortedProperty = nameof(ContentInfo.FileName);
+    private ListSortDirection _sortDirection;
+    private Point _clickPosition;
+    private bool _startDrag;
+
+    public SelectionMode SelectionMode
+    {
+        get => (SelectionMode)GetValue(SelectionModeProperty);
+        set => SetValue(SelectionModeProperty, value);
+    }
+
+    public static readonly DependencyProperty SelectionModeProperty =
+        DependencyProperty.Register(nameof(SelectionMode), typeof(SelectionMode), typeof(ContentBrowserView), new PropertyMetadata(SelectionMode.Extended));
+
+    public FileAccess FileAccess
+    {
+        get => (FileAccess)GetValue(FileAccessProperty);
+        set => SetValue(FileAccessProperty, value);
+    }
+
+    public static readonly DependencyProperty FileAccessProperty =
+        DependencyProperty.Register(nameof(FileAccess), typeof(FileAccess), typeof(ContentBrowserView), new PropertyMetadata(FileAccess.ReadWrite));
+
+
+    public bool AllowImport
+    {
+        get => (bool)GetValue(AllowImportProperty);
+        set => SetValue(AllowImportProperty, value);
+    }
+
+    public static readonly DependencyProperty AllowImportProperty =
+        DependencyProperty.Register(nameof(AllowImport), typeof(bool), typeof(ContentBrowserView), new PropertyMetadata(false));
+
+    internal ContentInfo SelectedItem
+    {
+        get => (ContentInfo)GetValue(SelectedItemProperty);
+        set => SetValue(SelectedItemProperty, value);
+    }
+
+    public static readonly DependencyProperty SelectedItemProperty =
+        DependencyProperty.Register(nameof(SelectedItem), typeof(ContentInfo), typeof(ContentBrowserView), new PropertyMetadata(null));
+
+    public ContentBrowserView()
+    {
+        DataContext = null;
+        InitializeComponent();
+        Loaded += OnContentBrowserLoaded;
+    }
+
+    private void OnContentBrowserLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnContentBrowserLoaded;
+        if (Application.Current?.MainWindow != null)
+        {
+            Application.Current.MainWindow.DataContextChanged += OnProjectChanged;
+        }
+
+        OnProjectChanged(null, new DependencyPropertyChangedEventArgs(DataContextProperty, null, Project.Current));
+        folderListView.AddHandler(Thumb.DragDeltaEvent, new DragDeltaEventHandler(Thumb_DragDelta), true);
+        folderListView.Items.SortDescriptions.Add(new SortDescription(_sortedProperty, _sortDirection));
+    }
+
+    private void Thumb_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (e.OriginalSource is Thumb thumb &&
+            thumb.TemplatedParent is GridViewColumnHeader header)
+        {
+            if (header.Column.ActualWidth < 50)
             {
-                mag += 1;
-                adjustedSize /= 1024;
+                header.Column.Width = 50;
             }
-
-            return string.Format("{0:n" + decimalPlaces + "} {1}", adjustedSize, _sizeSuffixes[mag]);
-        }
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return (value is long size) ? SizeSuffix(size, 0) : null;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
+            else if (header.Column.ActualWidth > 250)
+            {
+                header.Column.Width = 250;
+            }
         }
     }
 
-    class PlainView : ViewBase
+    private void OnProjectChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        public static readonly DependencyProperty ItemContainerStyleProperty =
-          ItemsControl.ItemContainerStyleProperty.AddOwner(typeof(PlainView));
-
-        public Style ItemContainerStyle
+        (DataContext as ContentBrowser)?.Dispose();
+        DataContext = null;
+        if (e.NewValue is Project project)
         {
-            get { return (Style)GetValue(ItemContainerStyleProperty); }
-            set { SetValue(ItemContainerStyleProperty, value); }
+            Debug.Assert(e.NewValue == Project.Current);
+            var contentBrowser = new ContentBrowser(project);
+            contentBrowser.PropertyChanged += OnSelectedFolderChanged;
+            DataContext = contentBrowser;
         }
-
-        public static readonly DependencyProperty ItemTemplateProperty =
-            ItemsControl.ItemTemplateProperty.AddOwner(typeof(PlainView));
-
-        public DataTemplate ItemTemplate
-        {
-            get { return (DataTemplate)GetValue(ItemTemplateProperty); }
-            set { SetValue(ItemTemplateProperty, value); }
-        }
-
-        public static readonly DependencyProperty ItemWidthProperty =
-            WrapPanel.ItemWidthProperty.AddOwner(typeof(PlainView));
-
-        public double ItemWidth
-        {
-            get { return (double)GetValue(ItemWidthProperty); }
-            set { SetValue(ItemWidthProperty, value); }
-        }
-
-        public static readonly DependencyProperty ItemHeightProperty =
-            WrapPanel.ItemHeightProperty.AddOwner(typeof(PlainView));
-
-        public double ItemHeight
-        {
-            get { return (double)GetValue(ItemHeightProperty); }
-            set { SetValue(ItemHeightProperty, value); }
-        }
-
-        protected override object DefaultStyleKey => new ComponentResourceKey(GetType(), "PlainViewResourceId");
     }
 
-    /// <summary>
-    /// Interaction logic for ContentBrowserView.xaml
-    /// </summary>
-    public partial class ContentBrowserView : UserControl, IDisposable
+    private void OnSelectedFolderChanged(object sender, PropertyChangedEventArgs e)
     {
-        private string _sortedProperty = nameof(ContentInfo.FileName);
-        private ListSortDirection _sortDirection;
-
-        public SelectionMode SelectionMode
+        var vm = sender as ContentBrowser;
+        if (e.PropertyName == nameof(vm.SelectedFolder) && !string.IsNullOrEmpty(vm.SelectedFolder))
         {
-            get => (SelectionMode)GetValue(SelectionModeProperty);
-            set => SetValue(SelectionModeProperty, value);
+            GeneratePathStackButtons();
+        }
+    }
+
+    private void GeneratePathStackButtons()
+    {
+        var vm = DataContext as ContentBrowser;
+        var path = Directory.GetParent(Path.TrimEndingDirectorySeparator(vm.SelectedFolder)).FullName;
+        var contentPath = Path.TrimEndingDirectorySeparator(vm.ContentFolder);
+
+        pathStack.Children.RemoveRange(1, pathStack.Children.Count - 1);
+        if (vm.SelectedFolder == vm.ContentFolder) goto _addCurrentDirectory;
+        string[] paths = new string[3];
+        string[] labels = new string[3];
+
+        int i;
+        for (i = 0; i < 3; ++i)
+        {
+            paths[i] = path;
+            labels[i] = path[(path.LastIndexOf(Path.DirectorySeparatorChar) + 1)..];
+            if (path == contentPath) break;
+            path = path[..path.LastIndexOf(Path.DirectorySeparatorChar)];
         }
 
-        public static readonly DependencyProperty SelectionModeProperty =
-            DependencyProperty.Register(nameof(SelectionMode), typeof(SelectionMode), typeof(ContentBrowserView), new PropertyMetadata(SelectionMode.Extended));
-
-        public FileAccess FileAccess
+        if (i == 3) i = 2;
+        for (; i >= 0; --i)
         {
-            get => (FileAccess)GetValue(FileAccessProperty);
-            set => SetValue(FileAccessProperty, value);
-        }
-
-        public static readonly DependencyProperty FileAccessProperty =
-            DependencyProperty.Register(nameof(FileAccess), typeof(FileAccess), typeof(ContentBrowserView), new PropertyMetadata(FileAccess.ReadWrite));
-
-
-        public bool AllowImport
-        {
-            get => (bool)GetValue(AllowImportProperty);
-            set => SetValue(AllowImportProperty, value);
-        }
-
-        public static readonly DependencyProperty AllowImportProperty =
-            DependencyProperty.Register(nameof(AllowImport), typeof(bool), typeof(ContentBrowserView), new PropertyMetadata(false));
-
-        internal ContentInfo SelectedItem
-        {
-            get => (ContentInfo)GetValue(SelectedItemProperty);
-            set => SetValue(SelectedItemProperty, value);
-        }
-
-        public static readonly DependencyProperty SelectedItemProperty =
-            DependencyProperty.Register(nameof(SelectedItem), typeof(ContentInfo), typeof(ContentBrowserView), new PropertyMetadata(null));
-
-        public ContentBrowserView()
-        {
-            DataContext = null;
-            InitializeComponent();
-            Loaded += OnContentBrowserLoaded;
-        }
-
-        private void OnContentBrowserLoaded(object sender, RoutedEventArgs e)
-        {
-            Loaded -= OnContentBrowserLoaded;
-            if (Application.Current?.MainWindow != null)
+            var btn = new Button()
             {
-                Application.Current.MainWindow.DataContextChanged += OnProjectChanged;
-            }
-
-            OnProjectChanged(null, new DependencyPropertyChangedEventArgs(DataContextProperty, null, Project.Current));
-            folderListView.AddHandler(Thumb.DragDeltaEvent, new DragDeltaEventHandler(Thumb_DragDelta), true);
-            folderListView.Items.SortDescriptions.Add(new SortDescription(_sortedProperty, _sortDirection));
+                DataContext = paths[i],
+                Content = new TextBlock() { Text = labels[i], TextTrimming = TextTrimming.CharacterEllipsis }
+            };
+            pathStack.Children.Add(btn);
+            if (i > 0) pathStack.Children.Add(new System.Windows.Shapes.Path());
         }
 
-        private void Thumb_DragDelta(object sender, DragDeltaEventArgs e)
+        pathStack.Children.Add(new System.Windows.Shapes.Path());
+
+_addCurrentDirectory:
+        pathStack.Children.Add(new TextBlock()
         {
-            if (e.OriginalSource is Thumb thumb &&
-                thumb.TemplatedParent is GridViewColumnHeader header)
-            {
-                if (header.Column.ActualWidth < 50)
-                {
-                    header.Column.Width = 50;
-                }
-                else if (header.Column.ActualWidth > 250)
-                {
-                    header.Column.Width = 250;
-                }
-            }
+            Text = $"[ {Path.GetFileName(Path.TrimEndingDirectorySeparator(vm.SelectedFolder))} ]",
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = Brushes.White,
+            Margin = new(5, 0, 5, 0),
+        });
+    }
+
+    private void OnPathStack_Button_Click(object sender, RoutedEventArgs e)
+    {
+        var vm = DataContext as ContentBrowser;
+        vm.SelectedFolder = (sender as Button).DataContext as string;
+    }
+
+    private void OnGridViewColumnHeader_Click(object sender, RoutedEventArgs e)
+    {
+        var column = sender as GridViewColumnHeader;
+        var sortBy = column.Tag.ToString();
+
+        folderListView.Items.SortDescriptions.Clear();
+        var newDir = ListSortDirection.Ascending;
+        if (_sortedProperty == sortBy && _sortDirection == newDir)
+        {
+            newDir = ListSortDirection.Descending;
         }
 
-        private void OnProjectChanged(object sender, DependencyPropertyChangedEventArgs e)
+        _sortDirection = newDir;
+        _sortedProperty = sortBy;
+
+        folderListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
+    }
+
+    private void OnContent_Item_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        var info = (sender as FrameworkElement).DataContext as ContentInfo;
+        ExecuteSelection(info);
+    }
+
+    private void OnContent_Item_KeyDown(object sender, KeyEventArgs e)
+    {
+        var info = (sender as FrameworkElement).DataContext as ContentInfo;
+        if (e.Key == Key.Enter)
         {
-            (DataContext as ContentBrowser)?.Dispose();
-            DataContext = null;
-            if (e.NewValue is Project project)
-            {
-                Debug.Assert(e.NewValue == Project.Current);
-                var contentBrowser = new ContentBrowser(project);
-                contentBrowser.PropertyChanged += OnSelectedFolderChanged;
-                DataContext = contentBrowser;
-            }
-        }
-
-        private void OnSelectedFolderChanged(object sender, PropertyChangedEventArgs e)
-        {
-            var vm = sender as ContentBrowser;
-            if (e.PropertyName == nameof(vm.SelectedFolder) && !string.IsNullOrEmpty(vm.SelectedFolder))
-            {
-                GeneratePathStackButtons();
-            }
-        }
-
-        private void GeneratePathStackButtons()
-        {
-            var vm = DataContext as ContentBrowser;
-            var path = Directory.GetParent(Path.TrimEndingDirectorySeparator(vm.SelectedFolder)).FullName;
-            var contentPath = Path.TrimEndingDirectorySeparator(vm.ContentFolder);
-
-            pathStack.Children.RemoveRange(1, pathStack.Children.Count - 1);
-            if (vm.SelectedFolder == vm.ContentFolder) goto _addCurrentDirectory;
-            string[] paths = new string[3];
-            string[] labels = new string[3];
-
-            int i;
-            for (i = 0; i < 3; ++i)
-            {
-                paths[i] = path;
-                labels[i] = path[(path.LastIndexOf(Path.DirectorySeparatorChar) + 1)..];
-                if (path == contentPath) break;
-                path = path.Substring(0, path.LastIndexOf(Path.DirectorySeparatorChar));
-            }
-
-            if (i == 3) i = 2;
-            for (; i >= 0; --i)
-            {
-                var btn = new Button()
-                {
-                    DataContext = paths[i],
-                    Content = new TextBlock() { Text = labels[i], TextTrimming = TextTrimming.CharacterEllipsis }
-                };
-                pathStack.Children.Add(btn);
-                if (i > 0) pathStack.Children.Add(new System.Windows.Shapes.Path());
-            }
-
-            pathStack.Children.Add(new System.Windows.Shapes.Path());
-
-        _addCurrentDirectory:
-            pathStack.Children.Add(new TextBlock()
-            {
-                Text = $"[ {Path.GetFileName(Path.TrimEndingDirectorySeparator(vm.SelectedFolder))} ]",
-                VerticalAlignment = VerticalAlignment.Center,
-                Foreground = Brushes.White,
-                Margin = new(5, 0, 5, 0),
-            });
-        }
-
-        private void OnPathStack_Button_Click(object sender, RoutedEventArgs e)
-        {
-            var vm = DataContext as ContentBrowser;
-            vm.SelectedFolder = (sender as Button).DataContext as string;
-        }
-
-        private void OnGridViewColumnHeader_Click(object sender, RoutedEventArgs e)
-        {
-            var column = sender as GridViewColumnHeader;
-            var sortBy = column.Tag.ToString();
-
-            folderListView.Items.SortDescriptions.Clear();
-            var newDir = ListSortDirection.Ascending;
-            if (_sortedProperty == sortBy && _sortDirection == newDir)
-            {
-                newDir = ListSortDirection.Descending;
-            }
-
-            _sortDirection = newDir;
-            _sortedProperty = sortBy;
-
-            folderListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
-        }
-
-        private void OnContent_Item_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            var info = (sender as FrameworkElement).DataContext as ContentInfo;
             ExecuteSelection(info);
         }
-
-        private void OnContent_Item_KeyDown(object sender, KeyEventArgs e)
+        else if (e.Key == Key.F2)
         {
-            var info = (sender as FrameworkElement).DataContext as ContentInfo;
-            if (e.Key == Key.Enter)
-            {
-                ExecuteSelection(info);
-            }
-            else if (e.Key == Key.F2)
-            {
-                TryEdit(folderListView, info.FullPath);
-            }
+            TryEdit(folderListView, info.FullPath);
         }
+    }
 
-        private void ExecuteSelection(ContentInfo info)
-        {
-            if (info == null) return;
+    private void ExecuteSelection(ContentInfo info)
+    {
+        if (info == null) return;
 
-            if (info.IsDirectory)
-            {
-                var vm = DataContext as ContentBrowser;
-                vm.SelectedFolder = info.FullPath;
-            }
-            else if (FileAccess.HasFlag(FileAccess.Read))
-            {
-                var assetInfo = Asset.TryGetAssetInfo(info.FullPath);
-                if (assetInfo != null)
-                {
-                    OpenAssetEditor(assetInfo);
-                }
-            }
-        }
-
-        private static IAssetEditor OpenAssetEditor(AssetInfo info)
-        {
-            IAssetEditor editor = null;
-            try
-            {
-                switch (info.Type)
-                {
-                    case AssetType.Animation: break;
-                    case AssetType.Audio: break;
-                    case AssetType.Material: break;
-                    case AssetType.Mesh:
-                        editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor");
-                        break;
-                    case AssetType.Skeleton: break;
-                    case AssetType.Texture:
-                        editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-
-            return editor;
-        }
-
-        private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title)
-            where T : FrameworkElement, new()
-        {
-            // First look for a window that's already open and is displaying the same asset.
-            foreach (Window window in Application.Current.Windows)
-            {
-                if (window.Content is FrameworkElement content &&
-                    content.DataContext is IAssetEditor editor &&
-                    editor.CheckAssetGuid(info.Guid))
-                {
-                    window.Activate();
-                    return editor;
-                }
-            }
-
-            // If not already open in an asset editor, we create a new window and load the asset.
-            var newEditor = CreateEditorWindow<T>(title);
-            (newEditor.DataContext as IAssetEditor).SetAsset(info);
-            return newEditor.DataContext as IAssetEditor;
-        }
-
-        private static FrameworkElement CreateEditorWindow<T>(string title)
-            where T : FrameworkElement, new()
-        {
-            var newEditor = new T();
-            Debug.Assert(newEditor.DataContext is IAssetEditor);
-
-            var win = new Window()
-            {
-                Content = newEditor,
-                Title = title,
-                Owner = Application.Current.MainWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Style = Application.Current.FindResource("PrimalWindowStyle") as Style
-            };
-
-            win.Show();
-            return newEditor;
-        }
-
-        private void OnDropBorder_Drop(object sender, DragEventArgs e)
+        if (info.IsDirectory)
         {
             var vm = DataContext as ContentBrowser;
-            if (Directory.Exists(vm.SelectedFolder) && e.Data.GetDataPresent(DataFormats.FileDrop))
+            vm.SelectedFolder = info.FullPath;
+        }
+        else if (FileAccess.HasFlag(FileAccess.Read))
+        {
+            var assetInfo = Asset.TryGetAssetInfo(info.FullPath);
+            if (assetInfo != null)
             {
-                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                OpenAssetEditor(assetInfo);
+            }
+        }
+    }
+
+    internal static IAssetEditor OpenAssetEditor(AssetInfo info)
+    {
+        IAssetEditor editor = null;
+        try
+        {
+            switch (info.Type)
+            {
+                case AssetType.Animation: break;
+                case AssetType.Audio: break;
+                case AssetType.Material: break;
+                case AssetType.Mesh:
+                    editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor");
+                    break;
+                case AssetType.Skeleton: break;
+                case AssetType.Texture:
+                    editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+
+        return editor;
+    }
+
+    private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title)
+        where T : FrameworkElement, new()
+    {
+        // First look for a window that's already open and is displaying the same asset.
+        foreach (Window window in Application.Current.Windows)
+        {
+            if (window.Content is FrameworkElement content &&
+                content.DataContext is IAssetEditor editor &&
+                editor.CheckAssetGuid(info.Guid))
+            {
+                window.Activate();
+                return editor;
+            }
+        }
+
+        // If not already open in an asset editor, we create a new window and load the asset.
+        var newEditor = CreateEditorWindow<T>(title);
+        (newEditor.DataContext as IAssetEditor).SetAsset(info);
+        return newEditor.DataContext as IAssetEditor;
+    }
+
+    private static FrameworkElement CreateEditorWindow<T>(string title)
+        where T : FrameworkElement, new()
+    {
+        var newEditor = new T();
+        Debug.Assert(newEditor.DataContext is IAssetEditor);
+
+        var win = new Window()
+        {
+            Content = newEditor,
+            Title = title,
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Style = Application.Current.FindResource("PrimalWindowStyle") as Style
+        };
+
+        win.Show();
+        return newEditor;
+    }
+
+    private void OnDropBorder_Drop(object sender, DragEventArgs e)
+    {
+        var vm = DataContext as ContentBrowser;
+        if (Directory.Exists(vm.SelectedFolder) && e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files?.Length > 0)
+            {
+                if (e.OriginalSource == filesDrop)
+                {
+                    new ConfigureImportSettings(files, vm.SelectedFolder).Import();
+                    e.Handled = true;
+                }
+                else if (e.OriginalSource == cfgDrop)
+                {
+                    OpenImportSettingsConfigurator(files, vm.SelectedFolder);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        e.Effects = DragDropEffects.None;
+        OnDropBorder_DragLeave(sender, e);
+    }
+
+    private static void OpenImportSettingsConfigurator(string[] files, string selectedFolder, bool forceOpen = false)
+    {
+        ConfigureImportSettings settingsConfigurator = null;
+        // First, look for a window with this DataContext and add files to be configured for import.
+        foreach (Window win in Application.Current.Windows)
+        {
+            if (win.DataContext is ConfigureImportSettings cfg)
+            {
                 if (files?.Length > 0)
                 {
-                    if (e.OriginalSource == filesDrop)
-                    {
-                        new ConfigureImportSettings(files, vm.SelectedFolder).Import();
-                        e.Handled = true;
-                    }
-                    else if (e.OriginalSource == cfgDrop)
-                    {
-                        OpenImportSettingsConfigurator(files, vm.SelectedFolder);
-                        e.Handled = true;
-                    }
+                    cfg.AddFiles(files, selectedFolder);
                 }
-            }
 
-            e.Effects = DragDropEffects.None;
-            OnDropBorder_DragLeave(sender, e);
+                settingsConfigurator = cfg;
+                win.Activate();
+                break;
+            }
         }
 
-        private static void OpenImportSettingsConfigurator(string[] files, string selectedFolder, bool forceOpen=false)
+        // If the window wasn't already open, create and show a new one.
+        if (settingsConfigurator == null)
         {
-            ConfigureImportSettings settingsConfigurator = null;
-            // First, look for a window with this DataContext and add files to be configured for import.
-            foreach (Window win in Application.Current.Windows)
+            settingsConfigurator = (files?.Length > 0) ? new(files, selectedFolder) : new(selectedFolder);
+            if (settingsConfigurator.FileCount > 0 || forceOpen)
             {
-                if (win.DataContext is ConfigureImportSettings cfg)
+                new ConfigureImportSettingsWindow()
                 {
-                    if(files?.Length>0)
-                    {
-                        cfg.AddFiles(files, selectedFolder);
-                    }
-
-                    settingsConfigurator = cfg;
-                    win.Activate();
-                    break;
-                }
+                    DataContext = settingsConfigurator,
+                    Owner = Application.Current.MainWindow,
+                }.Show();
             }
+        }
+    }
 
-            // If the window wasn't already open, create and show a new one.
-            if (settingsConfigurator == null)
+    private void OnFolderContent_ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var item = folderListView.SelectedItem as ContentInfo;
+        SelectedItem = item?.IsDirectory == true ? null : item;
+    }
+
+    private void OnFolderContent_ListView_PreviewMouse_LBD(object sender, MouseButtonEventArgs e)
+    {
+        _clickPosition = e.GetPosition(this);
+
+        var item = (e.OriginalSource as DependencyObject)?.FindVisualParent<ListViewItemEx>();
+        _startDrag = item != null;
+    }
+
+    private void OnFolderContent_ListView_PreviewMouse_LBU(object sender, MouseButtonEventArgs e)
+    {
+        _startDrag = false;
+    }
+
+    private void OnFolderContent_ListView_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            var mousePosition = e.GetPosition(this);
+            var diff = mousePosition - _clickPosition;
+
+            // NOTE: SystemParameters.MinimumHorizontalDragDistance etc. are too small for this use-case.
+            if (_startDrag && diff.LengthSquared > 100.0)
             {
-                settingsConfigurator = (files?.Length > 0) ? new(files, selectedFolder) : new(selectedFolder);
-                if (settingsConfigurator.FileCount > 0 || forceOpen)
+                var files = new List<string>();
+                foreach (ContentInfo item in folderListView.SelectedItems)
                 {
-                    new ConfigureImportSettingsWindow()
-                    {
-                        DataContext = settingsConfigurator,
-                        Owner = Application.Current.MainWindow,
-                    }.Show();
+                    files.Add(item.FullPath);
                 }
-            }
-        }
 
-        private void OnFolderContent_ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var item = folderListView.SelectedItem as ContentInfo;
-            SelectedItem = item?.IsDirectory == true ? null : item;
-        }
-
-        private void TryEdit(ListBoxItem item)
-        {
-            var textBox = item.FindVisualChild<TextBox>();
-            if (textBox != null)
-            {
-                textBox.Visibility = Visibility.Visible;
-                textBox.Focus();
-            }
-        }
-
-        private bool TryEdit(ListView list, string path)
-        {
-            foreach (ContentInfo item in list.Items)
-            {
-                if (item.FullPath == path)
+                if (files.Count > 0)
                 {
-                    var listBoxItem = list.ItemContainerGenerator.ContainerFromItem(item) as ListBoxItem;
-                    listBoxItem.IsSelected = true;
-                    list.SelectedItem = item;
-                    list.SelectedIndex = list.Items.IndexOf(item);
-                    TryEdit(listBoxItem);
-                    return true;
+                    var fileArray = files.ToArray();
+                    var dataObj = new DataObject(DataFormats.FileDrop, fileArray);
+                    DragDrop.DoDragDrop(folderListView, dataObj, DragDropEffects.Copy | DragDropEffects.Move);
+                    _startDrag = false;
                 }
             }
-
-            return false;
         }
+    }
 
-        private async void OnCreateNewFolder(object sender, RoutedEventArgs e)
+    private void TryEdit(ListBoxItem item)
+    {
+        var textBox = item.FindVisualChild<TextBox>();
+        if (textBox != null)
         {
-            var vm = DataContext as ContentBrowser;
-            var path = vm.SelectedFolder;
-            if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
-            var folder = "NewFolder";
-            var index = 1;
-            while (Directory.Exists(path + folder))
-            {
-                folder = $"NewFolder{index++:0#}";
-            }
-
-            folder = path + folder;
-
-            try
-            {
-                Directory.CreateDirectory(folder);
-                var waitCounter = 0;
-                // Wait up to 3 seconds for the OS to create the folder and
-                // our file system watcher to make a new entry in Content Browser.
-                while (waitCounter < 30 && !TryEdit(folderListView, folder))
-                {
-                    await Task.Run(() => Thread.Sleep(100));
-                    ++waitCounter;
-                }
-            }
-            catch (Exception ex)
-            {
-
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine($"Error: failed to create new folder: {folder}");
-            }
+            textBox.Visibility = Visibility.Visible;
+            textBox.Focus();
         }
-        public void Dispose()
+    }
+
+    private bool TryEdit(ListView list, string path)
+    {
+        foreach (ContentInfo item in list.Items)
         {
-            if (Application.Current?.MainWindow != null)
+            if (item.FullPath == path)
             {
-                Application.Current.MainWindow.DataContextChanged -= OnProjectChanged;
+                var listBoxItem = list.ItemContainerGenerator.ContainerFromItem(item) as ListBoxItem;
+                listBoxItem.IsSelected = true;
+                list.SelectedItem = item;
+                list.SelectedIndex = list.Items.IndexOf(item);
+                TryEdit(listBoxItem);
+                return true;
             }
-
-            (DataContext as ContentBrowser)?.Dispose();
-            DataContext = null;
         }
 
-        private void OnFolderContent_ListView_DragEnter(object sender, DragEventArgs e)
+        return false;
+    }
+
+    private async void OnCreateNewFolder(object sender, RoutedEventArgs e)
+    {
+        var vm = DataContext as ContentBrowser;
+        var path = vm.SelectedFolder;
+        if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
+        var folder = "NewFolder";
+        var index = 1;
+        while (Directory.Exists(path + folder))
+        {
+            folder = $"NewFolder{index++:0#}";
+        }
+
+        folder = path + folder;
+
+        try
+        {
+            Directory.CreateDirectory(folder);
+            var waitCounter = 0;
+            // Wait up to 3 seconds for the OS to create the folder and
+            // our file system watcher to make a new entry in Content Browser.
+            while (waitCounter < 30 && !TryEdit(folderListView, folder))
+            {
+                await Task.Run(() => Thread.Sleep(100));
+                ++waitCounter;
+            }
+        }
+        catch (Exception ex)
+        {
+
+            Debug.WriteLine(ex.Message);
+            Debug.WriteLine($"Error: failed to create new folder: {folder}");
+        }
+    }
+    public void Dispose()
+    {
+        if (Application.Current?.MainWindow != null)
+        {
+            Application.Current.MainWindow.DataContextChanged -= OnProjectChanged;
+        }
+
+        (DataContext as ContentBrowser)?.Dispose();
+        DataContext = null;
+    }
+
+    private void OnFolderContent_ListView_DragEnter(object sender, DragEventArgs e)
+    {
+        if (!_startDrag)
         {
             dropBorder.Opacity = 0;
             dropBorder.Visibility = Visibility.Visible;
             var fadeIn = new DoubleAnimation(0, 1, new Duration(TimeSpan.FromMilliseconds(100)));
             dropBorder.BeginAnimation(OpacityProperty, fadeIn);
         }
+    }
 
-        private void OnDropBorder_DragLeave(object sender, DragEventArgs e)
+    private void OnDropBorder_DragLeave(object sender, DragEventArgs e)
+    {
+        if (sender == dropBorder && e?.Effects != DragDropEffects.None)
         {
-            if (sender == dropBorder && e?.Effects != DragDropEffects.None)
+            var point = e.GetPosition(dropBorder);
+            var result = VisualTreeHelper.HitTest(dropBorder, point);
+            if (result != null)
             {
-                var point = e.GetPosition(dropBorder);
-                var result = VisualTreeHelper.HitTest(dropBorder, point);
-                if (result != null)
-                {
-                    return;
-                }
+                return;
             }
-
-            var fadeOut = new DoubleAnimation(1, 0, new Duration(TimeSpan.FromMilliseconds(100)));
-            fadeOut.Completed += (_, _) => dropBorder.Visibility = Visibility.Collapsed;
-            dropBorder.BeginAnimation(OpacityProperty, fadeOut);
         }
 
-        private void OnOpenImportSettingsConfigurator_Button_Click(object sender, RoutedEventArgs e)
-        {
-            var vm = DataContext as ContentBrowser;
-            OpenImportSettingsConfigurator(null, vm.SelectedFolder, true);
-        }
+        var fadeOut = new DoubleAnimation(1, 0, new Duration(TimeSpan.FromMilliseconds(100)));
+        fadeOut.Completed += (_, _) => dropBorder.Visibility = Visibility.Collapsed;
+        dropBorder.BeginAnimation(OpacityProperty, fadeOut);
+    }
+
+    private void OnOpenImportSettingsConfigurator_Button_Click(object sender, RoutedEventArgs e)
+    {
+        var vm = DataContext as ContentBrowser;
+        OpenImportSettingsConfigurator(null, vm.SelectedFolder, true);
     }
 }

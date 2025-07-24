@@ -188,7 +188,7 @@ namespace PrimalEditor.Content
 
         static ImportingItemCollection()
         {
-            _importingItems = new();
+            _importingItems = [];
             ImportingItems = new(_importingItems);
             FilteredItems = new() { Source = ImportingItems };
             FilteredItems.Filter += (s, e) =>

@@ -12,7 +12,7 @@ namespace PrimalEditor.Content
     static class ContentInfoCache
     {
         private static readonly Lock _lock = new();
-        private static readonly Dictionary<string, ContentInfo> _contentInfoCache = new();
+        private static readonly Dictionary<string, ContentInfo> _contentInfoCache = [];
         private static bool _isDirty;
         private static string _cacheFilePath = string.Empty;
 

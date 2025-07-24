@@ -11,6 +11,17 @@
                     xmlns:utl ="clr-namespace:PrimalEditor.Utilities.Controls">
 
     <sys:Double x:Key="AssetIconWidth">90</sys:Double>
+
+    <StackPanel x:Key="MultivalueTextBlock" Opacity="0.7">
+        <StackPanel.RenderTransform>
+            <TransformGroup>
+                <SkewTransform AngleX="-10"/>
+                <RotateTransform Angle="-10"/>
+            </TransformGroup>
+        </StackPanel.RenderTransform>
+        <TextBlock Text="MULTI" Width="32" Foreground="{StaticResource Editor.OrangeBrush}" FontFamily="Bahnschrift condensed"/>
+        <TextBlock Text="VALUE" Width="32" Foreground="{StaticResource Editor.OrangeBrush}" FontFamily="Bahnschrift condensed" Margin="0,-4"/>
+    </StackPanel>
     
     <Style TargetType="{x:Type TextBlock}" x:Key="LightTextBlockStyle">
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
@@ -283,6 +294,107 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" TargetName="border" Value="{StaticResource Editor.Window.GrayBrush5}"/>
                         </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DropBorderStyle" TargetType="{x:Type Border}">
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush6}"/>
+        <Setter Property="AllowDrop" Value="True"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="Width" Value="{StaticResource AssetIconWidth}"/>
+        <Setter Property="Height" Value="{StaticResource AssetIconWidth}"/>
+        <Setter Property="ClipToBounds" Value="True" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource Editor.MouseOver.BorderBrush}"/>
+            </Trigger>
+            <EventTrigger RoutedEvent="PreviewDragEnter">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                        From="{StaticResource Editor.Window.GrayColor6}"
+                                        To="{StaticResource Editor.GreenColor}" Duration="0:0:0" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+            <EventTrigger RoutedEvent="PreviewDragLeave">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                        From="{StaticResource Editor.GreenColor}"
+                                        To="{StaticResource Editor.Window.GrayColor6}" Duration="0:0:0" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+            <EventTrigger RoutedEvent="Drop">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                        From="{StaticResource Editor.GreenColor}"
+                                        To="{StaticResource Editor.Window.GrayColor6}" Duration="0:0:0" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <SolidColorBrush x:Key="TabItem.Static.Foreground" Color="{StaticResource Editor.FontColor}"/>
+    <SolidColorBrush x:Key="TabItem.Static.Background" Color="{StaticResource Editor.Window.GrayColor2}"/>
+    <SolidColorBrush x:Key="TabItem.Static.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
+    <SolidColorBrush x:Key="TabItem.MouseOver.Background" Color="{StaticResource Editor.Window.GrayColor3}"/>
+    <SolidColorBrush x:Key="TabItem.MouseOver.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
+    <SolidColorBrush x:Key="TabItem.Selected.Foreground" Color="White"/>
+    <SolidColorBrush x:Key="TabItem.Selected.Background" Color="{StaticResource Editor.Window.GrayColor3}"/>
+    <SolidColorBrush x:Key="TabItem.Selected.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
+    <SolidColorBrush x:Key="TabItem.Disabled.Background" Color="{StaticResource Editor.Window.GrayColor1}"/>
+    <SolidColorBrush x:Key="TabItem.Disabled.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
+    
+    <Style TargetType="{x:Type TabItem}">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="Foreground" Value="{StaticResource TabItem.Static.Foreground}"/>
+        <Setter Property="Background" Value="{StaticResource TabItem.Static.Background}" />
+        <Setter Property="BorderBrush" Value="{StaticResource TabItem.Static.Border}" />
+        <Setter Property="Margin" Value="0,0,0,0"/>
+        <Setter Property="Padding" Value="6,2,6,2"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                        <Border x:Name="mainBorder" BorderThickness="1,1,1,0" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" Margin="0">
+                            <Border x:Name="innerBorder" BorderThickness="1,1,1,0" Background="{StaticResource TabItem.Selected.Background}"
+                                    BorderBrush="{StaticResource TabItem.Selected.Border}" Margin="-1" Opacity="0">
+                                <Border Background="{StaticResource Editor.Selected.BackgroundBrush}" Height="2" VerticalAlignment="Top" Margin="-1"/>
+                            </Border>
+                        </Border>
+                        <ContentPresenter x:Name="contentPresenter" ContentSource="Header" 
+                            HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}" 
+                            VerticalAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}" 
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Focusable="False" 
+                            Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Path=IsMouseOver, RelativeSource={RelativeSource Self}}" Value="true">
+                            <Setter TargetName="mainBorder" Property="Background" Value="{StaticResource TabItem.MouseOver.Background}"/>
+                            <Setter TargetName="mainBorder" Property="BorderBrush" Value="{StaticResource TabItem.MouseOver.Border}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TabItem.Selected.Foreground}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=IsEnabled, RelativeSource={RelativeSource Self}}" Value="false">
+                            <Setter TargetName="contentPresenter" Property="Opacity" Value="0.56"/>
+                            <Setter TargetName="mainBorder" Property="Background" Value="{StaticResource TabItem.Disabled.Background}"/>
+                            <Setter TargetName="mainBorder" Property="BorderBrush" Value="{StaticResource TabItem.Disabled.Border}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=IsSelected, RelativeSource={RelativeSource Self}}" Value="true">
+                            <Setter Property="Panel.ZIndex" Value="1"/>
+                            <Setter Property="Margin" Value="0,-2,-2,-1"/>
+                            <Setter TargetName="innerBorder" Property="Opacity" Value="1"/>
+                            <Setter Property="Foreground" Value="{StaticResource TabItem.Selected.Foreground}"/>
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -652,5 +764,32 @@
 
         <Rectangle Fill="Transparent" Stroke="White" StrokeThickness="0.2" Width="100" Height="100"/>
     </Canvas>
+
+    <Style TargetType="{x:Type utl:ComponentView}" x:Key="{x:Type utl:ComponentView}">
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type utl:ComponentView}">
+                    <Expander IsExpanded="True" x:Name="expander"
+                              Background="{StaticResource Editor.Window.GrayBrush3}">
+                        <Expander.Style>
+                            <Style TargetType="{x:Type Expander}">
+                                <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+                            </Style>
+                        </Expander.Style>
+                        <Expander.Header>
+                            <TextBlock FontWeight="Bold" Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </Expander.Header>
+                        <ContentPresenter Margin="5"/>
+                    </Expander>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="expander" Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     
 </ResourceDictionary>

@@ -66,7 +66,7 @@ namespace PrimalEditor.Content
     {
         public override TextureImportSettings ImportSettings { get; } = new();
 
-        private readonly ObservableCollection<TextureProxy> _imageSources = new();
+        private readonly ObservableCollection<TextureProxy> _imageSources = [];
         public ReadOnlyObservableCollection<TextureProxy> ImageSources { get; }
 
         public override void CopySettings(IAssetImportSettings settings)
@@ -168,7 +168,7 @@ namespace PrimalEditor.Content
 
     class GeometryImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<GeometryProxy>
     {
-        private readonly ObservableCollection<GeometryProxy> _geometryProxies = new();
+        private readonly ObservableCollection<GeometryProxy> _geometryProxies = [];
         public ReadOnlyObservableCollection<GeometryProxy> GeometryProxies { get; }
 
         public void AddFiles(IEnumerable<string> files, string destinationFolder)
@@ -194,7 +194,7 @@ namespace PrimalEditor.Content
 
     class TextureImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<TextureProxy>
     {
-        private readonly ObservableCollection<TextureProxy> _textureProxies = new();
+        private readonly ObservableCollection<TextureProxy> _textureProxies = [];
         public ReadOnlyObservableCollection<TextureProxy> TextureProxies { get; }
 
         public void AddFiles(IEnumerable<string> files, string destinationFolder)
@@ -250,7 +250,7 @@ namespace PrimalEditor.Content
 
     class AudioImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<AudioProxy>
     {
-        private readonly ObservableCollection<AudioProxy> _audioProxies = new();
+        private readonly ObservableCollection<AudioProxy> _audioProxies = [];
         public ReadOnlyObservableCollection<AudioProxy> AudioProxies { get; }
 
         public void AddFiles(IEnumerable<string> files, string destinationFolder)
