@@ -394,9 +394,7 @@ namespace PrimalEditor
                 {
                     int offset = 0;
                     Half[] dataFloats =
-                        data.GroupBy(x => offset++ / bytesPerChannel)
-                        .Select(x => BitConverter.ToHalf(x.ToArray(), 0))
-                        .ToArray();
+                        [.. data.GroupBy(x => offset++ / bytesPerChannel).Select(x => BitConverter.ToHalf([.. x], 0))];
                     using var writer = new BinaryWriter(new MemoryStream());
                     for (int i = 0; i < dataFloats.Length; i += bytesPerChannel)
                     {
@@ -414,9 +412,7 @@ namespace PrimalEditor
                 {
                     int offset = 0;
                     float[] dataFloats =
-                        data.GroupBy(x => offset++ / bytesPerChannel)
-                        .Select(x => BitConverter.ToSingle(x.ToArray().Reverse().ToArray(), 0))
-                        .ToArray();
+                        [.. data.GroupBy(x => offset++ / bytesPerChannel).Select(x => BitConverter.ToSingle([.. x.ToArray().Reverse()], 0))];
                     using var writer = new BinaryWriter(new MemoryStream());
                     foreach (var f in dataFloats)
                     {
@@ -465,9 +461,7 @@ namespace PrimalEditor
                 {
                     int offset = 0;
                     Half[] dataFloats =
-                        data.GroupBy(x => offset++ / bytesPerChannel)
-                        .Select(x => BitConverter.ToHalf(x.ToArray(), 0))
-                        .ToArray();
+                        [.. data.GroupBy(x => offset++ / bytesPerChannel).Select(x => BitConverter.ToHalf([.. x], 0))];
                     using var writer = new BinaryWriter(new MemoryStream());
                     foreach (var f in dataFloats)
                     {

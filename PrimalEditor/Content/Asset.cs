@@ -86,6 +86,7 @@ abstract class Asset : ViewModelBase
     }
 
     public string FileName => Path.GetFileNameWithoutExtension(FullPath);
+    [DataMember]
     public Guid Guid { get; protected set; } = Guid.NewGuid();
     public DateTime ImportDate { get; protected set; }
     public byte[] Hash { get; protected set; }
@@ -300,7 +301,7 @@ class UploadedAsset
 
     public static IdType GetContentId(Guid id)
     {
-        //Debug.Assert(id != Guid.Empty);
+        Debug.Assert(id != Guid.Empty);
         lock (_lock) { return _uploadedAssets.TryGetValue(id, out var uploadedAsset) ? uploadedAsset.ContentId : ID.INVALID_ID; }
     }
 

@@ -86,6 +86,7 @@ namespace PrimalEditor
 
         private void OpenProjectBrowserDialog()
         {
+            Project.Current?.Unload();
             var projectBrowser = new ProjectBrowserDialog();
             if(projectBrowser.ShowDialog() == false || projectBrowser.DataContext == null)
             {
@@ -94,10 +95,8 @@ namespace PrimalEditor
             }
             else
             {
-                Project.Current?.Unload();
                 var project = projectBrowser.DataContext as Project;
                 Debug.Assert(project != null);
-                ContentWatcher.Reset(project.ContentPath, project.Path);
                 DataContext = project;
             }
         }

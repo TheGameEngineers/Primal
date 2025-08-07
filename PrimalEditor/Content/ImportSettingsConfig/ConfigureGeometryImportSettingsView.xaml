@@ -25,22 +25,7 @@
             <Setter Property="Background" 
                     Value="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource Self}, Converter={StaticResource alternationConverter}}"/>
         </Style>
-
-        <Style TargetType="{x:Type Line}" x:Key="RedLineStyle">
-            <Setter Property="Stroke" Value="{StaticResource Editor.RedBrush}"/>
-            <Setter Property="StrokeThickness" Value="2"/>
-            <Setter Property="StrokeStartLineCap" Value="Round"/>
-            <Setter Property="StrokeEndLineCap" Value="Round"/>
-        </Style>
-
-        <Style BasedOn="{StaticResource SimpleButton}" TargetType="{x:Type Button}" x:Key="RemoveButtonStyle">
-            <Setter Property="Width" Value="20"/>
-            <Setter Property="Height" Value="14"/>
-            <Setter Property="Margin" Value="0,2,2,0"/>
-            <Setter Property="VerticalAlignment" Value="Top"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-        </Style>
+        
     </UserControl.Resources>
     <Grid d:DataContext="{d:DesignInstance Type={x:Type local:GeometryImportSettingsConfigurator}}" DataContext="{Binding GeometryImportSettingsConfigurator}">
         <Grid.ColumnDefinitions>
@@ -105,15 +90,8 @@
                                 <TextBlock Text="{Binding FileInfo.LastWriteTime}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
                                 <TextBlock Text="{Binding FileInfo.Length, Converter={StaticResource dataSizeToStringConverter}}"
                                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
-                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemove_Button_Click" Background="Transparent" Grid.Column="1"
-                                        x:Name="removeButton" Visibility="Collapsed">
-                                    <Button.Content>
-                                        <Grid>
-                                            <Line X1="1" X2="8" Y1="1.5" Y2="8.5" Style="{StaticResource RedLineStyle}"/>
-                                            <Line X1="1" X2="8" Y1="8.5" Y2="1.5" Style="{StaticResource RedLineStyle}"/>
-                                        </Grid>
-                                    </Button.Content>
-                                </Button>
+                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemove_Button_Click" Grid.Column="1"
+                                        x:Name="removeButton" Visibility="Collapsed" Grid.RowSpan="2" Margin="5"/>
                             </Grid>
                             <DataTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">

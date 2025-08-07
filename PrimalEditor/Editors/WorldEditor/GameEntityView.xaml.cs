@@ -99,30 +99,30 @@ public partial class GameEntityView : UserControl
     private void AddComponent(ComponentType componentType, object data)
     {
         var creationFunction = ComponentFactory.GetCreationFunction(componentType);
-        var changdedEntities = new List<(GameEntity entity, Component component)>();
+        var changedEntities = new List<(GameEntity entity, Component component)>();
         var vm = DataContext as MSEntity;
         foreach (var entity in vm.SelectedEntities)
         {
             var component = creationFunction(entity, data);
             if (entity.AddComponent(component))
             {
-                changdedEntities.Add((entity, component));
+                changedEntities.Add((entity, component));
             }
         }
 
-        if (changdedEntities.Any())
+        if (changedEntities.Any())
         {
             vm.Refresh();
 
             Project.UndoRedo.Add(new UndoRedoAction(
             () =>
             {
-                changdedEntities.ForEach(x => x.entity.RemoveComponent(x.component));
+                changedEntities.ForEach(x => x.entity.RemoveComponent(x.component));
                 (DataContext as MSEntity).Refresh();
             },
             () =>
             {
-                changdedEntities.ForEach(x => x.entity.AddComponent(x.component));
+                changedEntities.ForEach(x => x.entity.AddComponent(x.component));
                 (DataContext as MSEntity).Refresh();
             },
             $"Add {componentType} component"));

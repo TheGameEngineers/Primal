@@ -29,28 +29,45 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Expander IsExpanded="{Binding IsActive, Mode=OneWay}">
+                        <Expander Foreground="{StaticResource Editor.FontBrush}" IsExpanded="{Binding IsActive, Mode=OneWay}">
                             <Expander.Header>
                                 <Grid>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Name}" Style="{StaticResource LightTextBlockStyle}"/>
+                                        <Grid VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource LightTextBlockStyle}"/>
+                                            <TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}"
+                                                     Style="{StaticResource TextBoxStyle_WithRename}" Tag="{Binding RenameCommand}" Visibility="Collapsed"/>
+                                        </Grid>
                                         <Button Content="Remove"
                                                 Command="{Binding DataContext.RemoveSceneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}" Margin="20,0" Focusable="False"/>
-                                        <Button Content="+" IsEnabled="{Binding IsActive}"
-                                                Click="OnAddGameEntity_Button_Click"/>
+                                        <Button Content="Rename" Click="OnRenameScene_Button_Click" Tag="{Binding ElementName=renameTextBox}"/>
+                                        <Button Content="+" IsEnabled="{Binding IsActive}" Click="OnAddGameEntity_Button_Click" Margin="5,0"/>
                                     </StackPanel>
                                 </Grid>
                             </Expander.Header>
-                            <ListBox ItemsSource="{Binding GameEntities}" IsEnabled="{Binding IsActive}" SelectionMode="Extended"
-                                     SelectionChanged="OnGameEntities_ListBox_SelectionChanged">
+                            <ListBox Style="{StaticResource ListBoxNoScrollStyle}" IsEnabled="{Binding IsActive}" ItemsSource="{Binding GameEntities}"
+                                     SelectionMode="Extended" AllowDrop="True" MinHeight="48" HorizontalContentAlignment="Stretch"
+                                     SelectionChanged="OnGameEntities_ListBox_SelectionChanged" Loaded="OnGameEntities_ListBox_Loaded"
+                                     KeyDown="OnGameEntities_ListBox_KeyDown" Drop="OnGameEntities_ListBox_Drop">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Name}"/>
-                                            <Button Content="Remove" Command="{Binding ParentScene.RemoveGameEntityCommand}"
+                                        <Grid Background="Transparent" MinHeight="24">
+                                            <Grid>
+                                                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Medium" VerticalAlignment="Center"/>
+                                                <TextBox Text="{Binding Name, UpdateSourceTrigger=Explicit}" Style="{StaticResource TextBoxStyle_WithRename}"
+                                                         Padding="1,0,0,0" Visibility="Collapsed"/>
+                                            </Grid>
+                                            <Button Style="{StaticResource RemoveButtonStyle}"
+                                                    x:Name="removeButton" Visibility="Collapsed" Margin="5,0" VerticalAlignment="Center"
+                                                    Command="{Binding ParentScene.RemoveGameEntityCommand}"
                                                     CommandParameter="{Binding}"/>
-                                        </StackPanel>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Visibility" TargetName="removeButton" Value="Visible"/>
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>

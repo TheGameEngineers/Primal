@@ -22,7 +22,7 @@
         <TextBlock Text="MULTI" Width="32" Foreground="{StaticResource Editor.OrangeBrush}" FontFamily="Bahnschrift condensed"/>
         <TextBlock Text="VALUE" Width="32" Foreground="{StaticResource Editor.OrangeBrush}" FontFamily="Bahnschrift condensed" Margin="0,-4"/>
     </StackPanel>
-    
+
     <Style TargetType="{x:Type TextBlock}" x:Key="LightTextBlockStyle">
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -42,6 +42,7 @@
     <Style TargetType="{x:Type TextBox}" x:Key="{x:Type TextBox}" BasedOn="{StaticResource TextBoxStyle}">
         <EventSetter Event="KeyDown" Handler="OnTextBox_KeyDown"/>
         <EventSetter Event="GotFocus" Handler="OnTextBox_GotFocus"/>
+        <EventSetter Event="LostFocus" Handler="OnTextBox_LostFocus"/>
     </Style>
 
     <Style TargetType="{x:Type TextBox}" x:Key="TextBoxStyle_WithRename" BasedOn="{StaticResource TextBoxStyle}">
@@ -272,6 +273,53 @@
         </Setter>
     </Style>
 
+    <Style x:Key="ListBoxNoScrollStyle" TargetType="{x:Type ListBox}">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ListBoxItemStyle}"/>
+        <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+        <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBox}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}" Padding="1" SnapsToDevicePixels="true">
+                        <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Selector.IsSelectionActive" Value="True">
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsGrouping" Value="true"/>
+                                <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="false"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="SimpleButton" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush3}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
@@ -342,6 +390,47 @@
         </Style.Triggers>
     </Style>
 
+    <Style TargetType="{x:Type Line}" x:Key="RedLineStyle">
+        <Setter Property="Stroke" Value="{StaticResource Editor.RedBrush}"/>
+        <Setter Property="StrokeThickness" Value="2"/>
+        <Setter Property="StrokeStartLineCap" Value="Round"/>
+        <Setter Property="StrokeEndLineCap" Value="Round"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+
+    <Style TargetType="{x:Type Button}" x:Key="RemoveButtonStyle">
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Background" Value="#88000000"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.FontBrush}"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid x:Name="grid" Opacity="0.7">
+                        <Ellipse x:Name="circle" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                                 Fill="{TemplateBinding Background}" Stroke="{TemplateBinding BorderBrush}"
+                                 StrokeThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True"/>
+                        <Line X1="1" X2="8" Y1="1.5" Y2="8.5" Style="{StaticResource RedLineStyle}"/>
+                        <Line X1="1" X2="8" Y1="8.5" Y2="1.5" Style="{StaticResource RedLineStyle}"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="grid" Property="Opacity" Value="1"/>
+                            <Setter TargetName="circle" Property="Stroke" Value="White"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <SolidColorBrush x:Key="TabItem.Static.Foreground" Color="{StaticResource Editor.FontColor}"/>
     <SolidColorBrush x:Key="TabItem.Static.Background" Color="{StaticResource Editor.Window.GrayColor2}"/>
     <SolidColorBrush x:Key="TabItem.Static.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
@@ -352,7 +441,7 @@
     <SolidColorBrush x:Key="TabItem.Selected.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
     <SolidColorBrush x:Key="TabItem.Disabled.Background" Color="{StaticResource Editor.Window.GrayColor1}"/>
     <SolidColorBrush x:Key="TabItem.Disabled.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>
-    
+
     <Style TargetType="{x:Type TabItem}">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
         <Setter Property="Foreground" Value="{StaticResource TabItem.Static.Foreground}"/>
@@ -791,5 +880,5 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
 </ResourceDictionary>
