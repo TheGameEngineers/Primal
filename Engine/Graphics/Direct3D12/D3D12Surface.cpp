@@ -15,6 +15,12 @@ to_non_srgb(DXGI_FORMAT format)
     return format;
 }
 
+u32
+get_flags()
+{
+    return core::allow_tearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+}
+
 } // anonymous namespace
 
 void
@@ -22,17 +28,12 @@ d3d12_surface::create_swap_chain(IDXGIFactory7* factory, ID3D12CommandQueue* cmd
 {
     assert(factory && cmd_queue);
     release();
-    
-    if (SUCCEEDED(factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &_allow_tearing, sizeof(u32))) && _allow_tearing)
-    {
-        _present_flags = DXGI_PRESENT_ALLOW_TEARING;
-    }
 
     DXGI_SWAP_CHAIN_DESC1 desc{};
     desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     desc.BufferCount = buffer_count;
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.Flags = _allow_tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+    desc.Flags = get_flags();
     desc.Format = to_non_srgb(default_back_buffer_format);
     desc.Height = _window.height();
     desc.Width = _window.width();
@@ -66,7 +67,8 @@ void
 d3d12_surface::present() const
 {
     assert(_swap_chain);
-    DXCall(_swap_chain->Present(0, _present_flags));
+    u32 sync_interval{ core::vsync_enabled() ? (u32)1 : (u32)0 };
+    DXCall(_swap_chain->Present(sync_interval, sync_interval ? 0 : DXGI_PRESENT_ALLOW_TEARING));
     _current_bb_index = _swap_chain->GetCurrentBackBufferIndex();
 }
 
@@ -79,7 +81,7 @@ d3d12_surface::resize()
         core::release(_render_target_data[i].resource);
     }
 
-    const u32 flags{ _allow_tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0ul };
+    const u32 flags{ get_flags() };
     DXCall(_swap_chain->ResizeBuffers(buffer_count, 0, 0, DXGI_FORMAT_UNKNOWN, flags));
     _current_bb_index = _swap_chain->GetCurrentBackBufferIndex();
 
@@ -106,7 +108,7 @@ d3d12_surface::finalize()
     DXGI_SWAP_CHAIN_DESC desc{};
     DXCall(_swap_chain->GetDesc(&desc));
     const u32 width{ desc.BufferDesc.Width };
-    const u32 height{ desc.BufferDesc.Height};
+    const u32 height{ desc.BufferDesc.Height };
     assert(_window.width() == width && _window.height() == height);
 
     // set viewport and scissor rect

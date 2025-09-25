@@ -101,6 +101,58 @@ remove(entity_id id)
 }
 
 bool
+update_component(entity_id id, entity_info info, component_type::type type)
+{
+    assert(is_alive(id) && type != component_type::transform);
+    if (type == component_type::transform) return false;
+    entity entity{ id };
+    const id::id_type index{ id::index(id) };
+
+    if (type == component_type::script)
+    {
+        if (scripts[index].is_valid())
+        {
+            script::remove(scripts[index]);
+            scripts[index] = {};
+        }
+
+        if (info.script && info.script->script_creator)
+        {
+            script::component new_script{ script::create(*info.script, entity) };
+            assert(new_script.is_valid());
+
+            if (new_script.is_valid())
+            {
+                scripts[index] = new_script;
+                return true;
+            }
+        }
+    }
+    else if (type == component_type::geometry)
+    {
+        if (geometries[index].is_valid())
+        {
+            geometry::remove(geometries[index]);
+            geometries[index] = {};
+        }
+
+        if (info.geometry)
+        {
+            geometry::component new_geometry{ geometry::create(*info.geometry, entity) };
+            assert(new_geometry.is_valid());
+
+            if (new_geometry.is_valid())
+            {
+                geometries[index] = new_geometry;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool
 is_alive(entity_id id)
 {
     assert(id::is_valid(id));

@@ -21,3 +21,4 @@ constexpr u16 u16_invalid_id{ 0xffff };
 constexpr u8 u8_invalid_id{ 0xff };
 
 using f32 = float;
+using b32 = u32;

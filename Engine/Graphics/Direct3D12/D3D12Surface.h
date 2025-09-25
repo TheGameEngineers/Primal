@@ -20,8 +20,7 @@ public:
     DISABLE_COPY(d3d12_surface);
     constexpr d3d12_surface(d3d12_surface&& o)
         : _swap_chain{ o._swap_chain }, _window{ o._window }, _current_bb_index{ o._current_bb_index }
-        , _viewport{ o._viewport }, _scissor_rect{ o._scissor_rect }, _allow_tearing{ o._allow_tearing }
-        , _present_flags{ o._present_flags }, _light_culling_id{ o._light_culling_id }
+        , _viewport{ o._viewport }, _scissor_rect{ o._scissor_rect }, _light_culling_id{ o._light_culling_id }
     {
         for (u32 i{ 0 }; i < buffer_count; ++i)
         {
@@ -73,8 +72,6 @@ private:
         }
         _window = o._window;
         _current_bb_index = o._current_bb_index;
-        _allow_tearing = o._allow_tearing;
-        _present_flags = o._present_flags;
         _viewport = o._viewport;
         _scissor_rect = o._scissor_rect;
         _light_culling_id = o._light_culling_id;
@@ -91,8 +88,6 @@ private:
         }
         _window = {};
         _current_bb_index = 0;
-        _allow_tearing = 0;
-        _present_flags = 0;
         _viewport = {};
         _scissor_rect = {};
         _light_culling_id = id::invalid_id;
@@ -112,8 +107,6 @@ private:
     render_target_data  _render_target_data[buffer_count]{};
     platform::window    _window{};
     mutable u32         _current_bb_index{ 0 };
-    u32                 _allow_tearing{ 0 };
-    u32                 _present_flags{ 0 };
     D3D12_VIEWPORT      _viewport{};
     D3D12_RECT          _scissor_rect{};
     id::id_type         _light_culling_id{ id::invalid_id };

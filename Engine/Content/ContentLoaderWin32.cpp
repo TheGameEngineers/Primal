@@ -15,14 +15,6 @@
 namespace primal::content {
 namespace {
 
-enum component_type
-{
-    transform,
-    script,
-
-    count
-};
-
 utl::vector<game_entity::entity> entities;
 transform::init_info transform_info{};
 script::init_info script_info{};
@@ -67,11 +59,18 @@ read_script(const u8*& data, game_entity::entity_info& info)
     return script_info.script_creator != nullptr;
 }
 
+bool
+read_geometry(const u8*&, game_entity::entity_info&)
+{
+    return false;
+}
+
 using component_reader = bool(*)(const u8*&, game_entity::entity_info&);
 component_reader component_readers[]
 {
     read_transform,
     read_script,
+    read_geometry,
 };
 static_assert(_countof(component_readers) == component_type::count);
 

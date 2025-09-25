@@ -122,6 +122,13 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             PostMessage(hwnd, WM_CLOSE, 0, 0);
             return 0;
         }
+        else if(wparam == VK_SPACE)
+        {
+            bool vsync{ false };
+            graphics::get_option(graphics::renderer_option::vsync, &vsync, sizeof(bool));
+            vsync = !vsync;
+            graphics::set_option(graphics::renderer_option::vsync, &vsync, sizeof(bool));
+        }
         else if (wparam == VK_F11)
         {
             is_restarting = true;
@@ -334,7 +341,6 @@ engine_test::run()
     //if ((counter % 90) == 0) light_set_key = (light_set_key + 1) % 2;
 
     timer.begin();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     const f32 dt{ timer.dt_avg() };
     script::update(dt);
     //test_lights(dt);

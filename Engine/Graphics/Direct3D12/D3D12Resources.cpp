@@ -114,7 +114,7 @@ descriptor_heap::free(descriptor_handle& handle)
 
     const u32 frame_idx{ core::current_frame_index() };
     _deferred_free_indices[frame_idx].push_back(index);
-    core::set_deferred_releases_flag();
+    core::set_deferred_releases_flag(frame_idx);
     handle = {};
 }
 //// D3D12 BUFFER /////////////////////////////////////////////////////////////////////////////////

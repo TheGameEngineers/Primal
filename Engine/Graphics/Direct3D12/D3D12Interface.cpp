@@ -15,6 +15,8 @@ get_platform_interface(platform_interface& pi)
 {
     pi.initialize = core::initialize;
     pi.shutdown = core::shutdown;
+    pi.set_option = core::set_option;
+    pi.get_option = core::get_option;
 
     pi.surface.create = core::create_surface;
     pi.surface.remove = core::remove_surface;

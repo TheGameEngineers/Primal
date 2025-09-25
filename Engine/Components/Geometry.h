@@ -15,5 +15,6 @@ struct init_info
 component create(init_info info, game_entity::entity entity);
 void remove(component c);
 void get_render_item_ids(id::id_type *const item_ids, u32 count);
-
+void get_render_item_ids(const id::id_type *const geometry_ids, id::id_type *const item_ids, u32 count);
+void get_entity_ids(const id::id_type *const geometry_ids, game_entity::entity_id *const entity_ids, u32 count);
 }

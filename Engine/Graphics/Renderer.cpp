@@ -51,6 +51,18 @@ shutdown()
     if (gfx.platform != (graphics_platform)-1) gfx.shutdown();
 }
 
+void
+set_option(renderer_option::option option, const void *const parameter, u32 parameter_size)
+{
+    gfx.set_option(option, parameter, parameter_size);
+}
+
+void
+get_option(renderer_option::option option, void *const parameter, u32 parameter_size)
+{
+    gfx.get_option(option, parameter, parameter_size);
+}
+
 const char*
 get_engine_shaders_path()
 {

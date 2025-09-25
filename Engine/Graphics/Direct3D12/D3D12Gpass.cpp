@@ -106,13 +106,11 @@ struct gpass_cache
         const u64 items_count{ d3d12_render_item_ids.size() };
         const u64 new_buffer_size{ items_count * struct_size };
         const u64 old_buffer_size{ _buffer.size() };
-        if (new_buffer_size > old_buffer_size)
-        {
-            _buffer.resize(new_buffer_size);
-        }
 
         if (new_buffer_size != old_buffer_size)
         {
+            _buffer.resize(new_buffer_size);
+
             entity_ids = (id::id_type*)_buffer.data();
             submesh_gpu_ids = (id::id_type*)&entity_ids[items_count];
             material_ids = (id::id_type*)&submesh_gpu_ids[items_count];
@@ -197,7 +195,7 @@ create_buffers(math::u32v2 size)
     {
         d3d12_texture_init_info info{};
         info.desc = &desc;
-        info.initial_state = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        info.initial_state = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
         info.clear_value.Format = desc.Format;
         info.clear_value.DepthStencil.Depth = 0.f;
         info.clear_value.DepthStencil.Stencil = 0;
@@ -440,7 +438,7 @@ add_transitions_for_depth_prepass(d3dx::d3d12_resource_barrier& barriers)
                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                  D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
     barriers.add(gpass_depth_buffer.resource(),
-                 D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                 D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                  D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
@@ -452,7 +450,7 @@ add_transitions_for_gpass(d3dx::d3d12_resource_barrier& barriers)
                  D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
     barriers.add(gpass_depth_buffer.resource(),
                  D3D12_RESOURCE_STATE_DEPTH_WRITE,
-                 D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                 D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 }
 
 void

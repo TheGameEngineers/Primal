@@ -10,6 +10,9 @@ struct platform_interface
     bool(*initialize)(void);
     void(*shutdown)(void);
 
+    void (*set_option)(renderer_option::option, const void *const, u32);
+    void (*get_option)(renderer_option::option, void *const, u32);
+
     struct {
         surface(*create)(platform::window);
         void(*remove)(surface_id);

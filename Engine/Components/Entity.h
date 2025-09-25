@@ -5,6 +5,17 @@
 
 namespace primal {
 
+struct component_type
+{
+    enum type : u32 {
+        transform,
+        script,
+        geometry,
+
+        count
+    };
+};
+
 #define INIT_INFO(component) namespace component { struct init_info; }
 
 INIT_INFO(transform);
@@ -23,6 +34,7 @@ struct entity_info
 
 entity create(entity_info info);
 void remove(entity_id id);
+bool update_component(entity_id id, entity_info info, component_type::type type);
 bool is_alive(entity_id id);
 }
 }

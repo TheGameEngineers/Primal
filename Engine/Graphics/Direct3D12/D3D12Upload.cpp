@@ -30,18 +30,16 @@ upload_frame        upload_frames[upload_frame_count]{};
 ID3D12CommandQueue* upload_cmd_queue{ nullptr };
 ID3D12Fence1*       upload_fence{ nullptr };
 u64                 upload_fence_value{ 0 };
-HANDLE              fence_event{};
 std::mutex          frame_mutex{};
 std::mutex          queue_mutex{};
 
 void
 upload_frame::wait_and_reset()
 {
-    assert(upload_fence && fence_event);
+    assert(upload_fence);
     if (upload_fence->GetCompletedValue() < fence_value)
     {
-        DXCall(upload_fence->SetEventOnCompletion(fence_value, fence_event));
-        WaitForSingleObject(fence_event, INFINITE);
+        DXCall(upload_fence->SetEventOnCompletion(fence_value, nullptr));
     }
 
     core::release(upload_buffer);
@@ -106,7 +104,7 @@ d3d12_upload_context::d3d12_upload_context(u32 aligned_size)
     NAME_D3D12_OBJECT_INDEXED(frame.upload_buffer, aligned_size, L"Upload Buffer - size");
 
     const D3D12_RANGE range{};
-    DXCall(frame.upload_buffer->Map(0, &range, reinterpret_cast<void**>(&frame.cpu_address)));
+    DXCall(frame.upload_buffer->Map(0, &range, (void**)&frame.cpu_address));
     assert(frame.cpu_address);
 
     _cmd_list = frame.cmd_list;
@@ -179,10 +177,6 @@ initialize()
     if (FAILED(hr)) return init_failed();
     NAME_D3D12_OBJECT(upload_fence, L"Upload Fence");
 
-    fence_event = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
-    assert(fence_event);
-    if (!fence_event) return init_failed();
-
     return true;
 }
 
@@ -192,12 +186,6 @@ shutdown()
     for (u32 i{ 0 }; i < upload_frame_count; ++i)
     {
         upload_frames[i].release();
-    }
-
-    if (fence_event)
-    {
-        CloseHandle(fence_event);
-        fence_event = nullptr;
     }
 
     core::release(upload_cmd_queue);

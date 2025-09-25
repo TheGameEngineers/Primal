@@ -67,10 +67,6 @@ public:
         if (FAILED(hr)) goto _error;
         NAME_D3D12_OBJECT(_fence, L"D3D12 Fence");
 
-        _fence_event = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
-        assert(_fence_event);
-        if (!_fence_event) goto _error;
-
         return;
 
     _error:
@@ -82,11 +78,11 @@ public:
         assert(!_cmd_queue && !_cmd_list && !_fence);
     }
 
-    // Wait for the current frame to be signalled and reset the command list/allocator.
+    // Wait for the current frame to be signaled and reset the command list/allocator.
     void begin_frame()
     {
         command_frame& frame{ _cmd_frames[_frame_index] };
-        frame.wait(_fence_event, _fence);
+        frame.wait(_fence);
         DXCall(frame.cmd_allocator->Reset());
         DXCall(_cmd_list->Reset(frame.cmd_allocator, nullptr));
     }
@@ -113,7 +109,7 @@ public:
     {
         for (u32 i{ 0 }; i < frame_buffer_count; ++i)
         {
-            _cmd_frames[i].wait(_fence_event, _fence);
+            _cmd_frames[i].wait(_fence);
         }
         _frame_index = 0;
     }
@@ -123,9 +119,6 @@ public:
         flush();
         core::release(_fence);
         _fence_value = 0;
-
-        CloseHandle(_fence_event);
-        _fence_event = nullptr;
 
         core::release(_cmd_queue);
         core::release(_cmd_list);
@@ -146,19 +139,18 @@ private:
         ID3D12CommandAllocator* cmd_allocator{ nullptr };
         u64                     fence_value{ 0 };
 
-        void wait(HANDLE fence_event, ID3D12Fence1* fence)
+        void wait(ID3D12Fence1* fence) const
         {
-            assert(fence && fence_event);
+            assert(fence);
             // If the current fence value is still less than "fence_value"
             // then we know the GPU has not finished executing the command lists
             // since it has not reached the "_cmd_queue->Signal()" command
             if (fence->GetCompletedValue() < fence_value)
             {
-                // We have the fence create an event wich is singaled once the fence's current value equals "fence_value"
-                DXCall(fence->SetEventOnCompletion(fence_value, fence_event));
+                // We have the fence create an event which is signaled once the fence's current value equals "fence_value"
                 // Wait until the fence has triggered the event that its current value has reached "fence_value"
                 // indicating that command queue has finished executing.
-                WaitForSingleObject(fence_event, INFINITE);
+                DXCall(fence->SetEventOnCompletion(fence_value, nullptr));
             }
         }
 
@@ -174,12 +166,11 @@ private:
     ID3D12Fence1*                   _fence{ nullptr };
     u64                             _fence_value{ 0 };
     command_frame                   _cmd_frames[frame_buffer_count]{};
-    HANDLE                          _fence_event{ nullptr };
     u32                             _frame_index{ 0 };
 };
 
-constexpr UINT                  d3d12_sdk_version = 615;
-constexpr const char*           d3d12_sdk_path = ".\\D3D12\\";
+constexpr UINT                  d3d12_sdk_version{ 615 };
+constexpr const char*           d3d12_sdk_path{ ".\\D3D12\\" };
 constexpr D3D_FEATURE_LEVEL     minimum_feature_level{ D3D_FEATURE_LEVEL_11_0 };
 
 
@@ -203,6 +194,15 @@ utl::vector<IUnknown*>          deferred_releases[frame_buffer_count]{};
 u32                             deferred_releases_flag[frame_buffer_count]{};
 std::mutex                      deferred_releases_mutex{};
 
+// VSync can only be disabled if DXGI supports tearing.
+b32                             tearing_is_supported{ 0 };
+
+struct options
+{
+    bool    enable_vsync{ true };   // enable/disable vsync
+    bool    enable_dxr{ false };    //enable/disable DXR (ray tracing)
+    u32     msaa_samples{ 1 };      // MSAA samples (1, 2, 4, 8)
+} options;
 
 bool
 failed_init()
@@ -257,13 +257,15 @@ get_max_feature_level(IDXGIAdapter4* adapter)
 }
 
 void __declspec(noinline)
-process_deferred_releases(u32 frame_idx)
+process_deferred_releases(u32 frame_idx, bool force_release = false)
 {
     std::lock_guard lock{ deferred_releases_mutex };
 
-    // NOTE: we clear this flag in the beginning. If we'd clear it at the end
-    //       then it might overwrite some other thread that was trying to set it.
-    //       It's fine if overwriting happens before processing the items.
+    // NOTE: The resources could still be in use in previous frames. So we wait
+    //       another round before releasing the resources.
+    //      force_release is used during shutdown, where we don't have to wait.
+    if (!force_release && ++deferred_releases_flag[frame_idx] < frame_buffer_count) return;
+
     deferred_releases_flag[frame_idx] = 0;
 
     rtv_desc_heap.process_deferred_free(frame_idx);
@@ -281,24 +283,24 @@ process_deferred_releases(u32 frame_idx)
 
 d3d12_frame_info
 get_d3d12_frame_info(const frame_info& info, constant_buffer& cbuffer,
-                     const d3d12_surface& surface, u32 frame_idx, f32 delta_time)
+                     const d3d12_surface& surface, u32 frame_idx)
 {
     camera::d3d12_camera& camera{ camera::get(info.camera_id) };
     camera.update();
     hlsl::GlobalShaderData data{};
 
     using namespace DirectX;
-    XMStoreFloat4x4A(&data.View, camera.view());
-    XMStoreFloat4x4A(&data.Projection, camera.projection());
-    XMStoreFloat4x4A(&data.InvProjection, camera.inverse_projection());
-    XMStoreFloat4x4A(&data.ViewProjection, camera.view_projection());
-    XMStoreFloat4x4A(&data.InvViewProjection, camera.inverse_view_projection());
+    XMStoreFloat4x4(&data.View, camera.view());
+    XMStoreFloat4x4(&data.Projection, camera.projection());
+    XMStoreFloat4x4(&data.InvProjection, camera.inverse_projection());
+    XMStoreFloat4x4(&data.ViewProjection, camera.view_projection());
+    XMStoreFloat4x4(&data.InvViewProjection, camera.inverse_view_projection());
     XMStoreFloat3(&data.CameraPosition, camera.position());
     XMStoreFloat3(&data.CameraDirection, camera.direction());
     data.ViewWidth = surface.viewport().Width;
     data.ViewHeight = surface.viewport().Height;
     data.NumDirectionalLights = light::non_cullable_light_count(info.light_set_key);
-    data.DeltaTime = delta_time;
+    data.DeltaTime = info.average_frame_time;
     data.AmbientLight = light::ambient_light(info.light_set_key);
 
     // NOTE: be careful not to read from this buffer. Reads are really really slow.
@@ -315,7 +317,6 @@ get_d3d12_frame_info(const frame_info& info, constant_buffer& cbuffer,
         surface.height(),
         surface.light_culling_id(),
         frame_idx,
-        delta_time
     };
 
     return d3d12_info;
@@ -327,10 +328,10 @@ namespace detail {
 void
 deferred_release(IUnknown* resource)
 {
-    const u32 frame_idx{ current_frame_index() };
     std::lock_guard lock{ deferred_releases_mutex };
+    const u32 frame_idx{ current_frame_index() };
     deferred_releases[frame_idx].push_back(resource);
-    set_deferred_releases_flag();
+    deferred_releases_flag[frame_idx] = 1;
 }
 } // detail namespace
 
@@ -374,6 +375,14 @@ initialize()
 
     DXCall(hr = CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&dxgi_factory)));
     if (FAILED(hr)) return failed_init();
+
+    tearing_is_supported = 0;
+
+#if 1
+    DXCall(dxgi_factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &tearing_is_supported, sizeof(tearing_is_supported)));
+#else
+#pragma message("TEARING SUPPORT HAS BEEN DISABLED IN D3D12CORE::INITIALIZE()!")
+#endif
 
     // determine which adapter (i.e. graphics card) to use, if any
     ComPtr<IDXGIAdapter4> main_adapter;
@@ -444,7 +453,7 @@ shutdown()
     //       their depending resources are released.
     for (u32 i{ 0 }; i < frame_buffer_count; ++i)
     {
-        process_deferred_releases(i);
+        process_deferred_releases(i, true);
     }
 
     // shutdown modules
@@ -477,7 +486,7 @@ shutdown()
     // NOTE: some types only use deferred release for their resources during
     //       shutdown/reset/clear. To finally release these resources we call
     //       process_deferred_releases once more.
-    process_deferred_releases(0);
+    process_deferred_releases(0, true);
 
 #ifdef _DEBUG
     if (main_device)
@@ -503,7 +512,75 @@ shutdown()
     release(d3d12_sdk_config);
 }
 
-id3d12_device *const
+void
+set_option(renderer_option::option option, const void *const parameter, [[maybe_unused]] u32 parameter_size)
+{
+    assert(option < renderer_option::count);
+    assert(parameter && parameter_size);
+
+    switch (option)
+    {
+    case renderer_option::vsync:
+    {
+        assert(parameter_size == sizeof(bool));
+        const bool enable{ *(const bool*)parameter };
+        options.enable_vsync = enable || !tearing_is_supported;
+    }
+    break;
+    case renderer_option::raytracing:
+    {
+        assert(parameter_size == sizeof(bool));
+        const bool enable{ *(const bool*)parameter };
+        options.enable_dxr = enable;
+    }
+    break;
+    case renderer_option::msaa:
+    {
+        assert(parameter_size == sizeof(u32));
+        const u32 msaa_samples{ *(const u32*)parameter };
+        if (msaa_samples == 1 || msaa_samples == 2 || msaa_samples == 4 || msaa_samples == 8)
+        {
+            options.msaa_samples = msaa_samples;
+        }
+    }
+    break;
+    default:
+        break;
+    }
+}
+
+void
+get_option(renderer_option::option option, void *const parameter, [[maybe_unused]] u32 parameter_size)
+{
+    assert(option < renderer_option::count);
+    assert(parameter && parameter_size);
+    switch (option)
+    {
+    case renderer_option::vsync:
+    {
+        assert(parameter_size == sizeof(bool));
+        *(bool*)parameter = options.enable_vsync;
+    }
+    break;
+    case renderer_option::raytracing:
+    {
+        assert(parameter_size == sizeof(bool));
+        *(bool*)parameter = options.enable_dxr;
+    }
+    break;
+    case renderer_option::msaa:
+    {
+        assert(parameter_size == sizeof(u32));
+        *(u32*)parameter = options.msaa_samples;
+    }
+    break;
+    default:
+        break;
+    }
+}
+
+
+id3d12_device*
 device() { return main_device; }
 
 descriptor_heap&
@@ -525,7 +602,23 @@ u32
 current_frame_index() { return gfx_command.frame_index(); }
 
 void
-set_deferred_releases_flag() { deferred_releases_flag[current_frame_index()] = 1; }
+set_deferred_releases_flag(u32 frame_idx)
+{
+    std::lock_guard lock{ deferred_releases_mutex };
+    deferred_releases_flag[frame_idx] = 1;
+}
+
+bool
+allow_tearing()
+{
+    return tearing_is_supported;
+}
+
+bool
+vsync_enabled()
+{
+    return options.enable_vsync;
+}
 
 surface
 create_surface(platform::window window)
@@ -585,7 +678,7 @@ render_surface(surface_id id, frame_info info)
     ID3D12Resource *const current_back_buffer{ surface.back_buffer() };
 
     const d3d12_frame_info d3d12_info{
-        get_d3d12_frame_info(info, cbuffer, surface, frame_idx, 16.7f) };
+        get_d3d12_frame_info(info, cbuffer, surface, frame_idx) };
 
 
     gpass::set_size({ d3d12_info.surface_width, d3d12_info.surface_height });
@@ -609,9 +702,9 @@ render_surface(surface_id id, frame_info info)
     gpass::depth_prepass(cmd_list, d3d12_info);
 
     // Geometry and lighting pass
+    gpass::add_transitions_for_gpass(barriers);
     light::update_light_buffers(d3d12_info);
     delight::cull_lights(cmd_list, d3d12_info, barriers);
-    gpass::add_transitions_for_gpass(barriers);
     barriers.apply(cmd_list);
     gpass::set_render_targets_for_gpass(cmd_list);
     gpass::render(cmd_list, d3d12_info);

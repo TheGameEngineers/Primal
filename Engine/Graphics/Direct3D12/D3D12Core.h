@@ -16,7 +16,6 @@ struct d3d12_frame_info
     u32                         surface_height{ 0 };
     id::id_type                 light_culling_id{ id::invalid_id };
     u32                         frame_index{ 0 };
-    f32                         delta_time{ 16.7f };
 };
 }
 
@@ -48,16 +47,20 @@ constexpr void deferred_release(T*& resource)
         resource = nullptr;
     }
 }
+void set_option(renderer_option::option option, const void *const parameter, u32 parameter_size);
+void get_option(renderer_option::option option, void *const parameter, u32 parameter_size);
 
-[[nodiscard]] id3d12_device *const device();
+[[nodiscard]] id3d12_device* device();
 [[nodiscard]] descriptor_heap& rtv_heap();
 [[nodiscard]] descriptor_heap& dsv_heap();
 [[nodiscard]] descriptor_heap& srv_heap();
 [[nodiscard]] descriptor_heap& uav_heap();
 [[nodiscard]] constant_buffer& cbuffer();
 [[nodiscard]] u32 current_frame_index();
-void set_deferred_releases_flag();
+void set_deferred_releases_flag(u32 frame_idx);
 
+[[nodiscard]] bool allow_tearing();
+[[nodiscard]] bool vsync_enabled();
 [[nodiscard]] surface create_surface(platform::window window);
 void remove_surface(surface_id id);
 void resize_surface(surface_id id, u32, u32);

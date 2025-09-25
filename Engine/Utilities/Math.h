@@ -139,4 +139,15 @@ log2(u64 value)
     else
         return 0;
 }
+
+constexpr math::v3 to_radians(math::v3 degrees)
+{
+    return { degrees.x * to_rad, degrees.y * to_rad, degrees.z * to_rad };
+}
+
+constexpr math::v3 to_degrees(math::v3 radians)
+{
+    return { radians.x * to_deg, radians.y * to_deg, radians.z * to_deg };
+}
+
 }

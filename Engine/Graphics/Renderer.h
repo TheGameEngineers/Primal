@@ -8,6 +8,16 @@
 
 namespace primal::graphics {
 
+struct renderer_option {
+    enum option :u64 {
+        vsync,
+        raytracing,
+        msaa,
+
+        count
+    };
+};
+
 struct frame_info
 {
     id::id_type*    render_item_ids{ nullptr };
@@ -248,6 +258,9 @@ enum class graphics_platform :u32
 
 bool initialize(graphics_platform platform);
 void shutdown();
+
+void set_option(renderer_option::option option, const void *const parameter, u32 parameter_size);
+void get_option(renderer_option::option option, void *const parameter, u32 parameter_size);
 
 // Get the location of compiled engine shaders relative to the executable's path.
 // The path is for the graphics API that's currently in use.

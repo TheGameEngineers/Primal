@@ -11,6 +11,8 @@ constexpr f32 half_pi{ pi * 0.5f };
 constexpr f32 two_pi{ 2.f * pi };
 constexpr f32 inv_two_pi{ 1.f / two_pi };
 constexpr f32 epsilon{ 1e-5f };
+constexpr f32 to_rad{ pi * (1.f/180.f)};
+constexpr f32 to_deg{ inv_pi * 180.f};
 #if defined(_WIN64)
 using v2 = DirectX::XMFLOAT2;
 using v2a = DirectX::XMFLOAT2A;
