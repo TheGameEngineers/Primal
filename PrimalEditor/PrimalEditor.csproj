@@ -8,6 +8,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Configurations>DebugEditor;ReleaseEditor</Configurations>
     <Platforms>x64</Platforms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Resources\Icons\Primal.ico</ApplicationIcon>
   </PropertyGroup>
 

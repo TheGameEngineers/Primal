@@ -8,7 +8,8 @@
                     xmlns:opt="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
                     xmlns:local="clr-namespace:PrimalEditor.Dictionaries"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:utl ="clr-namespace:PrimalEditor.Utilities.Controls">
+                    xmlns:ctrl ="clr-namespace:PrimalEditor.Utilities.Controls"
+                    xmlns:utl ="clr-namespace:PrimalEditor.Utilities">
 
     <sys:Double x:Key="AssetIconWidth">90</sys:Double>
 
@@ -646,11 +647,11 @@
         </Setter>
     </Style>
 
-    <Style TargetType="{x:Type utl:NumberBox}" x:Key="{x:Type utl:NumberBox}">
+    <Style TargetType="{x:Type ctrl:NumberBox}" x:Key="{x:Type ctrl:NumberBox}">
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type utl:NumberBox}">
+                <ControlTemplate TargetType="{x:Type ctrl:NumberBox}">
                     <Grid>
                         <TextBlock x:Name="PART_textBlock"
                                    Text="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}"
@@ -686,7 +687,7 @@
         </Setter>
     </Style>
 
-    <Style TargetType="{x:Type utl:ScalarBox}" x:Key="{x:Type utl:ScalarBox}">
+    <Style TargetType="{x:Type ctrl:ScalarBox}" x:Key="{x:Type ctrl:ScalarBox}">
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
@@ -696,7 +697,7 @@
         <Setter Property="ToolTipService.BetweenShowDelay" Value="1000"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type utl:ScalarBox}">
+                <ControlTemplate TargetType="{x:Type ctrl:ScalarBox}">
                     <Border x:Name="border" SnapsToDevicePixels="true" Margin="0,2,0,3"
                             Background="{TemplateBinding Background}" Padding="5,2"
                             BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="10"
@@ -744,16 +745,16 @@
 
     </Style>
 
-    <Style TargetType="{x:Type utl:VectorBox}" x:Key="{x:Type utl:VectorBox}">
+    <Style TargetType="{x:Type ctrl:VectorBox}" x:Key="{x:Type ctrl:VectorBox}">
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type utl:VectorBox}">
+                <ControlTemplate TargetType="{x:Type ctrl:VectorBox}">
                     <ControlTemplate.Resources>
-                        <Style TargetType="{x:Type utl:NumberBox}" BasedOn="{StaticResource {x:Type utl:NumberBox}}">
+                        <Style TargetType="{x:Type ctrl:NumberBox}" BasedOn="{StaticResource {x:Type ctrl:NumberBox}}">
                             <Setter Property="MinWidth" Value="50"/>
                             <Setter Property="ToolTipService.InitialShowDelay" Value="3000"/>
                             <Setter Property="ToolTipService.BetweenShowDelay" Value="1000"/>
@@ -777,10 +778,10 @@
                                 <RowDefinition x:Name="rowDefinition2"/>
                                 <RowDefinition x:Name="rowDefinition3"/>
                             </Grid.RowDefinitions>
-                            <utl:NumberBox x:Name="nbX" Foreground="{StaticResource Editor.RedBrush}" Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="X value"/>
-                            <utl:NumberBox x:Name="nbY" Foreground="{StaticResource Editor.GreenBrush}" Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="Y value"/>
-                            <utl:NumberBox x:Name="nbZ" Foreground="{StaticResource Editor.BlueBrush}" Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="Z value"/>
-                            <utl:NumberBox x:Name="nbW" Foreground="{StaticResource Editor.FontBrush}" Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="W value" Visibility="Collapsed"/>
+                            <ctrl:NumberBox x:Name="nbX" Foreground="{StaticResource Editor.RedBrush}" Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="X value"/>
+                            <ctrl:NumberBox x:Name="nbY" Foreground="{StaticResource Editor.GreenBrush}" Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="Y value"/>
+                            <ctrl:NumberBox x:Name="nbZ" Foreground="{StaticResource Editor.BlueBrush}" Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="Z value"/>
+                            <ctrl:NumberBox x:Name="nbW" Foreground="{StaticResource Editor.FontBrush}" Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="W value" Visibility="Collapsed"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -854,11 +855,11 @@
         <Rectangle Fill="Transparent" Stroke="White" StrokeThickness="0.2" Width="100" Height="100"/>
     </Canvas>
 
-    <Style TargetType="{x:Type utl:ComponentView}" x:Key="{x:Type utl:ComponentView}">
+    <Style TargetType="{x:Type ctrl:ComponentView}" x:Key="{x:Type ctrl:ComponentView}">
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type utl:ComponentView}">
+                <ControlTemplate TargetType="{x:Type ctrl:ComponentView}">
                     <Expander IsExpanded="True" x:Name="expander"
                               Background="{StaticResource Editor.Window.GrayBrush3}">
                         <Expander.Style>
@@ -881,4 +882,15 @@
         </Setter>
     </Style>
 
+    <Style TargetType="{x:Type utl:RenderSurfaceControl}" x:Key="{x:Type utl:RenderSurfaceControl}">
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type utl:RenderSurfaceControl}">
+                    <ContentPresenter/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

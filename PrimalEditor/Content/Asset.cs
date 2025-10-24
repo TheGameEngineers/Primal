@@ -233,7 +233,7 @@ class UploadedAsset
                 {
                     AssetInfo = assetInfo,
                     Metadata = asset.GetMetadata(),
-                    ContentId = EngineAPI.CreateResource(data, assetInfo.Type),
+                    ContentId = EngineAPI.CreateResource(data, (int)assetInfo.Type),
                     ReferenceCount = 1,
                     _referencedAssets = referencedAssets
                 };

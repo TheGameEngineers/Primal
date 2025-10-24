@@ -8,6 +8,40 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Utilities"
-             mc:Ignorable="d" 
+             xmlns:controls="clr-namespace:PrimalEditor.Utilities.Controls"
+             mc:Ignorable="d" UseLayoutRounding="True"
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
+    </UserControl.Resources>
+    <Border BorderThickness="1" d:BorderBrush="#ffbc9cc6">
+        <Border.Style>
+            <Style TargetType="{x:Type Border}">
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFocused, ElementName=renderSurface}" Value="True">
+                        <Setter Property="BorderBrush" Value="#ffbc9cc6"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+
+            <local:RenderSurfaceControl x:Name="renderSurface" Grid.Row="1" x:FieldModifier="private"/>
+
+            <Border Background="{StaticResource Editor.Window.GrayBrush3}" BorderThickness="0,0,0,2" Grid.Row="0"
+                    BorderBrush="{StaticResource Editor.Window.GrayBrush2}" Height="32">
+                <Grid Margin="10,1">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="frameTime" Text="DT: -- ms" Foreground="#ffa8a4e0"/>
+                        <TextBlock x:Name="frameRate" Text="FPS: -- Hz" Margin="20,0" Foreground="#ffa8a4e0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
 </UserControl>

@@ -7,6 +7,7 @@
 #include "Components/Transform.h"
 #include "Components/Script.h"
 #include "Components/Geometry.h"
+#include "Utilities/Threading.h"
 
 using namespace primal;
 
@@ -84,7 +85,7 @@ game_entity::entity entity_from_id(id::id_type id)
 
 } // anonymous namespace
 
-std::mutex mutex{};
+utl::ticket_mutex mutex{};
 
 EDITOR_INTERFACE id::id_type
 CreateGameEntity(game_entity_descriptor* e)
@@ -112,7 +113,7 @@ RemoveGameEntity(id::id_type id)
     game_entity::remove(game_entity::entity_id{ id });
 }
 
-EDITOR_INTERFACE u32
+EDITOR_INTERFACE b32
 UpdateComponent(id::id_type entity_id, game_entity_descriptor* e, component_type::type type)
 {
     std::lock_guard lock{ mutex };
@@ -126,7 +127,7 @@ UpdateComponent(id::id_type entity_id, game_entity_descriptor* e, component_type
         &script_info,
         id::is_valid(desc.geometry.geometry_content_id) ? &geometry_info : nullptr,
     };
-    return game_entity::update_component(game_entity::entity_id{ entity_id }, entity_info, type);
+    return game_entity::update_component(game_entity::entity_id{ entity_id }, entity_info, type) ? 1 : 0;
 }
 
 EDITOR_INTERFACE id::id_type

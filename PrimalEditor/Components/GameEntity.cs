@@ -49,7 +49,7 @@ namespace PrimalEditor.Components
                     }
                     else if (ID.IsValid(EntityId))
                     {
-                        EngineAPI.EntityAPI.RemoveGameEntity(this);
+                        EngineAPI.EntityAPI.RemoveGameEntity(EntityId);
                         _components.ToList().ForEach(x => x.Unload());
                         EntityId = ID.INVALID_ID;
                     }

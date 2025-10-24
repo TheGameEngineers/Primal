@@ -54,14 +54,14 @@
             <MenuItem Header="Create" IsEnabled="False"></MenuItem>
             <MenuItem Header="Window"></MenuItem>
         </Menu>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="20,10">
-            <Button Content="Undo" Command="{Binding UndoCommand}"/>
-            <Button Content="Redo" Command="{Binding RedoCommand}" Margin="5,0"/>
-            <Button Content="New Script" Click="OnNewScript_Button_Click"
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5">
+            <Button Content="Undo" Command="{Binding UndoCommand}" Margin="10,0"/>
+            <Button Content="Redo" Command="{Binding RedoCommand}"/>
+            <Button Content="New Script" Click="OnNewScript_Button_Click" Margin="10,0"
                     IsEnabled="{Binding Path=IsEnabled, ElementName=buildButton}"/>
-            <Button x:Name="buildButton" Content="Build" Margin="5,0"
+            <Button x:Name="buildButton" Content="Build"
                     Command="{Binding BuildCommand}" CommandParameter="{StaticResource True}"/>
-            <ComboBox x:Name="runConfig" VerticalAlignment="Center"
+            <ComboBox x:Name="runConfig" VerticalAlignment="Center" Margin="10,0"
                       Width="72" SelectedIndex="{Binding BuildConfig}">
                 <ComboBoxItem Content="Debug"/>
                 <ComboBoxItem Content="Release"/>
@@ -70,47 +70,44 @@
         </StackPanel>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="10*"/>
+                <ColumnDefinition Width="1*" MinWidth="300"/>
             </Grid.ColumnDefinitions>
+            
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
+                    <RowDefinition Height="3*" MinHeight="400"/>
+                    <RowDefinition Height="1*" MinHeight="400"/>
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
+                        <RowDefinition MinHeight="128"/>
+                        <RowDefinition MinHeight="128"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition MinWidth="128"/>
+                        <ColumnDefinition MinWidth="128"/>
                     </Grid.ColumnDefinitions>
                     <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Background="Transparent"
                                   VerticalAlignment="Stretch" HorizontalAlignment="Right" Width="5"/>
                     <GridSplitter Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0" Background="Transparent"
                                   VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="5"/>
-                    <utl:RenderSurfaceView Grid.Row="0" Grid.Column="0" Margin="0,0,5,0"/>
-                    <utl:RenderSurfaceView Grid.Row="0" Grid.Column="1" Margin="0,0,0,0"/>
-                    <utl:RenderSurfaceView Grid.Row="1" Grid.Column="0" Margin="0,5,5,0"/>
-                    <utl:RenderSurfaceView Grid.Row="1" Grid.Column="1" Margin="0,5,0,0"/>
+                    <utl:RenderSurfaceView Grid.Row="0" Grid.Column="0" Margin="0,0,5,0" x:Name="sv1" KeyDown="OnProjectLayoutView_KeyDown"/>
+                    <utl:RenderSurfaceView Grid.Row="0" Grid.Column="1" Margin="0,0,0,0" x:Name="sv2" KeyDown="OnProjectLayoutView_KeyDown"/>
+                    <utl:RenderSurfaceView Grid.Row="1" Grid.Column="0" Margin="0,5,5,0" x:Name="sv3" KeyDown="OnProjectLayoutView_KeyDown"/>
+                    <utl:RenderSurfaceView Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" x:Name="sv4" KeyDown="OnProjectLayoutView_KeyDown"/>
                 </Grid>
-                <!--<Border Background="{StaticResource Editor.Selected.BackgroundBrush}">
-                   
-                </Border>-->
+                                   
                 <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"
                           VerticalAlignment="Top" Background="Transparent"/>
                 <Grid Grid.Row="1" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="250"/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="1*" MinWidth="250"/>
+                        <ColumnDefinition Width="2*" MinWidth="400"/>
+                        <ColumnDefinition Width="4*" MinWidth="800"/>
                     </Grid.ColumnDefinitions>
-                    <utl:UndoRedoView DataContext="{Binding UndoRedo}" Grid.Column="0"
-                                      Background="{StaticResource Editor.Window.GrayBrush2}"/>
-                    <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch"
-                                  HorizontalAlignment="Left" Background="Transparent"/>
+                    <utl:UndoRedoView DataContext="{Binding UndoRedo}" Grid.Column="0" Background="{StaticResource Editor.Window.GrayBrush2}"/>
+                    <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Left" Background="Transparent"/>
                     <utl:LoggerView Grid.Column="1" Margin="5,0,0,0"/>
                     <GridSplitter Grid.Column="2" Width="5" VerticalAlignment="Stretch"
                                   HorizontalAlignment="Left" Background="Transparent"/>
@@ -122,12 +119,12 @@
                       VerticalAlignment="Stretch" Background="Transparent"/>
             <Grid Grid.Column="1" Margin="5,0,0,0" MinWidth="250">
                 <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
+                    <RowDefinition MinHeight="400" Height="1*"/>
+                    <RowDefinition MinHeight="400" Height="2*"/>
                 </Grid.RowDefinitions>
                 <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"
                           VerticalAlignment="Top" Background="Transparent"/>
-                <local:ProjectLayoutView  Background="{StaticResource Editor.Window.GrayBrush3}"/>
+                <local:ProjectLayoutView Background="{StaticResource Editor.Window.GrayBrush3}" KeyDown="OnProjectLayoutView_KeyDown"/>
                 <local:GameEntityView Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}"
                                       Margin="0,5,0,0"/>
             </Grid>

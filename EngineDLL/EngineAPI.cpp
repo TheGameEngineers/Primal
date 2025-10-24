@@ -13,6 +13,7 @@
 #include "Components/Entity.h"
 #include "Components/Geometry.h"
 #include "Components/Transform.h"
+#include "Utilities/Threading.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -86,10 +87,9 @@ patch_material_data(u8* data)
 }
 
 void
-calculate_thresholds(const id::id_type *const geometry_ids, game_entity::entity_id *const entity_ids,
+calculate_thresholds(const game_entity::entity_id *const entity_ids,
                      f32 *const thresholds, u32 count, u32 surface_id)
 {
-    geometry::get_entity_ids(geometry_ids, entity_ids, count);
     game_entity::entity camera{ game_entity::entity_id{ surfaces[surface_id].camera.entity_id() } };
 
     using namespace DirectX;
@@ -200,7 +200,7 @@ remove_lights()
 
 } // anonymous namespace
 
-extern std::mutex mutex;
+extern utl::ticket_mutex mutex;
 math::v4 to_quat(math::v3 angles, bool is_degrees);
 
 EDITOR_INTERFACE engine_init_error::error_code
@@ -266,7 +266,7 @@ CreateRenderSurface(HWND host, s32 width, s32 height)
     std::lock_guard lock{ mutex };
 
     // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    if (lights[0].is_valid()) create_lights();
+    if (!lights[0].is_valid()) create_lights();
     // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
 
     assert(host);
@@ -459,8 +459,10 @@ RenderFrame(u32 surface_id, id::id_type camera_id, u64 light_set)
 
     if (count)
     {
-        geometry::get_render_item_ids(surface.geometry_ids.data(), item_ids, count);
-        calculate_thresholds(surface.geometry_ids.data(), entity_ids, thresholds, count, surface_id);
+        const id::id_type *const geometry_ids{ surface.geometry_ids.data() };
+        geometry::get_entity_ids(geometry_ids, entity_ids, count);
+        geometry::get_render_item_ids(geometry_ids, item_ids, count);
+        calculate_thresholds(entity_ids, thresholds, count, surface_id);
     }
 
     graphics::frame_info info{};

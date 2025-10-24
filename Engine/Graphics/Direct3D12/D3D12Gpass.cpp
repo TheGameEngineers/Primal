@@ -271,9 +271,10 @@ void
 prepare_render_frame(const d3d12_frame_info& d3d12_info)
 {
     assert(d3d12_info.info && d3d12_info.camera);
-    assert(d3d12_info.info->render_item_ids && d3d12_info.info->render_item_count);
+    
     gpass_cache& cache{ frame_cache };
     cache.clear();
+    if(!d3d12_info.info->render_item_ids || !d3d12_info.info->render_item_count) return;
 
     using namespace content;
     render_item::get_d3d12_render_item_ids(*d3d12_info.info, cache.d3d12_render_item_ids);

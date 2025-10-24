@@ -102,6 +102,11 @@ class Project : ViewModelBase
     public ICommand DebugStopCommand { get; private set; }
     public ICommand BuildCommand { get; private set; }
 
+    public void UpdateScene()
+    {
+        //if (Current != null) ; // TODO: update scene
+    }
+
     private void SetCommands()
     {
         AddSceneCommand = new RelayCommand<object>(x =>

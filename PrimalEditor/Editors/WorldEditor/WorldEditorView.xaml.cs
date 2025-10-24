@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using PrimalEditor.Components;
 using PrimalEditor.Content;
 using PrimalEditor.GameDev;
 using PrimalEditor.GameProject;
+using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -78,6 +80,25 @@ namespace PrimalEditor.Editors
                 string.IsNullOrEmpty(contentBrowser.SelectedFolder?.Trim()))
             {
                 contentBrowser.SelectedFolder = contentBrowser.ContentFolder;
+            }
+        }
+
+        private void OnProjectLayoutView_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.F && e.OriginalSource is not TextBox && MSEntity.CurrentSelection?.SelectedEntities.Count > 0)
+            {
+                var avgPos = Vector3.Zero;
+                foreach (var entity in MSEntity.CurrentSelection.SelectedEntities)
+                {
+                    avgPos += entity.GetComponent<Transform>().Position;
+                }
+
+                avgPos /= MSEntity.CurrentSelection.SelectedEntities.Count;
+
+                sv1.RenderSurfaceControl.FocusPosition(avgPos);
+                sv2.RenderSurfaceControl.FocusPosition(avgPos);
+                sv3.RenderSurfaceControl.FocusPosition(avgPos);
+                sv4.RenderSurfaceControl.FocusPosition(avgPos);
             }
         }
     }

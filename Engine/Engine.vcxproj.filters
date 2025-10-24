@@ -47,6 +47,7 @@
     <ClInclude Include="Graphics\Direct3D12\D3D12LightCulling.h" />
     <ClInclude Include="Components\Geometry.h" />
     <ClInclude Include="EngineAPI\GeometryComponent.h" />
+    <ClInclude Include="Utilities\Threading.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
     Copyright (c) Arash Khatami
     Distributed under the MIT license. See the LICENSE file in the project root for more information.
 -->
@@ -6,7 +6,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:content="clr-namespace:PrimalEditor.Content"
                     xmlns:controls="clr-namespace:PrimalEditor.Utilities.Controls">
-    
+
     <Style x:Key="{ComponentResourceKey  TypeInTargetAssembly={x:Type content:PlainView}, ResourceId=PlainViewResourceId}" 
                TargetType="{x:Type controls:ListViewEx}" BasedOn="{StaticResource {x:Type ListBox}}" >
         <Setter Property="HorizontalContentAlignment" Value="Center"/>

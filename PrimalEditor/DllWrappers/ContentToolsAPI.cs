@@ -332,13 +332,13 @@ namespace PrimalEditor.ContentToolsAPIStructs
 
 namespace PrimalEditor.DllWrappers
 {
-    static class ContentToolsAPI
+    static partial class ContentToolsAPI
     {
         private const string _toolsDLL = "ContentTools.dll";
         private delegate void ProgressCallback(int value, int maxValue);
 
-        [DllImport(_toolsDLL)]
-        public static extern void ShutDownContentTools();
+        [LibraryImport(_toolsDLL)]
+        public static partial void ShutDownContentTools();
 
         #region Texture       
         [DllImport(_toolsDLL)]

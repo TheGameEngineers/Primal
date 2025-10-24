@@ -16,7 +16,16 @@ namespace PrimalEditor.Utilities
 
     public static class MathUtil
     {
-        public static float Epsilon => 0.00001f;
+        public static float Epsilon => 1e-5f;
+        public static float Pi => (float)Math.PI;
+        public static float HalfPi => Pi * 0.5f;
+
+        public static float WrapAngle(float angle)
+        {
+            angle %= 360f;
+            if (angle < 0) angle += 360f;
+            return angle;
+        }
 
         public static bool IsTheSameAs(this float value, float other)
         {
