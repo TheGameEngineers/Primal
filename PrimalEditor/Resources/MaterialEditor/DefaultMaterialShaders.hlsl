@@ -177,9 +177,9 @@ float3 CookTorranceBRDF(Surface S, float3 L)
     // NOTE: See "Practical multiple scattering compensation for microfacet models"
     //       https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
     //       Eq. (16) with Ess == BrdfLut.x
-    float2 BrdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
-    float3 energyCompensation = 1.f + S.SpecularColor * (rcp(BrdfLut.x) - 1.f);
-    specularBRDF *= energyCompensation;
+    //float2 BrdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
+    //float3 energyCompensation = 1.f + S.SpecularColor * (rcp(BrdfLut.x) - 1.f);
+    //specularBRDF *= energyCompensation;
 
     return (diffuseBRDF + S.SpecularStrength * specularBRDF) * NoL;
 }
@@ -265,12 +265,12 @@ Surface GetSurface(VertexOut psIn, float3 V)
 {
     Surface S;
 
-    S.BaseColor = PerObjectBuffer.BaseColor.rgb;
-    S.Metallic = PerObjectBuffer.Metallic;
+    S.BaseColor = 1.f; //PerObjectBuffer.BaseColor.rgb;
+    S.Metallic = 0.f; //PerObjectBuffer.Metallic;
     S.Normal = normalize(psIn.WorldNormal);
-    S.PerceptualRoughness = PerObjectBuffer.Roughness;
-    S.EmissiveColor = PerObjectBuffer.Emissive;
-    S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
+    S.PerceptualRoughness = 0.9f; //PerObjectBuffer.Roughness;
+    S.EmissiveColor = 0.f; //PerObjectBuffer.Emissive;
+    S.EmissiveIntensity = 0.f; //PerObjectBuffer.EmissiveIntensity;
     S.AmbientOcclusion = 1.f;
 
     S.V = V;

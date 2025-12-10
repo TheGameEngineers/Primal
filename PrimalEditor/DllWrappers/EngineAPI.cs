@@ -406,9 +406,9 @@ namespace PrimalEditor.DllWrappers
 
                 return UpdateComponent(entity.EntityId, desc, type) != 0;
             }
+            [LibraryImport(_engineDll)]
+            public static partial IdType GetComponentId(IdType entityId, ComponentType type);
         }
-        [LibraryImport(_engineDll)]
-        public static partial IdType GetComponentId(IdType entityId, ComponentType type);
     }
 
 }

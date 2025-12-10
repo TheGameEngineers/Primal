@@ -60,8 +60,7 @@
                                             </Grid>
                                             <Button Style="{StaticResource RemoveButtonStyle}"
                                                     x:Name="removeButton" Visibility="Collapsed" Margin="5,0" VerticalAlignment="Center"
-                                                    Command="{Binding ParentScene.RemoveGameEntityCommand}"
-                                                    CommandParameter="{Binding}"/>
+                                                    Click="OnRemoveGameEntity_Button_Click"/>
                                         </Grid>
                                         <DataTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">

@@ -4,6 +4,7 @@ using PrimalEditor.Components;
 using PrimalEditor.Content;
 using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,7 +33,7 @@ public partial class ProjectLayoutView : UserControl
     {
         var btn = sender as Button;
         var scene = btn.DataContext as Scene;
-        scene.AddGameEntityCommand.Execute(new GameEntity(scene) { Name = "Empty Game Entity" });
+        scene.AddGameEntities([new(scene) { Name = "Empty Game Entity" }]);
     }
 
     private void OnGameEntities_ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -67,7 +68,9 @@ public partial class ProjectLayoutView : UserControl
             "Selection changed"
             ));
 
-        MSGameEntity msEntities = null;
+        MSEntity msEntities = null;
+        MSEntity.Reset();
+
         if (newSelection.Count != 0)
         {
             msEntities = new MSGameEntity(newSelection);
@@ -81,18 +84,17 @@ public partial class ProjectLayoutView : UserControl
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-            var fileList = files?
-                .Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh)
-                .ToList();
             List<GameEntity> entities = [];
 
             await Task.Run(() =>
             {
+                var fileList = files?
+                    .Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh);
+
                 foreach (var file in fileList)
                 {
-                    Debug.Assert(!string.IsNullOrEmpty(file.Trim()));
-                    var assetInfo = Asset.TryGetAssetInfo(file);
-                    if (assetInfo != null)
+                    Debug.Assert(!string.IsNullOrEmpty(file?.Trim()));
+                    if (Asset.TryGetAssetInfo(file) is AssetInfo assetInfo)
                     {
                         var entity = new GameEntity(scene) { Name = assetInfo.FileName.Trim() };
                         // NOTE: adding an entity to an active scene will automatically set its IsActive to true.
@@ -105,15 +107,46 @@ public partial class ProjectLayoutView : UserControl
                 }
             });
 
-            entities.ForEach(entity => scene.AddGameEntityCommand.Execute(entity));
+            if (entities.Count > 0)
+            {
+                scene.AddGameEntities(entities);
+            }
         }
     }
 
-    private void OnGameEntities_ListBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    private void OnGameEntities_ListBox_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter)
+        if (e.Key == Key.Delete)
         {
-            // TODO: remove entities.
+            var listBox = sender as ListBox;
+            var entities = new List<GameEntity>();
+            foreach (GameEntity entity in listBox.SelectedItems)
+            {
+                entities.Add(entity);
+            }
+
+            listBox.UnselectAll();
+
+            if (entities.Count > 0)
+            {
+                RemoveGameEntities(entities);
+            }
+        }
+    }
+
+    private void RemoveGameEntities(List<GameEntity> entities)
+    {
+        if(DataContext is Project { ActiveScene: Scene scene})
+        {
+            scene.RemoveGameEntities(entities);
+        }
+    }
+
+    private void OnRemoveGameEntity_Button_Click(object sender, RoutedEventArgs e)
+    {
+        if( sender is Button { DataContext: GameEntity entity})
+        {
+            RemoveGameEntities([entity]);
         }
     }
 

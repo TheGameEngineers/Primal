@@ -494,14 +494,12 @@
     <Style x:Key="PrimalWindowStyle" TargetType="{x:Type Window}">
         <Setter Property="BorderBrush" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush1}"/>
+        <Setter Property="AllowsTransparency" Value="True"/>
+        <Setter Property="WindowStyle" Value="None"/>
         <Setter Property="WindowChrome.WindowChrome">
             <Setter.Value>
-                <WindowChrome
-                    CornerRadius="0"
-                    ResizeBorderThickness="{x:Static SystemParameters.WindowResizeBorderThickness}"
-                    GlassFrameThickness="0" CaptionHeight="20"
-                    NonClientFrameEdges="None"
-                    UseAeroCaptionButtons="False" />
+                <WindowChrome CornerRadius="0" ResizeBorderThickness="{x:Static SystemParameters.WindowResizeBorderThickness}"
+                    GlassFrameThickness="0" CaptionHeight="20" NonClientFrameEdges="None" UseAeroCaptionButtons="False" />
             </Setter.Value>
         </Setter>
         <Setter Property="Template">

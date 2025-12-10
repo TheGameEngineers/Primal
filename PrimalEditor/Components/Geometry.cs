@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Content;
+using PrimalEditor.DllWrappers;
 using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
@@ -57,6 +58,7 @@ class GeometryWithMaterials(string name, byte[] icon, List<LodWithMaterials> lod
 class Geometry : Component
 {
     private UploadedAsset _geometry;
+    private IdType _componentId = ID.INVALID_ID;
 
     [DataMember(Name = "Geometry")]
     public Guid GeometryGuid { get; private set; }
@@ -136,17 +138,59 @@ class Geometry : Component
         GeometryGuid = _geometry.AssetInfo.Guid;
         UploadedAsset.RemoveFromScene(_geometry);
         _geometry = null;
+        _componentId = ID.INVALID_ID;
+    }
+
+    private bool UpdateComponent(List<AppliedMaterial> materials, Guid guid)
+    {
+        var oldGeometryWithMaterials = GeometryWithMaterials;
+        var oldMaterials = MaterialsList;
+        var oldGeometry = _geometry;
+        var oldGeometryId = _geometry?.ContentId ?? ID.INVALID_ID;
+        var oldComponentId = _componentId;
+
+        GeometryWithMaterials = null;
+        GeometryGuid = guid;
+        _materials = materials ?? [];
+        _geometry = null;
+        _componentId = ID.INVALID_ID;
+        Load();
+
+        if (ID.IsValid(_geometry?.ContentId ?? ID.INVALID_ID))
+        {
+            EngineAPI.EntityAPI.UpdateComponent(Owner, ComponentType.Geometry);
+
+            oldMaterials.ForEach(x => x.UnloadFromEngine());
+            UploadedAsset.RemoveFromScene(oldGeometry);
+            return true;
+        }
+
+        GeometryWithMaterials = oldGeometryWithMaterials;
+        GeometryGuid = oldGeometry?.AssetInfo.Guid ?? Guid.Empty;
+        _geometry = oldGeometry;
+        _materials = oldMaterials;
+        _componentId = oldComponentId;
+
+        return false;
     }
 
     public void SetGeometry(Guid guid)
     {
         if (_geometry?.AssetInfo.Guid != guid)
         {
-            Owner.IsActive = false; // This will remove the game entity and destroy the geometry in engine.
-            GeometryGuid = guid;
-            _materials.Clear();     // Use default materials for the new geometry.
-            Owner.IsActive = true;  // Create new game entity with the new geometry.
+            UpdateComponent(null, guid);
         }
+    }
+
+    public IdType GetComponentId()
+    {
+        if (!ID.IsValid(_componentId) && ID.IsValid(Owner.EntityId))
+        {
+            _componentId = EngineAPI.EntityAPI.GetComponentId(Owner.EntityId, ComponentType.Geometry);
+            Debug.Assert(ID.IsValid(_componentId));
+        }
+
+        return _componentId;
     }
 
     public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSGeometry(msEntity);
@@ -159,6 +203,12 @@ class Geometry : Component
         Debug.Assert(_geometry != null && _geometry.AssetInfo.Guid != Guid.Empty);
         GeometryGuid = _geometry.AssetInfo.Guid;
         _materials = MaterialsList;
+    }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        _componentId = ID.INVALID_ID;
     }
 
     public Geometry(GameEntity owner, AssetInfo geometry) : base(owner)
@@ -188,7 +238,10 @@ sealed class MSGeometry : MSComponent<Geometry>
 
     public void SetGeometry(Guid guid)
     {
+        var scene = SelectedComponents[0].Owner.ParentScene;
+        var enableList = scene.DisableAndUpdate(MSEntity.CurrentSelection.SelectedEntities);
         SelectedComponents.ForEach(x => x.SetGeometry(guid));
+        scene.EnableAndUpdate(enableList);
         Refresh();
     }
 

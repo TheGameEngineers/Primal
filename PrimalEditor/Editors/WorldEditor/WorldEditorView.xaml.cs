@@ -4,6 +4,8 @@ using PrimalEditor.Components;
 using PrimalEditor.Content;
 using PrimalEditor.GameDev;
 using PrimalEditor.GameProject;
+using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,14 +21,29 @@ namespace PrimalEditor.Editors
         public WorldEditorView()
         {
             InitializeComponent();
-            Loaded += OnWorldEditorViewLoaded;
+            Project.SceneUpdated += OnSceneUpdated;
+            DataContextChanged += OnWorldEditorDataContextChanged;
         }
 
-        private void OnWorldEditorViewLoaded(object sender, RoutedEventArgs e)
+        private void OnWorldEditorDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            Loaded -= OnWorldEditorViewLoaded;
             Focus();
         }
+
+        private void OnSceneUpdated(object sender, EventArgs e)
+        {
+            Debug.Assert((sender as Scene)?.Project == Project.Current);
+
+            if(sender is Scene scene)
+            {
+                var ids = scene.IsActive ? scene.GetGeometryComponentIds() : [];
+                sv1.RenderSurfaceControl.SetComponentIds(ids);
+                sv2.RenderSurfaceControl.SetComponentIds(ids);
+                sv3.RenderSurfaceControl.SetComponentIds(ids);
+                sv4.RenderSurfaceControl.SetComponentIds(ids);
+            }
+        }
+
 
         private void OnNewScript_Button_Click(object sender, RoutedEventArgs e)
         {
@@ -35,8 +52,7 @@ namespace PrimalEditor.Editors
 
         private void OnCreatePrimitiveMesh_Button_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new PrimitiveMeshDialog();
-            dlg.ShowDialog();
+            new PrimitiveMeshDialog().ShowDialog();
         }
 
         private void UnloadAndCloseAllWindows()
@@ -49,12 +65,12 @@ namespace PrimalEditor.Editors
             {
                 if (win != mainWindow)
                 {
-                    win.DataContext = null;
                     win.Close();
                 }
             }
-
+            // NOTE: the order of these lines matter!
             mainWindow.DataContext = null;
+            Project.Current?.Unload();
             mainWindow.Close();
         }
 

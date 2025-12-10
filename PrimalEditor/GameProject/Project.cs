@@ -6,12 +6,15 @@ using PrimalEditor.DllWrappers;
 using PrimalEditor.GameDev;
 using PrimalEditor.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace PrimalEditor.GameProject;
@@ -19,13 +22,14 @@ namespace PrimalEditor.GameProject;
 [DataContract(Name = "Game")]
 class Project : ViewModelBase
 {
+    public static event EventHandler SceneUpdated;
+
     public static string Extension => ".primal";
     [DataMember]
     public string Name { get; private set; } = "New Project";
     /// <summary>
     /// Gets the root folder that contains the current project.
     /// </summary>
-    [DataMember]
     public string Path { get; private set; }
     /// <summary>
     /// Gets the full path of the current Primal project file, including its file name and extension.
@@ -104,7 +108,7 @@ class Project : ViewModelBase
 
     public void UpdateScene()
     {
-        //if (Current != null) ; // TODO: update scene
+        if (Current != null) SceneUpdated?.Invoke(ActiveScene, new());
     }
 
     private void SetCommands()
@@ -178,6 +182,7 @@ class Project : ViewModelBase
             Debug.Assert(project != null);
             project.Path = path;
             Current = project;
+            project.UpdateScene();
             return project;
         }
         catch (Exception ex)
@@ -195,9 +200,11 @@ class Project : ViewModelBase
 
     public void Unload()
     {
+        ActiveScene.GameEntities.ToList().ForEach(entity => entity.IsEnabled = false);
+        UpdateScene();
         ActiveScene.IsActive = false;
         UnloadGameCodeDLL();
-        Task.Run(VisualStudio.CloseVisualStudio);
+        VisualStudio.CloseVisualStudio();
         AssetRegistry.Save();
         UndoRedo.Reset();
         Logger.Clear();
@@ -258,11 +265,11 @@ class Project : ViewModelBase
     {
         try
         {
-            UnloadGameCodeDLL();
+            var scriptNames = UnloadGameCodeDLL();
             await Task.Run(() => VisualStudio.BuildSolution(this, DLLBuildConfig, showWindow));
             if (VisualStudio.BuildSucceeded)
             {
-                LoadGameCodeDLL();
+                LoadGameCodeDLL(scriptNames);
             }
         }
         catch (Exception ex)
@@ -272,7 +279,48 @@ class Project : ViewModelBase
         }
     }
 
-    private void LoadGameCodeDLL()
+    private List<(GameEntity Entity, string ScriptName)> RemoveScriptComponents()
+    {
+        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            if (!ActiveScene.IsActive) return [];
+
+            var scriptNames = new List<(GameEntity Entity, string ScriptName)>();
+
+            foreach (var entity in ActiveScene.GameEntities)
+            {
+                if(ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
+                {
+                    Debug.Assert(entity.IsActive && ID.IsValid(entity.EntityId));
+                    scriptNames.Add((entity, script.Name));
+                    entity.RemoveComponent(script);
+                }
+            }
+
+            MSEntity.CurrentSelection?.Refresh();
+            return scriptNames;
+        });
+
+        return [];
+    }
+
+    private void AddScriptComponents(List<(GameEntity Entity, string ScriptName)> scriptNames)
+    {
+        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            foreach (var (entity, scriptName) in scriptNames)
+            {
+                if (!ID.IsValid(entity.EntityId)) continue;
+                Debug.Assert(entity.GetComponent<Script>() == null && !string.IsNullOrEmpty(scriptName));
+                var script = ComponentFactory.GetCreationFunction(ComponentType.Script)(entity, scriptName);
+                entity.AddComponent(script);
+            }
+
+            MSEntity.CurrentSelection?.Refresh();
+        });
+    }
+
+    private void LoadGameCodeDLL(List<(GameEntity Entity, string ScriptName)> scriptNames)
     {
         var configName = VisualStudio.GetConfigurationName(DLLBuildConfig);
         var dll = $@"{Path}x64\{configName}\{Name}.dll";
@@ -280,8 +328,8 @@ class Project : ViewModelBase
         if (File.Exists(dll) && EngineAPI.LoadGameCodeDll(dll) != 0)
         {
             AvailableScripts = EngineAPI.GetScriptNames();
-            ActiveScene.GameEntities.Where(x => x.GetComponent<Script>() != null).ToList().ForEach(x => x.IsActive = true);
             Logger.Log(MessageType.Info, "Game code DLL loaded successfully.");
+            AddScriptComponents(scriptNames);
         }
         else
         {
@@ -289,14 +337,17 @@ class Project : ViewModelBase
         }
     }
 
-    private void UnloadGameCodeDLL()
+    private List<(GameEntity Entity, string ScriptName)> UnloadGameCodeDLL()
     {
-        ActiveScene.GameEntities.Where(x => x.GetComponent<Script>() != null).ToList().ForEach(x => x.IsActive = false);
+        var scriptNames = RemoveScriptComponents();
+
         if (EngineAPI.UnloadGameCodeDll() != 0)
         {
             Logger.Log(MessageType.Info, "Game code DLL unloaded.");
             AvailableScripts = null;
         }
+
+        return scriptNames;
     }
 
     [OnDeserialized]
