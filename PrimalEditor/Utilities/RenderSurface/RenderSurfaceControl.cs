@@ -207,7 +207,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
             var moveDir = GetMoveDirection();
             if (moveDir.LengthSquared() > MathUtil.Epsilon)
             {
-                _ = Application.Current.Dispatcher.BeginInvoke(() => _camera.ChangePosition(moveDir, _frameTimer.AverageFrameTime));
+                _camera.ChangePosition(moveDir, _frameTimer.AverageFrameTime);
             }
         }
 

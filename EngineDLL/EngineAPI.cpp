@@ -71,6 +71,37 @@ struct shader_group_data
     u8* data;
 };
 
+bool tracking{ false };
+void track_mouse(HWND hwnd)
+{
+    TRACKMOUSEEVENT tme;
+    tme.cbSize = sizeof(TRACKMOUSEEVENT);
+    tme.dwFlags = TME_HOVER | TME_LEAVE;
+    tme.dwHoverTime = 10;
+    tme.hwndTrack = hwnd;
+
+    TrackMouseEvent(&tme);
+}
+
+LRESULT
+WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    switch (msg)
+    {
+    case WM_MOUSEMOVE:
+        if (!tracking)
+        {
+            track_mouse(hwnd);
+            tracking = true;
+        }
+        break;
+    case WM_MOUSELEAVE:
+        tracking = false;
+        break;
+    }
+    return DefWindowProc(hwnd, msg, wparam, lparam);
+}
+
 u8*
 patch_material_data(u8* data)
 {
@@ -270,7 +301,7 @@ CreateRenderSurface(HWND host, s32 width, s32 height)
     // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
 
     assert(host);
-    platform::window_init_info info{ nullptr, host, nullptr, 0, 0, width, height };
+    platform::window_init_info info{ &WinProc, host, nullptr, 0, 0, width, height };
     viewport_surface surface{};
     surface.window = platform::create_window(&info);
     surface.surface = graphics::create_surface(surface.window);
@@ -473,4 +504,39 @@ RenderFrame(u32 surface_id, id::id_type camera_id, u64 light_set)
     info.light_set_key = light_set;
 
     surface.surface.render(info);
+}
+
+EDITOR_INTERFACE void
+UpdateEditorCamera(u32 surface_id, f32 pos_x, f32 pos_y, f32 pos_z, f32 rot_x, f32 rot_y, f32 rot_z)
+{
+    std::lock_guard lock{ mutex };
+    assert(surface_id < surfaces.size());
+    const id::id_type entity_id{ surfaces[surface_id].camera.entity_id() };
+    assert(id::is_valid(entity_id));
+    transform::component_cache cache{};
+    cache.position = { pos_x, pos_y, pos_z };
+    cache.rotation = to_quat({ rot_x, rot_y, rot_z }, false);
+    cache.flags = transform::component_flags::position | transform::component_flags::rotation;
+    cache.id = transform::transform_id{ entity_id };
+
+    transform::update(&cache, 1);
+}
+
+EDITOR_INTERFACE void
+SetCameraRange(u32 surface_id, f32 near_z, f32 far_z)
+{
+    std::lock_guard lock{ mutex };
+    assert(near_z > 0 && far_z >= near_z);
+    assert(surface_id < surfaces.size());
+    surfaces[surface_id].camera.range(near_z, far_z);
+}
+
+EDITOR_INTERFACE void
+SetCameraFoV(u32 surface_id, f32 fov)
+{
+    std::lock_guard lock{ mutex };
+    assert(fov > 0);
+    assert(surface_id < surfaces.size());
+    fov *= (1.f / 180.f);
+    surfaces[surface_id].camera.field_of_view(fov);
 }

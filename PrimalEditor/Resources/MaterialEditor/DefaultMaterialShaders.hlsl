@@ -265,12 +265,12 @@ Surface GetSurface(VertexOut psIn, float3 V)
 {
     Surface S;
 
-    S.BaseColor = 1.f; //PerObjectBuffer.BaseColor.rgb;
-    S.Metallic = 0.f; //PerObjectBuffer.Metallic;
+    S.BaseColor = PerObjectBuffer.BaseColor.rgb;
+    S.Metallic = PerObjectBuffer.Metallic;
     S.Normal = normalize(psIn.WorldNormal);
-    S.PerceptualRoughness = 0.9f; //PerObjectBuffer.Roughness;
-    S.EmissiveColor = 0.f; //PerObjectBuffer.Emissive;
-    S.EmissiveIntensity = 0.f; //PerObjectBuffer.EmissiveIntensity;
+    S.PerceptualRoughness = PerObjectBuffer.Roughness;
+    S.EmissiveColor = PerObjectBuffer.Emissive;
+    S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
     S.AmbientOcclusion = 1.f;
 
     S.V = V;

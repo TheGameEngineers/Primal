@@ -40,8 +40,68 @@
                         <TextBlock x:Name="frameTime" Text="DT: -- ms" Foreground="#ffa8a4e0"/>
                         <TextBlock x:Name="frameRate" Text="FPS: -- Hz" Margin="20,0" Foreground="#ffa8a4e0"/>
                     </StackPanel>
+                    <ToggleButton Padding="2" x:Name="cameraSettingsButton" HorizontalAlignment="Right"
+                                  IsChecked="{Binding IsOpen, ElementName=cameraSettingsPopup, Mode=OneWay}"
+                                  Click="OnCameraSettings_Button_Click" Focusable="False" VerticalAlignment="Center">
+                        <ToggleButton.Style>
+                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}">
+                                <Setter Property="Opacity" Value="0.7"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Opacity" Value="1"/>
+                                    </Trigger>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter Property="Opacity" Value="1"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ToggleButton.Style>
+                        <ToggleButton.Content>
+                            <Image Source="pack://application:,,,/Resources/RenderSurface/CameraSettings.png"/>
+                        </ToggleButton.Content>
+                    </ToggleButton>
                 </Grid>
             </Border>
+
+            <Popup AllowsTransparency="True" x:Name="cameraSettingsPopup" PopupAnimation="Fade"
+                   DataContext="{Binding ElementName=renderSurface}"
+                   PlacementTarget="{Binding ElementName=cameraSettingsButton}" Placement="Bottom" StaysOpen="False"
+                   HorizontalOffset="-220" VerticalOffset="5">
+                <Border CornerRadius="5" ClipToBounds="True" Width="250"
+                        BorderBrush="{StaticResource Editor.Window.GrayBrush5}" BorderThickness="1">
+                    <Border.Background>
+                        <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor3}" Opacity="0.8"/>
+                    </Border.Background>
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Camera Settings" HorizontalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold"/>
+                        <CheckBox Content="Lock Camera" IsChecked="{Binding IsXZLocked}" Foreground="{StaticResource Editor.FontBrush}"/>
+                        <DockPanel>
+                            <TextBlock Text="Camera Speed" Width="90" Margin="0,5"/>
+                            <TextBlock Text="{Binding CameraSpeed}" Margin="0,5" Width="32"/>
+                            <Slider Minimum="1" Maximum="10" VerticalAlignment="Center"
+                                    Value="{Binding CameraSpeed}" TickFrequency="1" TickPlacement="BottomRight"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="Camera FoV" Width="90" Margin="0,5"/>
+                            <TextBlock Text="{Binding CameraFov, StringFormat=F1}" Margin="0,5" Width="32"/>
+                            <Slider Minimum="0.01" Maximum="180" VerticalAlignment="Center"
+                                    Value="{Binding CameraFov}"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="Camera NearZ" Width="90" Margin="0,5"/>
+                            <TextBlock Text="{Binding CameraNearZ, StringFormat=F1}" Margin="0,5" Width="32"/>
+                            <Slider Minimum="0.001" Maximum="{Binding CameraFarZ}" VerticalAlignment="Center"
+                                    Value="{Binding CameraNearZ}"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="Camera FoV" Width="90" Margin="0,5"/>
+                            <TextBlock Text="{Binding CameraFarZ, StringFormat=F1}" Margin="0,5" Width="32"/>
+                            <Slider Minimum="{Binding CameraNearZ}" Maximum="10000" VerticalAlignment="Center"
+                                    Value="{Binding CameraFarZ}"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
         </Grid>
     </Border>
 </UserControl>

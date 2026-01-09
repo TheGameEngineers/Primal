@@ -315,6 +315,20 @@ namespace PrimalEditor.DllWrappers
         [LibraryImport(_engineDll)]
         public static partial void RenderFrame(int surfaceId, IdType cameraId, ulong lightSet);
 
+        [LibraryImport(_engineDll)]
+        private static partial void UpdateEditorCamera(int surfaceId, float posX, float posY, float posZ, float rotX, float rotY, float rotZ);
+
+        public static void UpdateEditorCamera(int surfaceId, Vector3 Position, Vector3 Rotation)
+        {
+            UpdateEditorCamera(surfaceId, Position.X, Position.Y, Position.Z, Rotation.X, Rotation.Y, Rotation.Z);
+        }
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetCameraRange(int surfaceId, float nearZ, float farZ);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetCameraFoV(int surfaceId, float fov);
+
         internal static partial class EntityAPI
         {
             [DllImport(_engineDll)]

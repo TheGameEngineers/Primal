@@ -39,6 +39,7 @@
     <Resource Include="Resources\PrimitiveMeshView\Checkermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\CubeCheckermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
+    <Resource Include="Resources\RenderSurface\CameraSettings.png" />
     <Resource Include="Resources\TextureEditor\ChannelSelectShader.cso" />
     <Resource Include="Resources\TextureEditor\Checker64.png" />
   </ItemGroup>
@@ -46,6 +47,10 @@
   <ItemGroup>
     <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\DefaultAssets\**" Link=".\Resources\DefaultAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\RenderSurface\CameraSettings.png" />
   </ItemGroup>
 
   <ItemGroup>
