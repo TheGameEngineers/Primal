@@ -647,38 +647,39 @@
 
     <Style TargetType="{x:Type ctrl:NumberBox}" x:Key="{x:Type ctrl:NumberBox}">
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ctrl:NumberBox}">
-                    <Grid>
-                        <TextBlock x:Name="PART_textBlock"
-                                   Text="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}"
-                                   HorizontalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Cursor" Value="SizeWE"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <TextBox x:Name="PART_textBox" BorderThickness="0" Padding="0"
-                                 Text="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
-                                 Foreground="{TemplateBinding Foreground}" Visibility="Collapsed"
-                                 Style="{StaticResource TextBoxStyle_WithRename}" HorizontalContentAlignment="Center"
-                                 HorizontalAlignment="Center"/>
-                    </Grid>
+                    <TextBox x:Name="PART_textBox" BorderThickness="0" Padding="0"
+                             Foreground="{TemplateBinding Foreground}" Background="{TemplateBinding Background}" CaretBrush="{TemplateBinding Foreground}"
+                             HorizontalContentAlignment="Center">
+                        <TextBox.Style>
+                            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Text" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit, StringFormat=G5}"/>
+                                <Style.Triggers>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsMouseOver" Value="True"/>
+                                            <Condition Property="IsKeyboardFocused" Value="False"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Cursor" Value="SizeWE"/>
+                                    </MultiTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                     <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding Visibility, ElementName=PART_textBox}" Value="Visible">
-                            <Setter Property="Visibility" TargetName="PART_textBlock" Value="Collapsed"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Value, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
-                            <Setter Property="Background" TargetName="PART_textBlock" Value="{StaticResource Editor.Disabled.FontBrush}"/>
-                            <Setter Property="ToolTip" TargetName="PART_textBlock" Value="Mixed values"/>
-                            <Setter Property="MinWidth" TargetName="PART_textBlock" Value="20"/>
-                        </DataTrigger>
+                        <Trigger Property="IsInteger" Value="True">
+                            <Setter TargetName="PART_textBox" Property="Text"
+                                    Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit, StringFormat=F0}"/>
+                        </Trigger>
+                        <Trigger Property="Value" Value="{x:Null}">
+                            <Setter TargetName="PART_textBox" Property="Background" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                            <Setter TargetName="PART_textBox" Property="ToolTip" Value="Mixed values"/>
+                            <Setter TargetName="PART_textBox" Property="MinWidth" Value="20"/>
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -690,51 +691,54 @@
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
+        <Setter Property="Margin" Value="0,2,0,3"/>
+        <Setter Property="Padding" Value="5,2"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ToolTipService.InitialShowDelay" Value="3000"/>
         <Setter Property="ToolTipService.BetweenShowDelay" Value="1000"/>
+        <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ctrl:ScalarBox}">
-                    <Border x:Name="border" SnapsToDevicePixels="true" Margin="0,2,0,3"
-                            Background="{TemplateBinding Background}" Padding="5,2"
+                    <Border x:Name="border" SnapsToDevicePixels="true" Margin="{TemplateBinding Margin}"
+                            Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
                             BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="10"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <Grid x:Name="grid" MinWidth="50">
-                            <TextBlock x:Name="PART_textBlock"
-                                   Text="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}"
-                                   HorizontalAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="{x:Type TextBlock}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Cursor" Value="SizeWE"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBox x:Name="PART_textBox" BorderThickness="0" Padding="0"
-                                 Text="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
-                                 Foreground="{TemplateBinding Foreground}" Visibility="Collapsed"
-                                 Style="{StaticResource TextBoxStyle_WithRename}" HorizontalContentAlignment="Center"
-                                 HorizontalAlignment="Center"/>
-                        </Grid>
+                        <TextBox x:Name="PART_textBox" BorderThickness="0" Padding="0" Foreground="{TemplateBinding Foreground}" 
+                                 MinWidth="50" Background="{TemplateBinding Background}" CaretBrush="{TemplateBinding Foreground}"
+                                 HorizontalContentAlignment="Center">
+                            <TextBox.Style>
+                                <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                    <Setter Property="Text" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit, StringFormat=G5}"/>
+                                    <Style.Triggers>
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="IsMouseOver" Value="True"/>
+                                                <Condition Property="IsKeyboardFocused" Value="False"/>
+                                            </MultiTrigger.Conditions>
+                                            <Setter Property="Cursor" Value="SizeWE"/>
+                                        </MultiTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Editor.Window.GrayBrush6}"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Editor.MouseOver.BorderBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" TargetName="grid" Value="0.5"/>
+                            <Setter Property="Opacity" TargetName="PART_textBox" Value="0.5"/>
                         </Trigger>
-                        <DataTrigger Binding="{Binding Visibility, ElementName=PART_textBox}" Value="Visible">
-                            <Setter Property="Visibility" TargetName="PART_textBlock" Value="Collapsed"/>
-                        </DataTrigger>
+                        <Trigger Property="IsInteger" Value="True">
+                            <Setter TargetName="PART_textBox" Property="Text"
+                                    Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit, StringFormat=F0}"/>
+                        </Trigger>
+                        
                         <DataTrigger Binding="{Binding Value, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
-                            <Setter Property="Background" TargetName="PART_textBlock" Value="{StaticResource Editor.Disabled.FontBrush}"/>
-                            <Setter Property="ToolTip" TargetName="PART_textBlock" Value="Mixed values"/>
-                            <Setter Property="MinWidth" TargetName="PART_textBlock" Value="20"/>
+                            <Setter TargetName="PART_textBox" Property="Background" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                            <Setter TargetName="PART_textBox" Property="ToolTip" Value="Mixed values"/>
+                            <Setter TargetName="PART_textBox" Property="MinWidth" Value="20"/>
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -748,21 +752,31 @@
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
         <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Margin" Value="0,2,0,3"/>
+        <Setter Property="Padding" Value="5,2"/>
+        <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ctrl:VectorBox}">
                     <ControlTemplate.Resources>
+                        <SolidColorBrush x:Key="VectorBox.DarkRed" Color="#ff321a1e"/>
+                        <SolidColorBrush x:Key="VectorBox.DarkGreen" Color="#ff253025"/>
+                        <SolidColorBrush x:Key="VectorBox.DarkBlue" Color="#ff232532"/>
+                        <SolidColorBrush x:Key="VectorBox.DarkOrange" Color="#ff322a1c"/>
                         <Style TargetType="{x:Type ctrl:NumberBox}" BasedOn="{StaticResource {x:Type ctrl:NumberBox}}">
                             <Setter Property="MinWidth" Value="50"/>
                             <Setter Property="ToolTipService.InitialShowDelay" Value="3000"/>
                             <Setter Property="ToolTipService.BetweenShowDelay" Value="1000"/>
+                            <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="Multiplier" Value="{Binding Multiplier,RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter Property="Minimum" Value="{Binding Minimum,RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter Property="Maximum" Value="{Binding Maximum,RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter Property="WrapAround" Value="{Binding WrapAround,RelativeSource={RelativeSource TemplatedParent}}"/>
                         </Style>
                     </ControlTemplate.Resources>
-                    <Border x:Name="border" SnapsToDevicePixels="true" Margin="0,2,0,3"
-                            Background="{TemplateBinding Background}" Padding="5,2"
-                            BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="10"
-                            BorderThickness="{TemplateBinding BorderThickness}">
+                    <Border x:Name="border" Margin="{TemplateBinding Margin}" Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="10"
+                            BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="true" >
                         <Grid x:Name="grid">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="columnDefinition0"/>
@@ -776,50 +790,91 @@
                                 <RowDefinition x:Name="rowDefinition2"/>
                                 <RowDefinition x:Name="rowDefinition3"/>
                             </Grid.RowDefinitions>
-                            <ctrl:NumberBox x:Name="nbX" Foreground="{StaticResource Editor.RedBrush}" Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="X value"/>
-                            <ctrl:NumberBox x:Name="nbY" Foreground="{StaticResource Editor.GreenBrush}" Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="Y value"/>
-                            <ctrl:NumberBox x:Name="nbZ" Foreground="{StaticResource Editor.BlueBrush}" Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="Z value"/>
-                            <ctrl:NumberBox x:Name="nbW" Foreground="{StaticResource Editor.FontBrush}" Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}}" ToolTip="W value" Visibility="Collapsed"/>
+                            <ctrl:NumberBox x:Name="nbX" Foreground="{StaticResource Editor.RedBrush}" ToolTip="X value"/>
+                            <ctrl:NumberBox x:Name="nbY" Foreground="{StaticResource Editor.GreenBrush}" ToolTip="Y value"/>
+                            <ctrl:NumberBox x:Name="nbZ" Foreground="{StaticResource Editor.BlueBrush}" ToolTip="Z value"/>
+                            <ctrl:NumberBox x:Name="nbW" Foreground="{StaticResource Editor.OrangeBrush}" ToolTip="W value" Visibility="Collapsed"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.MouseOver.BorderBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" SourceName="nbX" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkRed}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.RedBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseCaptureWithin" SourceName="nbX" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkRed}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.RedBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" SourceName="nbY" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkGreen}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.GreenBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseCaptureWithin" SourceName="nbY" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkGreen}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.GreenBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" SourceName="nbZ" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkBlue}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.BlueBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseCaptureWithin" SourceName="nbZ" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkBlue}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.BlueBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" SourceName="nbW" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkOrange}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.OrangeBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseCaptureWithin" SourceName="nbW" Value="True">
+                            <Setter Property="Background" Value="{StaticResource VectorBox.DarkOrange}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.OrangeBrush}"/>
+                        </Trigger>
                         <DataTrigger Binding="{Binding Orientation, RelativeSource={RelativeSource Self}}" Value="Vertical">
-                            <Setter Property="Grid.Row" TargetName="nbX" Value="0"/>
-                            <Setter Property="Grid.Row" TargetName="nbY" Value="1"/>
-                            <Setter Property="Grid.Row" TargetName="nbZ" Value="2"/>
-                            <Setter Property="Grid.Row" TargetName="nbW" Value="3"/>
-                            <Setter Property="Width" TargetName="columnDefinition1" Value="auto"/>
-                            <Setter Property="Width" TargetName="columnDefinition2" Value="auto"/>
-                            <Setter Property="Width" TargetName="columnDefinition3" Value="auto"/>
+                            <Setter TargetName="nbX" Property="Grid.Row" Value="0"/>
+                            <Setter TargetName="nbY" Property="Grid.Row" Value="1"/>
+                            <Setter TargetName="nbZ" Property="Grid.Row" Value="2"/>
+                            <Setter TargetName="nbW" Property="Grid.Row" Value="3"/>
+                            <Setter TargetName="columnDefinition1" Property="Width" Value="auto"/>
+                            <Setter TargetName="columnDefinition2" Property="Width" Value="auto"/>
+                            <Setter TargetName="columnDefinition3" Property="Width" Value="auto"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Orientation, RelativeSource={RelativeSource Self}}" Value="Horizontal">
-                            <Setter Property="Grid.Column" TargetName="nbX" Value="0"/>
-                            <Setter Property="Grid.Column" TargetName="nbY" Value="1"/>
-                            <Setter Property="Grid.Column" TargetName="nbZ" Value="2"/>
-                            <Setter Property="Grid.Column" TargetName="nbW" Value="3"/>
-                            <Setter Property="Height" TargetName="rowDefinition1" Value="auto"/>
-                            <Setter Property="Height" TargetName="rowDefinition2" Value="auto"/>
-                            <Setter Property="Height" TargetName="rowDefinition3" Value="auto"/>
+                            <Setter TargetName="nbX" Property="Grid.Column" Value="0"/>
+                            <Setter TargetName="nbY" Property="Grid.Column" Value="1"/>
+                            <Setter TargetName="nbZ" Property="Grid.Column" Value="2"/>
+                            <Setter TargetName="nbW" Property="Grid.Column" Value="3"/>
+                            <Setter TargetName="rowDefinition1" Property="Height" Value="auto"/>
+                            <Setter TargetName="rowDefinition2" Property="Height" Value="auto"/>
+                            <Setter TargetName="rowDefinition3" Property="Height" Value="auto"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding VectorType, RelativeSource={RelativeSource Self}}" Value="Vector2">
-                            <Setter Property="Width" TargetName="columnDefinition2" Value="auto"/>
-                            <Setter Property="Width" TargetName="columnDefinition3" Value="auto"/>
-                            <Setter Property="Height" TargetName="rowDefinition2" Value="auto"/>
-                            <Setter Property="Height" TargetName="rowDefinition3" Value="auto"/>
-                            <Setter Property="Visibility" TargetName="nbZ" Value="Collapsed"/>
+                            <Setter TargetName="columnDefinition2" Property="Width" Value="auto"/>
+                            <Setter TargetName="columnDefinition3" Property="Width" Value="auto"/>
+                            <Setter TargetName="rowDefinition2" Property="Height" Value="auto"/>
+                            <Setter TargetName="rowDefinition3" Property="Height" Value="auto"/>
+                            <Setter TargetName="nbZ" Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding VectorType, RelativeSource={RelativeSource Self}}" Value="Vector3">
-                            <Setter Property="Width" TargetName="columnDefinition3" Value="auto"/>
-                            <Setter Property="Height" TargetName="rowDefinition3" Value="auto"/>
+                            <Setter TargetName="columnDefinition3" Property="Width" Value="auto"/>
+                            <Setter TargetName="rowDefinition3" Property="Height" Value="auto"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding VectorType, RelativeSource={RelativeSource Self}}" Value="Vector4">
-                            <Setter Property="Visibility" TargetName="nbW" Value="Visible"/>
+                            <Setter TargetName="nbW" Property="Visibility" Value="Visible"/>
                         </DataTrigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Editor.Window.GrayBrush6}"/>
+                        <Trigger Property="IsEnabled" Value="True">
+                            <Setter TargetName="nbX" Property="Value" Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="nbY" Property="Value" Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="nbZ" Property="Value" Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="nbW" Property="Value" Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" TargetName="grid" Value="0.5"/>
+                            <Setter TargetName="nbX" Property="Value" Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="nbY" Property="Value" Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="nbZ" Property="Value" Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="nbW" Property="Value" Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

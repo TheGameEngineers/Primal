@@ -61,8 +61,7 @@ namespace PrimalEditor.Content
 
         private float Value(ScalarBox scalarBox, float min)
         {
-            float.TryParse(scalarBox.Value, out var result);
-            return Math.Max(result, min);
+            return Math.Max((float?)scalarBox.Value ?? 0f, min);
         }
 
         private void UpdatePrimitive()

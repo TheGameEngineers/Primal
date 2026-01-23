@@ -44,7 +44,7 @@ namespace PrimalEditor.Content
         }
     }
 
-    class GeometryProxy : AssetProxy
+    class GeometryProxy(string fileName, string destinationFolder) : AssetProxy(fileName, destinationFolder)
     {
         public override GeometryImportSettings ImportSettings { get; } = new();
 
@@ -56,10 +56,6 @@ namespace PrimalEditor.Content
                 IAssetImportSettings.CopyImportSettings(geometryImportSettings, ImportSettings);
             }
         }
-
-        public GeometryProxy(string fileName, string destinationFolder)
-            : base(fileName, destinationFolder) { }
-
     }
 
     class TextureProxy : AssetProxy
@@ -146,7 +142,7 @@ namespace PrimalEditor.Content
 
     }
 
-    class AudioProxy : AssetProxy
+    class AudioProxy(string fileName, string destinationFolder) : AssetProxy(fileName, destinationFolder)
     {
         public override IAssetImportSettings ImportSettings => throw new NotImplementedException();
 
@@ -154,9 +150,6 @@ namespace PrimalEditor.Content
         {
             throw new NotImplementedException();
         }
-
-        public AudioProxy(string fileName, string destinationFolder)
-            : base(fileName, destinationFolder) { }
     }
 
     interface IImportSettingsConfigurator<T> where T : AssetProxy

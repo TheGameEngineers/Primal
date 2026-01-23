@@ -5,10 +5,10 @@ using System.Windows.Input;
 
 namespace PrimalEditor
 {
-    class RelayCommand<T> : ICommand
+    class RelayCommand<T>(Action<T> execute, Predicate<T> canExecute = null) : ICommand
     {
-        private readonly Action<T> _execute;
-        private readonly Predicate<T> _canExecute;
+        private readonly Action<T> _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+        private readonly Predicate<T> _canExecute = canExecute;
 
         public event EventHandler CanExecuteChanged
         {
@@ -24,12 +24,6 @@ namespace PrimalEditor
         public void Execute(object parameter)
         {
             _execute((T)parameter);
-        }
-
-        public RelayCommand(Action<T> execute, Predicate<T> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
         }
     }
 }

@@ -16,25 +16,15 @@ namespace PrimalEditor.Utilities
         Error = 0x04,
     }
 
-    class LogMessage
+    class LogMessage(MessageType type, string msg, string file, string caller, int line)
     {
-        public DateTime Time { get; }
-        public MessageType MessageType { get; }
-        public string Message { get; }
-        public string File { get; }
-        public string Caller { get; }
-        public int Line { get; }
+        public DateTime Time { get; } = DateTime.Now;
+        public MessageType MessageType { get; } = type;
+        public string Message { get; } = msg;
+        public string File { get; } = Path.GetFileName(file);
+        public string Caller { get; } = caller;
+        public int Line { get; } = line;
         public string MetaData => $"{File}: {Caller} ({Line})";
-
-        public LogMessage(MessageType type, string msg, string file, string caller, int line)
-        {
-            Time = DateTime.Now;
-            MessageType = type;
-            Message = msg;
-            File = Path.GetFileName(file);
-            Caller = caller;
-            Line = line;
-        }
     }
 
     static class Logger

@@ -9,44 +9,62 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Editors"
              xmlns:vm ="clr-namespace:PrimalEditor.Components"
-             xmlns:utl ="clr-namespace:PrimalEditor.Utilities.Controls"
+             xmlns:ctrl ="clr-namespace:PrimalEditor.Utilities.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:MSTransform}"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="400">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
-    <utl:ComponentView Header="Transform">
+    <ctrl:ComponentView Header="Transform">
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="78"/>
-                <ColumnDefinition />
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
 
             <TextBlock Text="Position" Grid.Column="0" Grid.Row="0"/>
-            <utl:VectorBox X="{Binding PosX}" Y="{Binding PosY}" Z="{Binding PosZ}" Grid.Column="1" Grid.Row="0"
-                           PreviewMouseLeftButtonDown="OnPosition_VectorBox_PreviewMouse_LBD"
-                           PreviewMouseLeftButtonUp="OnPosition_VectorBox_PreviewMouse_LBU"
-                           LostKeyboardFocus="OnPosition_VectorBox_LostKeyboardFocus"/>
+            <ctrl:VectorBox X="{Binding PosX, TargetNullValue=''}" Y="{Binding PosY, TargetNullValue=''}" Z="{Binding PosZ, TargetNullValue=''}"
+                           Grid.Column="2" Grid.Row="0" PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"/>
 
-            <TextBlock Text="Rotation" Grid.Column="0" Grid.Row="1"/>
-            <utl:VectorBox X="{Binding RotX}" Y="{Binding RotY}" Z="{Binding RotZ}" Grid.Column="1" Grid.Row="1"
-                           PreviewMouseLeftButtonDown="OnRotation_VectorBox_PreviewMouse_LBD"
-                           PreviewMouseLeftButtonUp="OnRotation_VectorBox_PreviewMouse_LBU"
-                           LostKeyboardFocus="OnRotation_VectorBox_LostKeyboardFocus"/>
+            <TextBlock Text="Local Offset" Grid.Column="0" Grid.Row="1"/>
+            <ctrl:VectorBox X="{Binding LocalPosX}" Y="{Binding LocalPosY}" Z="{Binding LocalPosZ}" Grid.Column="2" Grid.Row="1"
+                           ValueChanged="OnLocalPosition_VectorBox_ValueChanged"/>
+            
+            <TextBlock Text="Rotation" Grid.Column="0" Grid.Row="2"/>
+            <ctrl:VectorBox X="{Binding RotX, TargetNullValue=''}" Y="{Binding RotY, TargetNullValue=''}" Z="{Binding RotZ, TargetNullValue=''}"
+                           Grid.Column="2" Grid.Row="2" Minimum="0" Maximum="360" WrapAround="True"
+                           PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"/>
 
-            <TextBlock Text="Scale" Grid.Column="0" Grid.Row="2"/>
-            <utl:VectorBox X="{Binding ScaleX}" Y="{Binding ScaleY}" Z="{Binding ScaleZ}" Grid.Column="1" Grid.Row="2"
-                           PreviewMouseLeftButtonDown="OnScale_VectorBox_PreviewMouse_LBD"
-                           PreviewMouseLeftButtonUp="OnScale_VectorBox_PreviewMouse_LBU"
-                           LostKeyboardFocus="OnScale_VectorBox_LostKeyboardFocus"/>
+            <TextBlock Grid.Column="0" Grid.Row="3">
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
+                        <Setter Property="Text" Value="Local Offset"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsLocalRotation}" Value="False">
+                                <Setter Property="Text" Value="World Offset"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <ctrl:VectorBox X="{Binding RotOffsetX}" Y="{Binding RotOffsetY}" Z="{Binding RotOffsetZ}" Grid.Column="2" Grid.Row="3"
+                           Minimum="0" Maximum="360" WrapAround="True" ValueChanged="OnLocalRotation_VectorBox_ValueChanged"/>
+            <ToggleButton Content="O" IsChecked="{Binding IsLocalRotation}" Width="20" Margin="5,0" Grid.Column="1" Grid.Row="3"/>
 
+            <TextBlock Text="Scale" Grid.Column="0" Grid.Row="4"/>
+            <ctrl:VectorBox X="{Binding ScaleX, TargetNullValue=''}" Y="{Binding ScaleY, TargetNullValue=''}" Z="{Binding ScaleZ, TargetNullValue=''}"
+                           Grid.Column="2" Grid.Row="4" PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"
+                           ValueChanging="OnScale_VectorBox_ValueChanging"/>
+            <ToggleButton Content="O" IsChecked="{Binding IsUniformScale}" Width="20" Margin="5,0" Grid.Column="1" Grid.Row="4"/>
         </Grid>
-    </utl:ComponentView>
+    </ctrl:ComponentView>
 </UserControl>

@@ -318,9 +318,9 @@ namespace PrimalEditor.DllWrappers
         [LibraryImport(_engineDll)]
         private static partial void UpdateEditorCamera(int surfaceId, float posX, float posY, float posZ, float rotX, float rotY, float rotZ);
 
-        public static void UpdateEditorCamera(int surfaceId, Vector3 Position, Vector3 Rotation)
+        public static void UpdateEditorCamera(int surfaceId, Vector3 position, Vector3 rotation)
         {
-            UpdateEditorCamera(surfaceId, Position.X, Position.Y, Position.Z, Rotation.X, Rotation.Y, Rotation.Z);
+            UpdateEditorCamera(surfaceId, position.X, position.Y, position.Z, rotation.X, rotation.Y, rotation.Z);
         }
 
         [LibraryImport(_engineDll)]
@@ -422,7 +422,57 @@ namespace PrimalEditor.DllWrappers
             }
             [LibraryImport(_engineDll)]
             public static partial IdType GetComponentId(IdType entityId, ComponentType type);
+
+            private delegate void GetTransformAPI(IdType[] ids, float[] x, float[] y, float[] z, int count);
+
+            private static Vector3[] GetTransform(IdType[] ids, GetTransformAPI action, bool wrapAngles = false)
+            {
+                var count = ids.Length;
+                var x = new float[count]; var y = new float[count]; var z = new float[count];
+                action(ids, x, y, z, count);
+
+                if (wrapAngles)
+                {
+                    for (int i = 0; i < count; ++i)
+                    {
+                        x[i] = MathUtil.WrapAngle(x[i]);
+                        y[i] = MathUtil.WrapAngle(y[i]);
+                        z[i] = MathUtil.WrapAngle(z[i]);
+                    }
+                }
+
+                var result = new Vector3[count];
+                for (int i = 0; i < count; ++i)
+                {
+                    result[i] = new(x[i], y[i], z[i]);
+                }
+
+                return result;
+            }
+
+            [LibraryImport(_engineDll)]
+            private static partial void GetPosition([In] IdType[] ids, [Out] float[] x, [Out] float[] y, [Out] float[] z, int count);
+
+            public static Vector3[] GetPosition(IdType[] ids) => GetTransform(ids, GetPosition);
+
+            [LibraryImport(_engineDll)]
+            private static partial void GetRotation([In] IdType[] ids, [Out] float[] x, [Out] float[] y, [Out] float[] z, int count);
+
+            public static Vector3[] GetRotation(IdType[] ids) => GetTransform(ids, GetRotation, true);
+
+            [LibraryImport(_engineDll)]
+            private static partial void GetScale([In] IdType[] ids, [Out] float[] x, [Out] float[] y, [Out] float[] z, int count);
+
+            public static Vector3[] GetScale(IdType[] ids) => GetTransform(ids, GetScale);
+
+            [LibraryImport(_engineDll)]
+            public static partial void SetPosition([In] IdType[] ids, [In] float[] x, [In] float[] y, [In] float[] z, int count, int frame);
+
+            [LibraryImport(_engineDll)]
+            public static partial void SetRotation([In] IdType[] ids, [In] float[] x, [In] float[] y, [In] float[] z, int count, int frame);
+
+            [LibraryImport(_engineDll)]
+            public static partial void SetScale([In] IdType[] ids, [In] float[] x, [In] float[] y, [In] float[] z, int count, int _);
         }
     }
-
 }

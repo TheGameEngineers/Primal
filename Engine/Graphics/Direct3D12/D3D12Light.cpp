@@ -172,7 +172,7 @@ public:
             {
                 const game_entity::entity entity{ game_entity::entity_id{owner.entity_id} };
                 hlsl::DirectionalLightParameters& params{ _non_cullable_lights[owner.data_index] };
-                params.Direction = entity.orientation();
+                params.Direction = entity.front();
             }
         }
 
@@ -328,7 +328,7 @@ public:
         assert(owner.type == graphics::light::spot);
         assert(index < _cullable_lights.size());
 
-        umbra = math::clamp(umbra, 0.f, math::pi);
+        umbra = math::clamp(umbra, 0.f, math::pi - math::epsilon);
         _cullable_lights[index].CosUmbra = DirectX::XMScalarCos(umbra * 0.5f);
         make_dirty(index);
 
@@ -499,7 +499,7 @@ private:
         XMVECTOR tip{ XMLoadFloat3(&params.Position) };
         XMVECTOR direction{ XMLoadFloat3(&params.Direction) };
         const f32 cone_cos{ params.CosPenumbra };
-        assert(cone_cos > 0.f);
+        assert(cone_cos > -0.001f); // use a small negative value, so cos(180) wouldn't trigger the assertion.
 
         if (cone_cos >= 0.707107f)
         {
@@ -525,7 +525,7 @@ private:
 
         if (_owners[_cullable_owners[index]].type == graphics::light::spot)
         {
-            culling_info.Direction = params.Direction = entity.orientation();
+            culling_info.Direction = params.Direction = entity.front();
             calculate_cone_bounding_sphere(params, _bounding_spheres[index]);
         }
 

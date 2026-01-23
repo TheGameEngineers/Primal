@@ -247,10 +247,12 @@ d3d12_camera::update()
 {
     game_entity::entity entity{ game_entity::entity_id{_entity_id} };
     using namespace DirectX;
-    math::v3 pos{ entity.transform().position() };
-    math::v3 dir{ entity.transform().orientation() };
+    math::v3 pos{ entity.position() };
+    math::v3 dir{ entity.front() };
+    math::v3 up{ entity.up() };
     _position = XMLoadFloat3(&pos);
     _direction = XMLoadFloat3(&dir);
+    _up = XMLoadFloat3(&up);
     _view = XMMatrixLookToRH(_position, _direction, _up);
 
     if (_is_dirty)
@@ -338,7 +340,7 @@ void
 set_parameter(camera_id id, camera_parameter::parameter parameter, const void *const data, u32 data_size)
 {
     assert(data && data_size);
-    assert(parameter < camera_parameter::count);
+    assert(parameter < camera_parameter::count && set_functions[parameter] != dummy_set);
     d3d12_camera& camera{ get(id) };
     set_functions[parameter](camera, data, data_size);
 }

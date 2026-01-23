@@ -14,21 +14,16 @@ namespace PrimalEditor.Utilities
         void Redo();
     }
 
-    public class UndoRedoAction : IUndoRedo
+    public class UndoRedoAction(string name) : IUndoRedo
     {
         private Action _undoAction;
         private Action _redoAction;
 
-        public string Name { get; }
+        public string Name { get; } = name;
 
         public void Redo() => _redoAction();
 
         public void Undo() => _undoAction();
-
-        public UndoRedoAction(string name)
-        {
-            Name = name;
-        }
 
         public UndoRedoAction(Action undo, Action redo, string name)
             : this(name)

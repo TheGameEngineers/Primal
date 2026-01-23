@@ -9,14 +9,9 @@ using System.Windows;
 
 namespace PrimalEditor.Content
 {
-    public class ContentModifiedEventArgs : EventArgs
+    public class ContentModifiedEventArgs(string path) : EventArgs
     {
-        public string FullPath { get; }
-
-        public ContentModifiedEventArgs(string path)
-        {
-            FullPath = path;
-        }
+        public string FullPath { get; } = path;
     }
 
     static class ContentWatcher

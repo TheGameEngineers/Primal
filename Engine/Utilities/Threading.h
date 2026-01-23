@@ -5,7 +5,7 @@
 
 namespace primal::utl {
 
-#if _WIN64
+#if 0 //_WIN64
 class ticket_mutex {
 public:
     ticket_mutex() = default;
@@ -34,13 +34,13 @@ public:
 
     void lock()
     {
-        const u64 ticket{ _ticket.fetch_add(1, std::memory_order_relaxed) };
+        const u64 ticket{ _ticket.fetch_add(1, std::memory_order_acquire) };
         while (_serving != ticket) { _mm_pause(); }
     }
 
     void unlock()
     {
-        _serving.fetch_add(1, std::memory_order_relaxed);
+        _serving.fetch_add(1, std::memory_order_release);
     }
 
 private:

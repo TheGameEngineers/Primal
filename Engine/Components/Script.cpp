@@ -211,14 +211,6 @@ entity_script::set_rotation(const game_entity::entity *const entity, math::v4 ro
 }
 
 void
-entity_script::set_orientation(const game_entity::entity *const entity, math::v3 orientation_vector)
-{
-    transform::component_cache& cache{ *get_cache_ptr(entity) };
-    cache.flags |= transform::component_flags::orientation;
-    cache.orientation = orientation_vector;
-}
-
-void
 entity_script::set_position(const game_entity::entity *const entity, math::v3 position)
 {
     transform::component_cache& cache{ *get_cache_ptr(entity) };

@@ -8,7 +8,7 @@ using System.Text;
 namespace PrimalEditor.Components
 {
     [DataContract]
-    class Script : Component
+    class Script(GameEntity owner) : Component(owner)
     {
         private string _name;
         [DataMember]
@@ -33,8 +33,6 @@ namespace PrimalEditor.Components
             bw.Write(nameBytes.Length);
             bw.Write(nameBytes);
         }
-
-        public Script(GameEntity owner) : base(owner) { }
     }
 
     sealed class MSScript : MSComponent<Script>

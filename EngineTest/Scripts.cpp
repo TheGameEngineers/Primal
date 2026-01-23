@@ -103,7 +103,7 @@ public:
         math::v3 pos{ position() };
         _desired_position = _position = DirectX::XMLoadFloat3(&pos);
 
-        math::v3 dir{ orientation() };
+        math::v3 dir{ front() };
         f32 theta{ DirectX::XMScalarACos(dir.y) };
         f32 phi{ std::atan2(-dir.z, dir.x) };
         math::v3 rot{ theta - math::half_pi, phi + math::half_pi, 0.f };
