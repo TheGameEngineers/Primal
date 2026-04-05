@@ -55,7 +55,7 @@ struct gpass_cache
     D3D_PRIMITIVE_TOPOLOGY*     primitive_topologies{ nullptr };
     u32*                        elements_types{ nullptr };
     D3D12_GPU_VIRTUAL_ADDRESS*  per_object_data{ nullptr };
-    D3D12_GPU_VIRTUAL_ADDRESS*  srv_indices{ nullptr };
+    D3D12_GPU_VIRTUAL_ADDRESS*  material_data{ nullptr };
 
     constexpr content::render_item::items_cache items_cache() const
     {
@@ -127,7 +127,7 @@ struct gpass_cache
             primitive_topologies = (D3D_PRIMITIVE_TOPOLOGY*)&index_buffer_views[items_count];
             elements_types = (u32*)&primitive_topologies[items_count];
             per_object_data = (D3D12_GPU_VIRTUAL_ADDRESS*)&elements_types[items_count];
-            srv_indices = (D3D12_GPU_VIRTUAL_ADDRESS*)&per_object_data[items_count];
+            material_data = (D3D12_GPU_VIRTUAL_ADDRESS*)&per_object_data[items_count];
         }
     }
 
@@ -149,7 +149,7 @@ private:
         sizeof(D3D_PRIMITIVE_TOPOLOGY) +        // primitive_topologies
         sizeof(u32) +                           // elements_types
         sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +     // per_object_data
-        sizeof(D3D12_GPU_VIRTUAL_ADDRESS)       // srv_indices
+        sizeof(D3D12_GPU_VIRTUAL_ADDRESS)       // material_data
     };
 
     utl::vector<u8> _buffer;
@@ -210,7 +210,7 @@ create_buffers(math::u32v2 size)
 }
 
 void
-fill_per_object_data(const d3d12_frame_info& d3d12_info, const content::material::materials_cache& materials_cache)
+fill_per_object_data(const d3d12_frame_info& d3d12_info)
 {
     const gpass_cache& cache{ frame_cache };
     const u32 render_items_count{ (u32)cache.size() };
@@ -230,9 +230,6 @@ fill_per_object_data(const d3d12_frame_info& d3d12_info, const content::material
             XMMATRIX world{ XMLoadFloat4x4(&data.World) };
             XMMATRIX wvp{ XMMatrixMultiply(world, d3d12_info.camera->view_projection()) };
             XMStoreFloat4x4(&data.WorldViewProjection, wvp);
-
-            const material_surface *const surface{ materials_cache.material_surfaces[i] };
-            memcpy(&data.BaseColor, surface, sizeof(material_surface));
 
             current_data_pointer = cbuffer.allocate<hlsl::PerObjectData>();
             memcpy(current_data_pointer, &data, sizeof(hlsl::PerObjectData));
@@ -258,10 +255,7 @@ set_root_parameters(id3d12_graphics_command_list *const cmd_list, u32 cache_inde
         cmd_list->SetGraphicsRootShaderResourceView(params::position_buffer, cache.position_buffers[cache_index]);
         cmd_list->SetGraphicsRootShaderResourceView(params::element_buffer, cache.element_buffers[cache_index]);
         cmd_list->SetGraphicsRootConstantBufferView(params::per_object_data, cache.per_object_data[cache_index]);
-        if (cache.texture_counts[cache_index])
-        {
-            cmd_list->SetGraphicsRootShaderResourceView(params::srv_indices, cache.srv_indices[cache_index]);
-        }
+        cmd_list->SetGraphicsRootShaderResourceView(params::material_data, cache.material_data[cache_index]);
     }
     break;
     }
@@ -271,10 +265,10 @@ void
 prepare_render_frame(const d3d12_frame_info& d3d12_info)
 {
     assert(d3d12_info.info && d3d12_info.camera);
-    
+
     gpass_cache& cache{ frame_cache };
     cache.clear();
-    if(!d3d12_info.info->render_item_ids || !d3d12_info.info->render_item_count) return;
+    if (!d3d12_info.info->render_item_ids || !d3d12_info.info->render_item_count) return;
 
     using namespace content;
     render_item::get_d3d12_render_item_ids(*d3d12_info.info, cache.d3d12_render_item_ids);
@@ -289,29 +283,30 @@ prepare_render_frame(const d3d12_frame_info& d3d12_info)
     const material::materials_cache materials_cache{ cache.materials_cache() };
     material::get_materials(items_cache.material_ids, items_count, materials_cache, cache.descriptor_index_count);
 
-    fill_per_object_data(d3d12_info, materials_cache);
 
-    if (cache.descriptor_index_count)
+    constant_buffer& cbuffer{ core::cbuffer() };
+    const u32 size{ items_count * sizeof(material_surface) + cache.descriptor_index_count * sizeof(u32) };
+    u32 *const material_data{ (u32 *const)cbuffer.allocate(size) };
+    u32 mtl_data_offset{ 0 };
+
+    for (u32 i{ 0 }; i < items_count; ++i)
     {
-        constant_buffer& cbuffer{ core::cbuffer() };
-        const u32 size{ cache.descriptor_index_count * sizeof(u32) };
-        u32 *const srv_indices{ (u32 *const)cbuffer.allocate(size) };
-        u32 srv_index_offset{ 0 };
+        cache.material_data[i] = cbuffer.gpu_address(material_data + mtl_data_offset);
 
-        for (u32 i{ 0 }; i < items_count; ++i)
+        memcpy(&material_data[mtl_data_offset], cache.material_surfaces[i], sizeof(material_surface));
+        mtl_data_offset += sizeof(material_surface) / sizeof(u32);
+        const u32 texture_count{ cache.texture_counts[i] };
+
+        if (texture_count)
         {
-            const u32 texture_count{ cache.texture_counts[i] };
-            cache.srv_indices[i] = 0;
-
-            if (texture_count)
-            {
-                const u32 *const descriptor_indices{ cache.descriptor_indices[i] };
-                memcpy(&srv_indices[srv_index_offset], descriptor_indices, texture_count * sizeof(u32));
-                cache.srv_indices[i] = cbuffer.gpu_address(srv_indices + srv_index_offset);
-                srv_index_offset += texture_count;
-            }
+            memcpy(&material_data[mtl_data_offset], cache.descriptor_indices[i], texture_count * sizeof(u32));
+            mtl_data_offset += texture_count;
         }
     }
+
+    assert(mtl_data_offset == size / sizeof(u32));
+
+    fill_per_object_data(d3d12_info);
 }
 
 } // anonymous namespace
@@ -412,7 +407,7 @@ render(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_inf
             cmd_list->SetGraphicsRootShaderResourceView(idx::directional_lights, light::non_cullable_light_buffer(frame_index));
             cmd_list->SetGraphicsRootShaderResourceView(idx::cullable_lights, light::cullable_light_buffer(frame_index));
             cmd_list->SetGraphicsRootShaderResourceView(idx::light_grid, delight::light_grid_opaque(light_culling_id, frame_index));
-            cmd_list->SetGraphicsRootShaderResourceView(idx::light_index_list, delight::light_index_list_opaque (light_culling_id, frame_index));
+            cmd_list->SetGraphicsRootShaderResourceView(idx::light_index_list, delight::light_index_list_opaque(light_culling_id, frame_index));
         }
 
         if (current_pipeline_state != cache.gpass_pipeline_states[i])

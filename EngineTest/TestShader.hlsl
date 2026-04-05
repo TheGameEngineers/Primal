@@ -66,12 +66,13 @@ struct VertexElement
 };
 
 const static float InvIntervals = 2.f / ((1 << 16) - 1);
+const static float Inv255 = 1.f / 255.f;
 
 ConstantBuffer<GlobalShaderData>                GlobalData          : register(b0, space0);
 ConstantBuffer<PerObjectData>                   PerObjectBuffer     : register(b1, space0);
 StructuredBuffer<float3>                        VertexPositions     : register(t0, space0);
 StructuredBuffer<VertexElement>                 Elements            : register(t1, space0);
-StructuredBuffer<uint>                          SrvIndices          : register(t2, space0);
+StructuredBuffer<uint>                          MaterialData        : register(t2, space0);
 StructuredBuffer<DirectionalLightParameters>    DirectionalLights   : register(t3, space0);
 StructuredBuffer<LightParameters>               CullableLights      : register(t4, space0);
 StructuredBuffer<uint2>                         LightGrid           : register(t5, space0);
@@ -214,7 +215,7 @@ float3 PointLight(Surface S, float3 worldPosition, LightParameters light)
     const float dSq = dot(L, L);
     float3 color = 0.f;
 #if NO_LIGHT_ATTENUATION
-    float3 N = S.Normal;
+    const float3 N = S.Normal;
     if (dSq < light.Range * light.Range)
     {
         const float dRcp = rsqrt(dSq);
@@ -239,7 +240,7 @@ float3 Spotlight(Surface S, float3 worldPosition, LightParameters light)
     const float dSq = dot(L, L);
     float3 color = 0.f;
 #if NO_LIGHT_ATTENUATION
-    float3 N = S.Normal;
+    const float3 N = S.Normal;
     if (dSq < light.Range * light.Range)
     {
         const float dRcp = rsqrt(dSq);
@@ -296,28 +297,48 @@ float3 EvaluateIBL(Surface S)
     return  (diffuse + specular) * IBL.Intensity;
 }
 
+const static int MaterialSurfaceOffset = 3; // Size of material surface property data (3 ints == 12 bytes)
+const static int AmbientOcclusionIndex = MaterialSurfaceOffset + 0;
+const static int BaseColorIndex = MaterialSurfaceOffset + 1;
+const static int EmissiveIndex = MaterialSurfaceOffset + 2;
+const static int MetalRoughIndex = MaterialSurfaceOffset + 3;
+const static int NormalMapIndex = MaterialSurfaceOffset + 4;
+
+void GetSurfaceData(inout Surface S)
+{
+    uint value = MaterialData[0]; // base color (4 channels)
+    // ignore alpha for now.
+    S.BaseColor = float3((value & 0xff) * Inv255, ((value >> 8) & 0xff) * Inv255, ((value >> 16) & 0xff) * Inv255);
+
+    value = MaterialData[1]; // emissive color (3 channels) + metallic
+    S.EmissiveColor = float3((value & 0xff) * Inv255, ((value >> 8) & 0xff) * Inv255, ((value >> 16) & 0xff) * Inv255);
+    S.Metallic = ((value >> 24) & 0xff) * Inv255;
+
+    value = MaterialData[2]; // roughness, pad byte, emissive intensity (16 bits)
+    S.PerceptualRoughness = (value & 0xff) * Inv255;
+    S.EmissiveIntensity = ((value >> 16) & 0xffff) * (MaxEmissiveIntensity / 65535.f);
+}
+
 Surface GetSurface(VertexOut psIn, float3 V)
 {
     Surface S;
 
-    S.BaseColor = PerObjectBuffer.BaseColor.rgb;
-    S.Metallic = PerObjectBuffer.Metallic;
+    GetSurfaceData(S);
+    
     S.Normal = normalize(psIn.WorldNormal);
-    S.PerceptualRoughness = PerObjectBuffer.Roughness;
-    S.EmissiveColor = PerObjectBuffer.Emissive;
-    S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
     S.AmbientOcclusion = 1.f;
 
 #if TEXTURED_MTL
     float2 uv = psIn.UV;
-    S.AmbientOcclusion = Sample(SrvIndices[0], LinearSampler, uv).r;
-    S.BaseColor = Sample(SrvIndices[1], LinearSampler, uv).rgb;
-    S.EmissiveColor = Sample(SrvIndices[2], LinearSampler, uv).rgb;
-    float2 metalRough = Sample(SrvIndices[3], LinearSampler, uv).rg;
+    SamplerState sampler = AnisotropicSampler;
+    S.AmbientOcclusion = Sample(MaterialData[AmbientOcclusionIndex], sampler, uv).r;
+    S.BaseColor = Sample(MaterialData[BaseColorIndex], sampler, uv).rgb;
+    S.EmissiveColor = Sample(MaterialData[EmissiveIndex], sampler, uv).rgb;
+    float2 metalRough = Sample(MaterialData[MetalRoughIndex], sampler, uv).rg;
     S.Metallic = metalRough.r;
     S.PerceptualRoughness = metalRough.g;
     S.EmissiveIntensity = 1.f;
-    float3 n = Sample(SrvIndices[4], LinearSampler, uv).rgb;
+    float3 n = Sample(MaterialData[NormalMapIndex], sampler, uv).rgb;
     n = n * 2.f - 1.f;
     n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
 

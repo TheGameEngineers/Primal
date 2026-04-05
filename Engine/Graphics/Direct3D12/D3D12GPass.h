@@ -18,7 +18,7 @@ struct opaque_root_parameter {
         per_object_data,
         position_buffer,
         element_buffer,
-        srv_indices,
+        material_data,
         directional_lights,
         cullable_lights,
         light_grid,

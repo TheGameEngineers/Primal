@@ -64,13 +64,16 @@ class AppliedMaterialInput : MaterialInput
         get => _asset;
         private set
         {
-            if (_asset != value)
+            if (_asset != value && _asset?.Guid != value.Guid)
             {
                 _asset = value;
                 OnPropertyChanged(nameof(Asset));
+                OnPropertyChanged(nameof(Ignore));
             }
         }
     }
+
+    public bool Ignore => Asset.Guid == Texture.Default.Guid;
 
     public void SetInputAsset(AssetInfo assetInfo)
     {
@@ -110,99 +113,54 @@ class AppliedMaterialInput : MaterialInput
 }
 
 [DataContract]
-class MaterialSurface : ViewModelBase
+class MaterialSurface
 {
-    private Color _baseColor = Color.FromScRgb(1f, 0.7f, 0.7f, 0.7f);
     [DataMember]
-    public Color BaseColor
-    {
-        get => _baseColor;
-        set
-        {
-            if (_baseColor != value)
-            {
-                _baseColor = value;
-                OnPropertyChanged(nameof(BaseColor));
-            }
-        }
-    }
+    public Color BaseColor = Color.FromScRgb(1f, 0.7f, 0.2f, 0.7f);
 
-    private Color _emissiveColor = Color.FromScRgb(1f, 0f, 0f, 0f);
     [DataMember]
-    public Color EmissiveColor
-    {
-        get => _emissiveColor;
-        set
-        {
-            if (_emissiveColor != value)
-            {
-                _emissiveColor = value;
-                OnPropertyChanged(nameof(EmissiveColor));
-            }
-        }
-    }
+    public Color EmissiveColor = Color.FromScRgb(1f, 0f, 0f, 0f);
 
-    private float _emissiveIntensity = 1f;
     [DataMember]
-    public float EmissiveIntensity
-    {
-        get => _emissiveIntensity;
-        set
-        {
-            if (!_emissiveIntensity.IsTheSameAs(value))
-            {
-                _emissiveIntensity = value;
-                OnPropertyChanged(nameof(EmissiveIntensity));
-            }
-        }
-    }
+    public float EmissiveIntensity = 1f;
 
-    private float _metallic = 0f;
     [DataMember]
-    public float Metallic
-    {
-        get => _metallic;
-        set
-        {
-            if (!_metallic.IsTheSameAs(value))
-            {
-                _metallic = value;
-                OnPropertyChanged(nameof(Metallic));
-            }
-        }
-    }
+    public float Metallic = 1f;
 
-    private float _roughness = 0.9f;
     [DataMember]
-    public float Roughness
-    {
-        get => _roughness;
-        set
-        {
-            if (!_roughness.IsTheSameAs(value))
-            {
-                _roughness = value;
-                OnPropertyChanged(nameof(Roughness));
-            }
-        }
-    }
+    public float Roughness = 0.3f;
+
+    public byte InputMask = 0;
 
     public void FromBinary(BinaryReader reader)
     {
-        _baseColor.ScR = reader.ReadSingle(); _baseColor.ScG = reader.ReadSingle(); _baseColor.ScB = reader.ReadSingle(); _baseColor.ScA = reader.ReadSingle();
-        _emissiveColor.ScR = reader.ReadSingle(); _emissiveColor.ScG = reader.ReadSingle(); _emissiveColor.ScB = reader.ReadSingle();
-        _emissiveIntensity = reader.ReadSingle();
-        _metallic = reader.ReadSingle();
-        _roughness = reader.ReadSingle();
+        BaseColor.ScR = reader.ReadSingle(); BaseColor.ScG = reader.ReadSingle(); BaseColor.ScB = reader.ReadSingle(); BaseColor.ScA = reader.ReadSingle();
+        EmissiveColor.ScR = reader.ReadSingle(); EmissiveColor.ScG = reader.ReadSingle(); EmissiveColor.ScB = reader.ReadSingle();
+        EmissiveIntensity = reader.ReadSingle();
+        Metallic = reader.ReadSingle();
+        Roughness = reader.ReadSingle();
     }
 
-    public void ToBinary(BinaryWriter writer)
+    public void ToBinary(BinaryWriter writer, bool asInteger)
     {
-        writer.Write(_baseColor.ScR); writer.Write(_baseColor.ScG); writer.Write(_baseColor.ScB); writer.Write(_baseColor.ScA);
-        writer.Write(_emissiveColor.ScR); writer.Write(_emissiveColor.ScG); writer.Write(_emissiveColor.ScB);
-        writer.Write(_emissiveIntensity);
-        writer.Write(_metallic);
-        writer.Write(_roughness);
+        if (asInteger)
+        {
+            // NOTE: this is the order of bytes in material_surface struct in the engine.
+            writer.Write(BaseColor.R); writer.Write(BaseColor.G); writer.Write(BaseColor.B); writer.Write(BaseColor.A);
+            writer.Write(EmissiveColor.R); writer.Write(EmissiveColor.G); writer.Write(EmissiveColor.B);
+            writer.Write((byte)(Metallic * 255));
+            writer.Write((byte)(Roughness * 255));
+            writer.Write(InputMask);
+            writer.Write((ushort)(EmissiveIntensity * (65535f / Material.MaxEmissiveIntensity)));
+        }
+        else
+        {
+            writer.Write(BaseColor.ScR); writer.Write(BaseColor.ScG); writer.Write(BaseColor.ScB); writer.Write(BaseColor.ScA);
+            writer.Write(EmissiveColor.ScR); writer.Write(EmissiveColor.ScG); writer.Write(EmissiveColor.ScB);
+            writer.Write(EmissiveIntensity);
+            writer.Write(Metallic);
+            writer.Write(Roughness);
+        }
     }
 
     public void CopyTo(MaterialSurface dst)
@@ -504,7 +462,15 @@ class AppliedMaterial : Asset
 
         // Leave room for a pointer to texture ids. It will remain null if no textures are used.
         writer.Write(IntPtr.Zero);
-        MaterialSurface.ToBinary(writer);
+        MaterialSurface.InputMask = 0;
+        for (int i = 0; i < Math.Min(_inputs.Count, 8); ++i)
+        {
+            if (!_inputs[i].Ignore)
+            {
+                MaterialSurface.InputMask |= (byte)(1 << i);
+            }
+        }
+        MaterialSurface.ToBinary(writer, asInteger: true);
         writer.Write((int)_material.MaterialType);
         writer.Write(referencedAssets.Count);
         _shaderIds.ForEach(writer.Write);
@@ -560,7 +526,7 @@ class AppliedMaterial : Asset
         _inputs = [];
         Inputs = new(_inputs);
 
-        for(int i=0; i<_inputGuids.Count; ++i)
+        for (int i = 0; i < _inputGuids.Count; ++i)
         {
             var inputAssetInfo = AssetRegistry.GetAssetInfo(_inputGuids[i]) ?? Texture.Default; // TODO: warn if texture not found
             Debug.Assert(inputAssetInfo != null && inputAssetInfo.Guid == _inputGuids[i]);
@@ -592,7 +558,7 @@ class AppliedMaterial : Asset
 class Material : Asset
 {
     public static AssetInfo Default => DefaultAssets.DefaultMaterial;
-
+    public static float MaxEmissiveIntensity => 10000f; // 10,000 cd/m^2
     private readonly Dictionary<ShaderType, ShaderGroup> _shaders = [];
 
     private MaterialType _materialType;
@@ -719,7 +685,7 @@ class Material : Asset
             writer.Write((int)MaterialType);
             writer.Write((int)MaterialMode);
 
-            MaterialSurface.ToBinary(writer);
+            MaterialSurface.ToBinary(writer, asInteger: false);
             DefaultMaterialInputs.ToBinary(writer);
             //NodeMaterial.ToBinary(writer);
             //CodeMaterial.ToBinary(writer);

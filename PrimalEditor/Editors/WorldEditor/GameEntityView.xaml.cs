@@ -54,6 +54,7 @@ public partial class GameEntityView : UserControl
         return new Action(() =>
         {
             selection.ForEach(item => item.entity.IsEnabled = item.IsEnabled);
+            Project.Current.UpdateScene();
             MSEntity.CurrentSelection?.Refresh();
         });
     }
@@ -80,6 +81,7 @@ public partial class GameEntityView : UserControl
         var undoAction = GetIsEnabledAction();
         var vm = DataContext as MSEntity;
         vm.IsEnabled = (sender as CheckBox).IsChecked == true;
+        Project.Current.UpdateScene();
         var redoAction = GetIsEnabledAction();
         Project.UndoRedo.Add(new UndoRedoAction(undoAction, redoAction,
             vm.IsEnabled == true ? "Enable game entity" : "Disable game entity"));

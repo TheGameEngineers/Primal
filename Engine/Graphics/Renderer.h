@@ -219,11 +219,12 @@ struct material_type {
 
 struct material_surface
 {
-    math::v4    base_color{ 1.f, 1.f, 1.f, 1.f };
-    math::v3    emissive{ 0.f, 0.f, 0.f };
-    f32         emissive_intensity{ 1.f };
-    f32         metallic{ 0.f };
-    f32         roughness{ 1.f };
+    u8  base_color[4]{ 255, 255, 255, 255 };
+    u8  emissive[3]{ 0, 0, 0 };
+    u8  metallic{ 0 };
+    u8  roughness{ 225 };
+    u8  input_mask{ 0 }; // A set bit means to use a texture for the corresponding surface property
+    u16 emissive_intensity{ 0 };
 };
 
 struct material_init_info

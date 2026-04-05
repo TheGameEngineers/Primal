@@ -66,12 +66,13 @@ struct VertexElement
 };
 
 const static float InvIntervals = 2.f / ((1 << 16) - 1);
+const static float Inv255 = 1.f / 255.f;
 
 ConstantBuffer<GlobalShaderData>                GlobalData          : register(b0, space0);
 ConstantBuffer<PerObjectData>                   PerObjectBuffer     : register(b1, space0);
 StructuredBuffer<float3>                        VertexPositions     : register(t0, space0);
 StructuredBuffer<VertexElement>                 Elements            : register(t1, space0);
-StructuredBuffer<uint>                          SrvIndices          : register(t2, space0);
+StructuredBuffer<uint>                          MaterialData        : register(t2, space0);
 StructuredBuffer<DirectionalLightParameters>    DirectionalLights   : register(t3, space0);
 StructuredBuffer<LightParameters>               CullableLights      : register(t4, space0);
 StructuredBuffer<uint2>                         LightGrid           : register(t5, space0);
@@ -261,17 +262,78 @@ float3 EvaluateIBL(Surface S)
     return  (diffuse + specular) * IBL.Intensity;
 }
 
+const static uint BaseColorMask = (1 << 0);
+const static uint EmissiveColorMask = (1 << 1);
+const static uint NormalMapMask = (1 << 2);
+const static uint MetalRoughMask = (1 << 3);
+const static uint AmbientOcclusionMask = (1 << 4);
+const static uint MaskAll = BaseColorMask | EmissiveColorMask | NormalMapMask | MetalRoughMask | AmbientOcclusionMask;
+
+const static uint MaterialSurfaceOffset = 3; // Size of material surface property data (3 ints == 12 bytes)
+const static uint BaseColorIndex = MaterialSurfaceOffset + 0;
+const static uint EmissiveIndex = MaterialSurfaceOffset + 1;
+const static uint NormalMapIndex = MaterialSurfaceOffset + 2;
+const static uint MetalRoughIndex = MaterialSurfaceOffset + 3;
+const static uint AmbientOcclusionIndex = MaterialSurfaceOffset + 4;
+
+uint GetSurfaceData(inout Surface S)
+{
+    uint value = MaterialData[2]; // roughness, inputMask byte, emissive intensity (16 bits)
+    uint inputMask = (value >> 8) & 0xff;
+    S.EmissiveIntensity = ((value >> 16) & 0xffff) * (MaxEmissiveIntensity / 65535.f);
+
+    if (inputMask != MaskAll)
+    {
+        S.PerceptualRoughness = (value & 0xff) * Inv255;
+    
+        value = MaterialData[0]; // base color (4 channels, 3 used)
+        // ignore alpha for now.
+        S.BaseColor = float3((value & 0xff) * Inv255, ((value >> 8) & 0xff) * Inv255, ((value >> 16) & 0xff) * Inv255);
+
+        value = MaterialData[1]; // emissive color (3 channels) + metallic
+        S.EmissiveColor = float3((value & 0xff) * Inv255, ((value >> 8) & 0xff) * Inv255, ((value >> 16) & 0xff) * Inv255);
+        S.Metallic = ((value >> 24) & 0xff) * Inv255;
+    }
+
+    return inputMask;
+}
+
 Surface GetSurface(VertexOut psIn, float3 V)
 {
     Surface S;
 
-    S.BaseColor = PerObjectBuffer.BaseColor.rgb;
-    S.Metallic = PerObjectBuffer.Metallic;
     S.Normal = normalize(psIn.WorldNormal);
-    S.PerceptualRoughness = PerObjectBuffer.Roughness;
-    S.EmissiveColor = PerObjectBuffer.Emissive;
-    S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
     S.AmbientOcclusion = 1.f;
+
+    uint inputMask = GetSurfaceData(S);
+
+    if(inputMask != 0)
+    {
+        float2 uv = psIn.UV;
+        SamplerState sampler = LinearSampler;
+        if (inputMask & AmbientOcclusionMask) S.AmbientOcclusion = Sample(MaterialData[AmbientOcclusionIndex], sampler, uv).r;
+        if (inputMask & BaseColorMask) S.BaseColor = Sample(MaterialData[BaseColorIndex], sampler, uv).rgb;
+        if (inputMask & EmissiveColorMask) S.EmissiveColor = Sample(MaterialData[EmissiveIndex], sampler, uv).rgb;
+        if (inputMask & MetalRoughMask)
+        {
+            float2 metalRough = Sample(MaterialData[MetalRoughIndex], sampler, uv).rg;
+            S.Metallic = metalRough.r;
+            S.PerceptualRoughness = metalRough.g;
+        }
+        if (inputMask & NormalMapMask)
+        {
+            float3 n = Sample(MaterialData[NormalMapIndex], sampler, uv).rgb;
+            n = n * 2.f - 1.f;
+            n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
+
+            const float3 N = psIn.WorldNormal;
+            const float3 T = psIn.WorldTangent.xyz;
+            const float3 B = cross(N, T) * psIn.WorldTangent.w;
+            const float3x3 TBN = float3x3(T, B, N);
+            // Transform from tangent-space to world-space.
+            S.Normal = normalize(mul(n, TBN));
+        }
+    }
 
     S.V = V;
     S.PerceptualRoughness = max(S.PerceptualRoughness , 0.045f);
@@ -334,6 +396,14 @@ PixelOut MainPS(in VertexOut psIn)
       color += EvaluateIBL(S);
     }
     
+    // Exaggerate emissive color for dramatic effect.
+    float VoN = S.NoV * 1.3f;
+    float VoN2 = VoN * VoN;
+    float VoN4 = VoN2 * VoN2;
+    float3 e = S.EmissiveColor;
+    S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
+    /////////////////////////////////////////////////
+
     PixelOut psOut;
     psOut.Color = float4(color * S.AmbientOcclusion + S.EmissiveColor * S.EmissiveIntensity, 1.f);
 

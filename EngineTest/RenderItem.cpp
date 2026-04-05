@@ -98,8 +98,9 @@ load_shaders()
 
     const char* shader_path{ "..\\..\\enginetest\\" };
 
-    std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
+    std::wstring defines[]{ L"ELEMENTS_TYPE=0", L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
     utl::vector<u32> keys;
+    keys.emplace_back(tools::elements::elements_type::position_only);
     keys.emplace_back(tools::elements::elements_type::static_normal);
     keys.emplace_back(tools::elements::elements_type::static_normal_texture);
 
@@ -111,7 +112,7 @@ load_shaders()
         extra_args.clear();
         extra_args.emplace_back(L"-D");
         extra_args.emplace_back(defines[i]);
-        vertex_shaders.emplace_back(std::move(compile_shader(info, shader_path, extra_args)));
+        vertex_shaders.emplace_back(compile_shader(info, shader_path, extra_args));
         assert(vertex_shaders.back().get());
         vertex_shader_pointers.emplace_back(vertex_shaders.back().get());
     }
@@ -156,12 +157,14 @@ create_material()
         {1.f, 0.0f}, {1.f, 0.2f}, {1.f, 0.4f}, {1.f, 0.6f}, {1.f, 0.8f}, {1.f, 1.f},
     };
     graphics::material_surface& s{ info.surface };
-    s.base_color = { 0.5f, 0.5f, 0.5f, 1.f };
+    s.base_color[0] = s.base_color[1] = s.base_color[2] = 172; s.base_color[3] = 255;
+    s.emissive[0] = 255;  s.emissive[1] = 172; s.emissive[2] = 0;
+    s.emissive_intensity = (u16)(0.f * (65535.f / 10000.f));
 
     for (u32 i{ 0 }; i < _countof(pbr_mtl_ids); ++i)
     {
-        s.metallic = metal_rough[i].x;
-        s.roughness = metal_rough[i].y;
+        s.metallic = (u8)(255 * metal_rough[i].x);
+        s.roughness = (u8)(255 * metal_rough[i].y);
         pbr_mtl_ids[i] = content::create_resource(&info, content::asset_type::material);
     }
 

@@ -271,7 +271,7 @@ create_root_signature(material_type::type type, shader_flags::flags flags)
         parameters[params::per_object_data].as_cbv(data_visibility, 1);
         parameters[params::position_buffer].as_srv(buffer_visibility, 0);
         parameters[params::element_buffer].as_srv(buffer_visibility, 1);
-        parameters[params::srv_indices].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 2); // TODO: needs to be visible to any stages that need to sample textures.
+        parameters[params::material_data].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 2); // TODO: needs to be visible to any stages that need to sample textures.
         parameters[params::directional_lights].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 3);
         parameters[params::cullable_lights].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 4);
         parameters[params::light_grid].as_srv(D3D12_SHADER_VISIBILITY_PIXEL, 5);
@@ -343,6 +343,17 @@ get_shader_type(u32 flag)
     return (shader_type::type)index;
 }
 
+D3D12_SHADER_BYTECODE
+get_shader_byte_code(shader_type::type shader_type, u32 elements_type, const d3d12_material_stream& material, u32 shader_index)
+{
+    // NOTE: each type of shader may have keys that are generated from different properties of the submesh or material.
+    //       At the moment, we only have different kinds of vertex shaders depending on elements_type 
+    const u32 key{ shader_type == shader_type::vertex ? elements_type : u32_invalid_id };
+    primal::content::compiled_shader_ptr shader{ primal::content::get_shader(material.shader_ids()[shader_index], key) };
+    assert(shader);
+    return { shader->byte_code(), shader->byte_code_size() };
+}
+
 pso_id
 create_pso(id::id_type material_id, D3D12_PRIMITIVE_TOPOLOGY primitive_topology, u32 elements_type)
 {
@@ -352,6 +363,7 @@ create_pso(id::id_type material_id, D3D12_PRIMITIVE_TOPOLOGY primitive_topology,
     new (stream_ptr) d3dx::d3d12_pipeline_state_subobject_stream{};
 
     d3dx::d3d12_pipeline_state_subobject_stream& stream{ *(d3dx::d3d12_pipeline_state_subobject_stream *const)stream_ptr };
+    D3D12_SHADER_BYTECODE depth_prepass_vertex_shader{};
 
     { // Lock materials
         std::lock_guard lock{ material_mutex };
@@ -370,36 +382,41 @@ create_pso(id::id_type material_id, D3D12_PRIMITIVE_TOPOLOGY primitive_topology,
         stream.blend = d3dx::blend_state.disabled;
 
         const shader_flags::flags flags{ material.shader_flags() };
+        const bool use_position_only_for_depth_prepass{ !(flags & ((1 << shader_type::amplification) | (1 << shader_type::geometry) |
+                                                                   (1 << shader_type::hull) | (1 << shader_type::domain))) };       
         D3D12_SHADER_BYTECODE shaders[shader_type::count]{};
         u32 shader_index{ 0 };
         for (u32 i{ 0 }; i < shader_type::count; ++i)
         {
-            if (flags & (1 << i))
+            const u32 flag{ flags & (1 << i) };
+
+            if (flag)
             {
-                // NOTE: each type of shader may have keys that are generated from different properties of the submesh or material.
-                //       At the moment, we only have different kinds of vertex shaders depending on elements_type 
-                const u32 key{ get_shader_type(flags & (1 << i)) == shader_type::vertex ? elements_type : u32_invalid_id };
-                primal::content::compiled_shader_ptr shader{ primal::content::get_shader(material.shader_ids()[shader_index], key) };
-                assert(shader);
-                shaders[i].pShaderBytecode = shader->byte_code();
-                shaders[i].BytecodeLength = shader->byte_code_size();
+
+                const shader_type::type shader_type{ get_shader_type(flag) };
+                shaders[i] = get_shader_byte_code(shader_type, elements_type, material, shader_index);
+
                 ++shader_index;
             }
         }
 
         stream.vs = shaders[shader_type::vertex];
-        stream.ps = shaders[shader_type::pixel];
-        stream.ds = shaders[shader_type::domain];
-        stream.hs = shaders[shader_type::hull];
         stream.gs = shaders[shader_type::geometry];
+        stream.hs = shaders[shader_type::hull];
+        stream.ds = shaders[shader_type::domain];
         stream.cs = shaders[shader_type::compute];
+        stream.ps = shaders[shader_type::pixel];
         stream.as = shaders[shader_type::amplification];
         stream.ms = shaders[shader_type::mesh];
+
+        depth_prepass_vertex_shader = use_position_only_for_depth_prepass ?
+            get_shader_byte_code(shader_type::vertex, 0, material, 0) : shaders[shader_type::vertex];
     }
     pso_id id_pair{};
     id_pair.gpass_pso_id = create_pso_if_needed(stream_ptr, aligned_stream_size, false);
 
     stream.ps = D3D12_SHADER_BYTECODE{};
+    stream.vs = depth_prepass_vertex_shader;
     stream.depth_stencil1 = d3dx::depth_state.reversed;
     id_pair.depth_pso_id = create_pso_if_needed(stream_ptr, aligned_stream_size, true);
 
