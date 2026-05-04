@@ -65,6 +65,24 @@ create_root_signature(const D3D12_ROOT_SIGNATURE_DESC1& desc)
     return signature;
 }
 
+ID3D12CommandSignature*
+create_command_signature(const D3D12_COMMAND_SIGNATURE_DESC& desc, ID3D12RootSignature* root_signature)
+{
+    assert(root_signature);
+    id3d12_device* device{ core::device() };
+    HRESULT hr{ S_OK };
+
+    ID3D12CommandSignature* signature{ nullptr };
+    DXCall(hr = device->CreateCommandSignature(&desc, root_signature, IID_PPV_ARGS(&signature)));
+    
+    if (FAILED(hr))
+    {
+        core::release(signature);
+    }
+
+    return signature;
+}
+
 ID3D12PipelineState*
 create_pipeline_state(D3D12_PIPELINE_STATE_STREAM_DESC desc)
 {

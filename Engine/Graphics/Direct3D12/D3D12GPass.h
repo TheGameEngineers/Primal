@@ -28,16 +28,29 @@ struct opaque_root_parameter {
     };
 };
 
+struct draw_indexed_indirect_command {
+    union {
+        struct {
+            D3D12_GPU_VIRTUAL_ADDRESS   parameters[opaque_root_parameter::count];
+        } opaque;
+    };
+
+    D3D12_INDEX_BUFFER_VIEW         index_buffer_view;
+    D3D12_DRAW_INDEXED_ARGUMENTS    draw_indexed_args;
+};
+
 bool initialize();
 void shutdown();
 
 [[nodiscard]] const d3d12_render_texture& main_buffer();
 [[nodiscard]] const d3d12_depth_buffer& depth_buffer();
 
-// NOTE: call this every frame befor rendering anything in gpass.
+// NOTE: call this every frame before rendering anything in gpass.
 void set_size(math::u32v2 size);
 void depth_prepass(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_info);
 void render(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_info);
+void depth_prepass_indirect(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_info);
+void render_indirect(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_info);
 
 void add_transitions_for_depth_prepass(d3dx::d3d12_resource_barrier& barriers);
 void add_transitions_for_gpass(d3dx::d3d12_resource_barrier& barriers);

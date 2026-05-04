@@ -370,6 +370,8 @@ void transition_resource(
 
 ID3D12RootSignature* create_root_signature(const D3D12_ROOT_SIGNATURE_DESC1& desc);
 
+ID3D12CommandSignature* create_command_signature(const D3D12_COMMAND_SIGNATURE_DESC& desc, ID3D12RootSignature* root_signature);
+
 struct d3d12_descriptor_range : public D3D12_DESCRIPTOR_RANGE1
 {
     constexpr explicit d3d12_descriptor_range(D3D12_DESCRIPTOR_RANGE_TYPE range_type,
@@ -464,6 +466,69 @@ struct d3d12_root_signature_desc : public D3D12_ROOT_SIGNATURE_DESC1
     ID3D12RootSignature* create() const
     {
         return create_root_signature(*this);
+    }
+};
+
+struct d3d12_indirect_argument_desc : public D3D12_INDIRECT_ARGUMENT_DESC
+{
+    constexpr void as_constant(u32 root_param_index, u32 offset, u32 count)
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
+        Constant.RootParameterIndex = root_param_index;
+        Constant.DestOffsetIn32BitValues = offset;
+        Constant.Num32BitValuesToSet = count;
+    }
+
+    constexpr void as_cbv(u32 root_param_index)
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
+        ConstantBufferView.RootParameterIndex = root_param_index;
+    }
+
+    constexpr void as_srv(u32 root_param_index)
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_SHADER_RESOURCE_VIEW;
+        ShaderResourceView.RootParameterIndex = root_param_index;
+    }
+
+    constexpr void as_uav(u32 root_param_index)
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_UNORDERED_ACCESS_VIEW;
+        UnorderedAccessView.RootParameterIndex = root_param_index;
+    }
+
+    constexpr void as_inc_cons(u32 root_param_index, u32 offset)
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_INCREMENTING_CONSTANT;
+        IncrementingConstant.RootParameterIndex = root_param_index;
+        IncrementingConstant.DestOffsetIn32BitValues = offset;
+    }
+
+    constexpr void as_index_buffer_view()
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_INDEX_BUFFER_VIEW;
+    }
+
+    constexpr void as_draw_indexed()
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+    }
+
+    constexpr void as_dispatch()
+    {
+        Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+    }
+};
+
+struct d3d12_command_signature_desc : public D3D12_COMMAND_SIGNATURE_DESC
+{
+    constexpr explicit d3d12_command_signature_desc(u32 byte_stride, u32 args_count, const d3d12_indirect_argument_desc* args)
+        : D3D12_COMMAND_SIGNATURE_DESC{ byte_stride, args_count, args, 0 }
+    {}
+
+    ID3D12CommandSignature* create(ID3D12RootSignature* root_signature) const
+    {
+        return create_command_signature(*this, root_signature);
     }
 };
 

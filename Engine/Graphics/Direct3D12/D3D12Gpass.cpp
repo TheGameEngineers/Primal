@@ -36,7 +36,12 @@ constexpr f32                   clear_value[4]{ };
 struct gpass_cache
 {
     utl::vector<id::id_type>    d3d12_render_item_ids;
+    utl::vector<u8>             draw_indirect_pso_sort_flags;
+    utl::vector<u32>            gpass_grouped_indices;
+    utl::vector<u32>            depth_grouped_indices;
     u32                         descriptor_index_count{ 0 };
+    u32                         gpass_pso_count{ 0 };
+    u32                         depth_pso_count{ 0 };
 
     // NOTE: when adding new arrays, make sure to update resize() and struct_size.
     id::id_type*                entity_ids{ nullptr };
@@ -45,6 +50,7 @@ struct gpass_cache
     ID3D12PipelineState**       gpass_pipeline_states{ nullptr };
     ID3D12PipelineState**       depth_pipeline_states{ nullptr };
     ID3D12RootSignature**       root_signatures{ nullptr };
+    ID3D12CommandSignature**    cmd_signatures{ nullptr };
     material_type::type*        material_types{ nullptr };
     u32**                       descriptor_indices{ nullptr };
     u32*                        texture_counts{ nullptr };
@@ -83,6 +89,7 @@ struct gpass_cache
     {
         return{
             root_signatures,
+            cmd_signatures,
             material_types,
             descriptor_indices,
             texture_counts,
@@ -109,6 +116,10 @@ struct gpass_cache
 
         if (new_buffer_size != old_buffer_size)
         {
+            draw_indirect_pso_sort_flags.resize(items_count);
+            gpass_grouped_indices.resize(items_count);
+            depth_grouped_indices.resize(items_count);
+
             _buffer.resize(new_buffer_size);
 
             entity_ids = (id::id_type*)_buffer.data();
@@ -117,7 +128,8 @@ struct gpass_cache
             gpass_pipeline_states = (ID3D12PipelineState**)&material_ids[items_count];
             depth_pipeline_states = (ID3D12PipelineState**)&gpass_pipeline_states[items_count];
             root_signatures = (ID3D12RootSignature**)&depth_pipeline_states[items_count];
-            material_types = (material_type::type*)&root_signatures[items_count];
+            cmd_signatures = (ID3D12CommandSignature**)&root_signatures[items_count];
+            material_types = (material_type::type*)&cmd_signatures[items_count];
             descriptor_indices = (u32**)&material_types[items_count];
             texture_counts = (u32*)&descriptor_indices[items_count];
             material_surfaces = (material_surface**)&texture_counts[items_count];
@@ -139,6 +151,7 @@ private:
         sizeof(ID3D12PipelineState *) +         // gpass_pipeline_states
         sizeof(ID3D12PipelineState *) +         // depth_pipeline_states
         sizeof(ID3D12RootSignature*) +          // root_signatures
+        sizeof(ID3D12CommandSignature*) +       // cmd_signatures
         sizeof(material_type::type) +           // material_types
         sizeof(u32*) +                          // descriptor_indices
         sizeof(u32) +                           // texture_counts
@@ -157,6 +170,58 @@ private:
 
 // Good boy!
 #undef CONSTEXPR
+
+class command_buffer
+{
+public:
+    void resize(u32 items_count)
+    {
+        assert(items_count);
+        _commands.resize(items_count);
+        _buffer_size = items_count * sizeof(draw_indexed_indirect_command);
+
+        // Create a buffer twice the size of the items count for both gpass and depth pass commands.
+        // The first half will be used for gpass commands and the second half for depth pass commands.
+        const u32 total_size{ _buffer_size * 2 };
+
+        if (_cmd_buffer.size() < math::align_size_up<D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT>(total_size))
+        {
+            _cmd_buffer = d3d12_buffer{ constant_buffer::get_default_init_info(total_size), true };
+            NAME_D3D12_OBJECT_INDEXED(_cmd_buffer.buffer(), core::current_frame_index(), L"Indirect Command Buffer");
+
+            D3D12_RANGE read_range{ 0, 0 }; // We won't be reading from this buffer on the CPU.
+            DXCall(_cmd_buffer.buffer()->Map(0, &read_range, (void**)&_cpu_address));
+            assert(_cpu_address);
+        }
+    }
+
+    void release()
+    {
+        _cmd_buffer.release();
+        _cpu_address = nullptr;
+    }
+
+    void upload_gpass_commands() const { upload_commands(true); }
+    void upload_depth_commands() const { upload_commands(false); }
+    [[nodiscard]] constexpr ID3D12Resource *const buffer() const { return _cmd_buffer.buffer(); }
+    [[nodiscard]] constexpr u32 size() const { return _buffer_size; }
+    [[nodiscard]] constexpr utl::vector<draw_indexed_indirect_command>& commands() { return _commands; }
+
+private:
+
+    void upload_commands(bool is_gpass) const
+    {
+        if (_buffer_size)
+        {
+            memcpy(is_gpass ? _cpu_address : _cpu_address + _buffer_size, _commands.data(), _buffer_size);
+        }
+    }
+
+    d3d12_buffer                                _cmd_buffer{};
+    u8*                                         _cpu_address{ nullptr };
+    u32                                         _buffer_size{ 0 };
+    utl::vector<draw_indexed_indirect_command>  _commands{};
+} command_buffers[frame_buffer_count];
 
 bool
 create_buffers(math::u32v2 size)
@@ -309,6 +374,181 @@ prepare_render_frame(const d3d12_frame_info& d3d12_info)
     fill_per_object_data(d3d12_info);
 }
 
+void
+group_by_pso()
+{
+    gpass_cache& cache{ frame_cache };
+    const u32 items_count{ cache.size() };
+
+    if (!items_count) return;
+
+    assert(cache.draw_indirect_pso_sort_flags.size() == items_count);
+    assert(cache.gpass_grouped_indices.size() == items_count);
+    assert(cache.depth_grouped_indices.size() == items_count);
+
+    memset(cache.draw_indirect_pso_sort_flags.data(), 0, items_count);
+    memset(cache.gpass_grouped_indices.data(), u32_invalid_id, items_count * sizeof(u32));
+    memset(cache.depth_grouped_indices.data(), u32_invalid_id, items_count * sizeof(u32));
+
+    for (u32 pass{ 0 }; pass < 2; ++pass)
+    {
+        u32 item_index{ 0 };
+        u32 pso_count{ 0 };
+        const u8 pass_mask{ pass == 0 ? (u8)0x0f : (u8)0xf0 };
+        const u8 flag_set{ pass == 0 ? (u8)0x01 : (u8)0x10 };
+        const u8 flag_new_pso{ pass == 0 ? (u8)0x02 : (u8)0x20 };
+        utl::vector<u32>& grouped_indices{ pass == 0 ? cache.gpass_grouped_indices : cache.depth_grouped_indices };
+        ID3D12PipelineState**& pipeline_states{ pass == 0 ? cache.gpass_pipeline_states : cache.depth_pipeline_states };
+
+        for (;;)
+        {
+            u32 index{ 0 };
+            while (index < items_count && (cache.draw_indirect_pso_sort_flags[index] & pass_mask)) ++index;
+
+            if (index >= items_count) break;
+
+            ID3D12PipelineState* current_pso{ pipeline_states[index] };
+
+            // mark the first item that's using the current pso
+            cache.draw_indirect_pso_sort_flags[index] |= flag_new_pso;
+            ++pso_count;
+
+            for (u32 i{ index }; i < items_count; ++i)
+            {
+                if (!(cache.draw_indirect_pso_sort_flags[i] & flag_set) && current_pso == pipeline_states[i])
+                {
+                    cache.draw_indirect_pso_sort_flags[i] |= flag_set;
+                    grouped_indices[item_index] = i;
+                    ++item_index;
+                }
+            }
+        }
+
+        assert(pso_count);
+        assert(std::find(grouped_indices.begin(), grouped_indices.end(), u32_invalid_id) == grouped_indices.end());
+
+        if (pass == 0)
+        {
+            cache.gpass_pso_count = pso_count;
+        }
+        else
+        {
+            cache.depth_pso_count = pso_count;
+        }
+    }
+}
+
+void
+record_depth_command_buffer(const d3d12_frame_info& d3d12_info, u32 *const new_pso_indices, [[maybe_unused]] u32 pso_index_count)
+{
+    assert(frame_cache.depth_pso_count == pso_index_count);
+    const u32 frame_idx{ d3d12_info.frame_index };
+    const gpass_cache& cache{ frame_cache };
+    const u32 items_count{ cache.size() };
+    command_buffer& cmd_buffer{ command_buffers[frame_idx] };
+
+    u32 pso_index{ 0 };
+
+    for (u32 i{ 0 }; i < items_count; ++i)
+    {
+        assert((cache.draw_indirect_pso_sort_flags[i] & 0xf0) && cache.depth_grouped_indices[i] != u32_invalid_id);
+        const u32 cache_index{ cache.depth_grouped_indices[i] };
+
+        if (cache.draw_indirect_pso_sort_flags[cache_index] & 0x20)
+        {
+            new_pso_indices[pso_index++] = i;
+        }
+
+        draw_indexed_indirect_command& cmd{ cmd_buffer.commands()[i] };
+
+        switch (cache.material_types[cache_index])
+        {
+        case material_type::opaque:
+        {
+            using idx = opaque_root_parameter;
+            cmd.opaque.parameters[idx::global_shader_data] = d3d12_info.global_shader_data;
+            cmd.opaque.parameters[idx::per_object_data] = cache.per_object_data[cache_index];
+            cmd.opaque.parameters[idx::position_buffer] = cache.position_buffers[cache_index];
+            cmd.opaque.parameters[idx::element_buffer] = cache.element_buffers[cache_index];
+            cmd.opaque.parameters[idx::material_data] = cache.material_data[cache_index];
+
+            const D3D12_INDEX_BUFFER_VIEW& ibv{ cache.index_buffer_views[cache_index] };
+            cmd.index_buffer_view = ibv;
+
+            const u32 index_count{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+            cmd.draw_indexed_args.IndexCountPerInstance = index_count;
+            cmd.draw_indexed_args.InstanceCount = 1;
+            cmd.draw_indexed_args.StartIndexLocation = 0;
+            cmd.draw_indexed_args.BaseVertexLocation = 0;
+            cmd.draw_indexed_args.StartInstanceLocation = 0;
+        }
+        break;
+        }
+    }
+
+    cmd_buffer.upload_depth_commands();
+}
+
+void
+record_gpass_command_buffer(const d3d12_frame_info& d3d12_info, u32 *const new_pso_indices, [[maybe_unused]] u32 pso_index_count)
+{
+    assert(frame_cache.gpass_pso_count == pso_index_count);
+    const u32 frame_idx{ d3d12_info.frame_index };
+    const gpass_cache& cache{ frame_cache };
+    const u32 items_count{ cache.size() };
+    command_buffer& cmd_buffer{ command_buffers[frame_idx] };
+
+    const id::id_type light_culling_id{ d3d12_info.light_culling_id };
+    const D3D12_GPU_VIRTUAL_ADDRESS non_cullable_lights{ light::non_cullable_light_buffer(frame_idx) };
+    const D3D12_GPU_VIRTUAL_ADDRESS cullable_lights{ light::cullable_light_buffer(frame_idx) };
+    const D3D12_GPU_VIRTUAL_ADDRESS light_grid{ delight::light_grid_opaque(light_culling_id, frame_idx) };
+    const D3D12_GPU_VIRTUAL_ADDRESS light_index_list{ delight::light_index_list_opaque(light_culling_id, frame_idx) };
+    u32 pso_index{ 0 };
+
+    for (u32 i{ 0 }; i < items_count; ++i)
+    {
+        assert((cache.draw_indirect_pso_sort_flags[i] & 0x0f) && cache.gpass_grouped_indices[i] != u32_invalid_id);
+        const u32 cache_index{ cache.gpass_grouped_indices[i] };
+
+        if (cache.draw_indirect_pso_sort_flags[cache_index] & 0x02)
+        {
+            new_pso_indices[pso_index++] = i;
+        }
+
+        draw_indexed_indirect_command& cmd{ cmd_buffer.commands()[i] };
+
+        switch (cache.material_types[cache_index])
+        {
+        case material_type::opaque:
+        {
+            using idx = opaque_root_parameter;
+            cmd.opaque.parameters[idx::global_shader_data] = d3d12_info.global_shader_data;
+            cmd.opaque.parameters[idx::per_object_data] = cache.per_object_data[cache_index];
+            cmd.opaque.parameters[idx::position_buffer] = cache.position_buffers[cache_index];
+            cmd.opaque.parameters[idx::element_buffer] = cache.element_buffers[cache_index];
+            cmd.opaque.parameters[idx::material_data] = cache.material_data[cache_index];
+            cmd.opaque.parameters[idx::directional_lights] = non_cullable_lights;
+            cmd.opaque.parameters[idx::cullable_lights] = cullable_lights;
+            cmd.opaque.parameters[idx::light_grid] = light_grid;
+            cmd.opaque.parameters[idx::light_index_list] = light_index_list;
+
+            const D3D12_INDEX_BUFFER_VIEW& ibv{ cache.index_buffer_views[cache_index] };
+            cmd.index_buffer_view = ibv;
+
+            const u32 index_count{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+            cmd.draw_indexed_args.IndexCountPerInstance = index_count;
+            cmd.draw_indexed_args.InstanceCount = 1;
+            cmd.draw_indexed_args.StartIndexLocation = 0;
+            cmd.draw_indexed_args.BaseVertexLocation = 0;
+            cmd.draw_indexed_args.StartInstanceLocation = 0;
+        }
+        break;
+        }
+    }
+
+    cmd_buffer.upload_gpass_commands();
+}
+
 } // anonymous namespace
 
 bool
@@ -323,6 +563,11 @@ shutdown()
     gpass_main_buffer.release();
     gpass_depth_buffer.release();
     dimensions = initial_dimensions;
+
+    for (u32 i{ 0 }; i < frame_buffer_count; ++i)
+    {
+        command_buffers[i].release();
+    }
 }
 
 const d3d12_render_texture&
@@ -424,6 +669,79 @@ render(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_inf
         cmd_list->IASetIndexBuffer(&ibv);
         cmd_list->IASetPrimitiveTopology(cache.primitive_topologies[i]);
         cmd_list->DrawIndexedInstanced(index_count, 1, 0, 0, 0);
+    }
+}
+
+void
+depth_prepass_indirect(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_info)
+{
+    prepare_render_frame(d3d12_info);
+
+    const gpass_cache& cache{ frame_cache };
+    const u32 items_count{ cache.size() };
+
+    if (!items_count) return;
+
+    const u32 frame_idx{ d3d12_info.frame_index };
+    command_buffer& cmd_buffer{ command_buffers[frame_idx] };
+    cmd_buffer.resize(items_count);
+    group_by_pso();
+
+    const u32 pso_count{ cache.depth_pso_count };
+    u32 *const new_pso_indices{ (u32*)alloca(pso_count * sizeof(u32)) };
+    record_depth_command_buffer(d3d12_info, new_pso_indices, pso_count);
+
+    for (u32 i{ 0 }; i < pso_count; ++i)
+    {
+        const u32 cache_index{ cache.depth_grouped_indices[new_pso_indices[i]] };
+        ID3D12RootSignature* current_root_signature{ cache.root_signatures[cache_index] };
+        ID3D12PipelineState* current_pso{ cache.depth_pipeline_states[cache_index] };
+        const D3D_PRIMITIVE_TOPOLOGY topology{ cache.primitive_topologies[cache_index] };
+
+        const u32 cmd_count{ i + 1 < pso_count ? new_pso_indices[i + 1] - new_pso_indices[i] : items_count - new_pso_indices[i] };
+
+        cmd_list->SetGraphicsRootSignature(current_root_signature);
+        cmd_list->SetPipelineState(current_pso);
+        cmd_list->IASetPrimitiveTopology(topology);
+
+        cmd_list->ExecuteIndirect(cache.cmd_signatures[cache_index], cmd_count,
+                                  cmd_buffer.buffer(),
+                                  cmd_buffer.size() + new_pso_indices[i] * sizeof(draw_indexed_indirect_command),
+                                  nullptr, 0);
+    }
+}
+
+void
+render_indirect(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& d3d12_info)
+{
+    const gpass_cache& cache{ frame_cache };
+    const u32 items_count{ cache.size() };
+
+    if (!items_count) return;
+
+    const u32 frame_idx{ d3d12_info.frame_index };
+    command_buffer& cmd_buffer{ command_buffers[frame_idx] };
+    const u32 pso_count{ cache.gpass_pso_count };
+    u32 *const new_pso_indices{ (u32*)alloca(pso_count * sizeof(u32)) };
+    record_gpass_command_buffer(d3d12_info, new_pso_indices, pso_count);
+
+    for (u32 i{ 0 }; i < pso_count; ++i)
+    {
+        const u32 cache_index{ cache.gpass_grouped_indices[new_pso_indices[i]] };
+        ID3D12RootSignature* current_root_signature{ cache.root_signatures[cache_index] };
+        ID3D12PipelineState* current_pso{ cache.gpass_pipeline_states[cache_index] };
+        const D3D_PRIMITIVE_TOPOLOGY topology{ cache.primitive_topologies[cache_index] };
+
+        const u32 cmd_count{ i + 1 < pso_count ? new_pso_indices[i + 1] - new_pso_indices[i] : items_count - new_pso_indices[i] };
+
+        cmd_list->SetGraphicsRootSignature(current_root_signature);
+        cmd_list->SetPipelineState(current_pso);
+        cmd_list->IASetPrimitiveTopology(topology);
+
+        cmd_list->ExecuteIndirect(cache.cmd_signatures[cache_index], cmd_count,
+                                  cmd_buffer.buffer(),
+                                  new_pso_indices[i] * sizeof(draw_indexed_indirect_command),
+                                  nullptr, 0);
     }
 }
 

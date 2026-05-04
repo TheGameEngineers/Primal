@@ -34,11 +34,12 @@ namespace material {
 
 struct materials_cache
 {
-    ID3D12RootSignature* *const root_signatures;
-    material_type::type *const  material_types;
-    u32* *const                 descriptor_indices;
-    u32 *const                  texture_count;
-    material_surface* *const    material_surfaces;
+    ID3D12RootSignature* *const     root_signatures;
+    ID3D12CommandSignature* *const   cmd_signatures;
+    material_type::type *const      material_types;
+    u32* *const                     descriptor_indices;
+    u32 *const                      texture_count;
+    material_surface* *const        material_surfaces;
 };
 
 id::id_type add(material_init_info info);

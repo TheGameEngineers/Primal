@@ -43,6 +43,7 @@ utl::free_list<u32>                             descriptor_indices;
 std::mutex                                      texture_mutex{};
 
 utl::vector<ID3D12RootSignature*>               root_signatures;
+utl::vector<ID3D12CommandSignature*>            cmd_signatures;
 std::unordered_map<u64, id::id_type>            mtl_rs_map; // maps a material's type and shader flags to an index in the array of root signatures.
 utl::free_list<std::unique_ptr<u8[]>>           materials;
 std::mutex                                      material_mutex{};
@@ -219,6 +220,48 @@ get_root_signature_flags(shader_flags::flags flags)
     return default_flags;
 }
 
+void
+create_command_signature(material_type::type type, u32 root_sig_id)
+{
+    assert(root_sig_id < root_signatures.size());
+    assert(root_sig_id == cmd_signatures.size());
+
+    ID3D12CommandSignature* cmd_signature{ nullptr };
+
+    switch (type)
+    {
+    case material_type::opaque:
+
+        using params = gpass::opaque_root_parameter;
+        d3dx::d3d12_indirect_argument_desc args[params::count + 2]{};
+
+        args[params::global_shader_data].as_cbv(params::global_shader_data);
+        args[params::per_object_data].as_cbv(params::per_object_data);
+        args[params::position_buffer].as_srv(params::position_buffer);
+        args[params::element_buffer].as_srv(params::element_buffer);
+        args[params::material_data].as_srv(params::material_data);
+        args[params::directional_lights].as_srv(params::directional_lights);
+        args[params::cullable_lights].as_srv(params::cullable_lights);
+        args[params::light_grid].as_srv(params::light_grid);
+        args[params::light_index_list].as_srv(params::light_index_list);
+
+        args[params::count].as_index_buffer_view();
+
+        args[params::count + 1].as_draw_indexed();
+
+        cmd_signature = d3dx::d3d12_command_signature_desc
+        {
+            sizeof(gpass::draw_indexed_indirect_command), _countof(args), &args[0]
+        }.create(root_signatures[root_sig_id]);
+
+        break;
+    }
+
+    assert(cmd_signature);
+    cmd_signatures.emplace_back(cmd_signature);
+    assert(root_sig_id == cmd_signatures.size() - 1);
+}
+
 id::id_type
 create_root_signature(material_type::type type, shader_flags::flags flags)
 {
@@ -297,6 +340,8 @@ create_root_signature(material_type::type type, shader_flags::flags flags)
     root_signatures.emplace_back(root_signature);
     mtl_rs_map[key] = id;
     NAME_D3D12_OBJECT_INDEXED(root_signature, key, L"GPass Root Signature - key");
+
+    create_command_signature(type, id);
 
     return id;
 }
@@ -383,7 +428,7 @@ create_pso(id::id_type material_id, D3D12_PRIMITIVE_TOPOLOGY primitive_topology,
 
         const shader_flags::flags flags{ material.shader_flags() };
         const bool use_position_only_for_depth_prepass{ !(flags & ((1 << shader_type::amplification) | (1 << shader_type::geometry) |
-                                                                   (1 << shader_type::hull) | (1 << shader_type::domain))) };       
+                                                                   (1 << shader_type::hull) | (1 << shader_type::domain))) };
         D3D12_SHADER_BYTECODE shaders[shader_type::count]{};
         u32 shader_index{ 0 };
         for (u32 i{ 0 }; i < shader_type::count; ++i)
@@ -620,8 +665,14 @@ shutdown()
         core::release(item);
     }
 
+    for(auto& item : cmd_signatures)
+    {
+        core::release(item);
+    }
+
     mtl_rs_map.clear();
     root_signatures.clear();
+    cmd_signatures.clear();
 
     for (auto& item : pipeline_states)
     {
@@ -814,6 +865,7 @@ get_materials(const id::id_type *const material_ids, u32 material_count, const m
     {
         const d3d12_material_stream stream{ materials[material_ids[i]].get() };
         cache.root_signatures[i] = root_signatures[stream.root_signature_id()];
+        cache.cmd_signatures[i] = cmd_signatures[stream.root_signature_id()];
         cache.material_types[i] = stream.material_type();
         cache.descriptor_indices[i] = stream.descriptor_indices();
         cache.texture_count[i] = stream.texture_count();

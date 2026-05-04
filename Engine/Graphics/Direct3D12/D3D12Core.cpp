@@ -401,6 +401,19 @@ initialize()
         ComPtr<ID3D12InfoQueue> info_queue;
         DXCall(main_device->QueryInterface(IID_PPV_ARGS(&info_queue)));
 
+        D3D12_MESSAGE_ID disabled_messages[]
+        {
+            // TODO: this will happen when using execute indirect. We might want to switch to a method
+            //       that doesn't require the index buffer view being set in the command buffer.
+            //       Maybe use mesh shaders?
+            D3D12_MESSAGE_ID_GPU_BASED_VALIDATION_RESOURCE_STATE_IMPRECISE,
+        };
+
+        D3D12_INFO_QUEUE_FILTER filter{};
+        filter.DenyList.NumIDs = _countof(disabled_messages);
+        filter.DenyList.pIDList = disabled_messages;
+        info_queue->AddStorageFilterEntries(&filter);
+
         info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
         info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
         info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
@@ -699,7 +712,13 @@ render_surface(surface_id id, frame_info info)
     gpass::add_transitions_for_depth_prepass(barriers);
     barriers.apply(cmd_list);
     gpass::set_render_targets_for_depth_prepass(cmd_list);
+
+#define DRAW_INDIRECT 1
+#if DRAW_INDIRECT
+    gpass::depth_prepass_indirect(cmd_list, d3d12_info);
+#else
     gpass::depth_prepass(cmd_list, d3d12_info);
+#endif
 
     // Geometry and lighting pass
     gpass::add_transitions_for_gpass(barriers);
@@ -707,7 +726,13 @@ render_surface(surface_id id, frame_info info)
     delight::cull_lights(cmd_list, d3d12_info, barriers);
     barriers.apply(cmd_list);
     gpass::set_render_targets_for_gpass(cmd_list);
+
+#if DRAW_INDIRECT
+    gpass::render_indirect(cmd_list, d3d12_info);
+#else
     gpass::render(cmd_list, d3d12_info);
+#endif
+#undef DRAW_INDIRECT
 
     // Post-process
     gpass::add_transitions_for_post_process(barriers);
