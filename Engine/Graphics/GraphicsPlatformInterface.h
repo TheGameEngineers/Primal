@@ -39,8 +39,8 @@ struct platform_interface
     } camera;
 
     struct {
-        id::id_type(*add_submesh)(const u8*&);
-        void (*remove_submesh)(id::id_type);
+        void(*add_mesh)(const u8 *const, id::id_type *const, u32);
+        void (*remove_mesh)(const id::id_type *const, u32);
         id::id_type(*add_texture)(const u8 *const);
         void (*remove_texture)(id::id_type);
         id::id_type(*add_material)(material_init_info);

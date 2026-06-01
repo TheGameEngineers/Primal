@@ -283,8 +283,8 @@ void remove_light(light_id id, u64 light_set_key);
 camera create_camera(camera_init_info info);
 void remove_camera(camera_id id);
 
-id::id_type add_submesh(const u8*& data);
-void remove_submesh(id::id_type id);
+void add_mesh(const u8 *const data, id::id_type *const ids, u32 count);
+void remove_mesh(const id::id_type *const ids, u32 count);
 
 id::id_type add_texture(const u8 *const data);
 void remove_texture(id::id_type id);

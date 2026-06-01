@@ -424,7 +424,7 @@ group_by_pso()
             }
         }
 
-        assert(pso_count);
+        assert(pso_count && item_index == items_count);
         assert(std::find(grouped_indices.begin(), grouped_indices.end(), u32_invalid_id) == grouped_indices.end());
 
         if (pass == 0)

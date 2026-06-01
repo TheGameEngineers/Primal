@@ -70,31 +70,30 @@ struct noexcept_map {
 // This constant indicates that an element in geometry_hierarchies is not a pointer, but a gpu_id
 constexpr uintptr_t             single_mesh_marker{ (uintptr_t)0x01 };
 utl::free_list<u8*>             geometry_hierarchies;
-std::mutex                      geometry_mutex;
+std::mutex                      geometry_mutex{};
 
 utl::free_list<noexcept_map>    shader_groups;
-std::mutex                      shader_mutex;
+std::mutex                      shader_mutex{};
 
 // NOTE: expects the same data as create_geometry_resource()
 u32
 get_geometry_hierarchy_buffer_size(const void *const data)
 {
     assert(data);
-    utl::blob_stream_reader blob{ (const u8*)data };
+    utl::blob_stream_reader blob{ (const u8 *const)data };
     const u32 lod_count{ blob.read<u32>() };
     assert(lod_count);
+    blob.skip(sizeof(f32) * lod_count); // skip thresholds
     // add size of  lod_count, thresholds and lod offsets to the size of hierarchy.
     u32 size{ sizeof(u32) + (sizeof(f32) + sizeof(lod_offset)) * lod_count };
 
+    u32 mesh_count{ 0 };
     for (u32 lod_idx{ 0 }; lod_idx < lod_count; ++lod_idx)
     {
-        // skip threshold
-        blob.skip(sizeof(f32));
-        // add size of gpu_ids (sizeof(id::id_type) * submesh_count)
-        size += sizeof(id::id_type) * blob.read<u32>();
-        // skip submesh data and go to the next LOD
-        blob.skip(blob.read<u32>());
+        mesh_count += blob.read<u32>();
     }
+
+    size += sizeof(id::id_type) * mesh_count;
 
     return size;
 }
@@ -108,28 +107,29 @@ create_mesh_hierarchy(const void *const data)
     const u32 size{ get_geometry_hierarchy_buffer_size(data) };
     u8 *const hierarchy_buffer{ (u8 *const)malloc(size) };
 
-    utl::blob_stream_reader blob{ (const u8*)data };
+    utl::blob_stream_reader blob{ (const u8 *const)data };
     const u32 lod_count{ blob.read<u32>() };
     assert(lod_count);
     geometry_hierarchy_stream stream{ hierarchy_buffer, lod_count };
-    u32 submesh_index{ 0 };
-    id::id_type *const gpu_ids{ stream.gpu_ids() };
 
     for (u32 lod_idx{ 0 }; lod_idx < lod_count; ++lod_idx)
     {
         stream.thresholds()[lod_idx] = blob.read<f32>();
+    }
+
+    u32 submesh_index{ 0 };
+
+    for (u32 lod_idx{ 0 }; lod_idx < lod_count; ++lod_idx)
+    {
         const u32 id_count{ blob.read<u32>() };
         assert(id_count < (1 << 16));
         stream.lod_offsets()[lod_idx] = { (u16)submesh_index, (u16)id_count };
-        blob.skip(sizeof(u32)); // skip over size_of_submeshes
-        for (u32 id_idx{ 0 }; id_idx < id_count; ++id_idx)
-        {
-            const u8* at{ blob.position() };
-            gpu_ids[submesh_index++] = graphics::add_submesh(at);
-            blob.skip((u32)(at - blob.position()));
-            assert(submesh_index < (1 << 16));
-        }
+        submesh_index += id_count;
+        assert(submesh_index < (1 << 16));
     }
+
+    id::id_type *const gpu_ids{ stream.gpu_ids() };
+    graphics::add_mesh(blob.position(), gpu_ids, submesh_index);
 
     assert([&]() {
         f32 previous_threshold{ stream.thresholds()[0] };
@@ -152,11 +152,12 @@ id::id_type
 create_single_submesh(const void *const data)
 {
     assert(data);
-    utl::blob_stream_reader blob{ (const u8*)data };
-    // skip lod_count, lod_threshold, submesh_count and size_of_submeshes
-    blob.skip(sizeof(u32) + sizeof(f32) + sizeof(u32) + sizeof(u32));
-    const u8* at{ blob.position() };
-    const id::id_type gpu_id{ graphics::add_submesh(at) };
+    utl::blob_stream_reader blob{ (const u8 *const)data };
+    // skip lod_count, lod_threshold, submesh_count
+    blob.skip(sizeof(u32) + sizeof(f32) + sizeof(u32));
+    id::id_type gpu_id{ id::invalid_id };
+    graphics::add_mesh(blob.position(), &gpu_id, 1);
+    assert(id::is_valid(gpu_id));
 
     // create a fake pointer and put it in the geometry_hierarchies.
     static_assert(sizeof(uintptr_t) > sizeof(id::id_type));
@@ -172,7 +173,7 @@ bool
 is_single_mesh(const void *const data)
 {
     assert(data);
-    utl::blob_stream_reader blob{ (const u8*)data };
+    utl::blob_stream_reader blob{ (const u8 *const)data };
     const u32 lod_count{ blob.read<u32>() };
     assert(lod_count);
     if (lod_count > 1) return false;
@@ -190,32 +191,33 @@ gpu_id_from_fake_pointer(u8 *const pointer)
     assert((uintptr_t)pointer & single_mesh_marker);
     static_assert(sizeof(uintptr_t) > sizeof(id::id_type));
     constexpr u8 shift_bits{ (sizeof(uintptr_t) - sizeof(id::id_type)) << 3 };
-    return (((uintptr_t)pointer) >> shift_bits) & (uintptr_t)id::invalid_id;
+    return ((uintptr_t)pointer >> shift_bits) & (uintptr_t)id::invalid_id;
 }
 
 // NOTE: Expects 'data' to contain:
 // struct{
 //     u32 lod_count,
-//     struct {
-//         f32 lod_threshold,
-//         u32 submesh_count,
-//         u32 size_of_submeshes,
-//         struct {
-//             u32 element_size, u32 vertex_count,
-//             u32 index_count, u32 elements_type, u32 primitive_topology
-//             u8 positions[sizeof(f32) * 3 * vertex_count],     // sizeof(positions) must be a multiple of 4 bytes. Pad if needed.
-//             u8 elements[sizeof(element_size) * vertex_count], // sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
-//             u8 indices[index_size * index_count]
-//         } submeshes[submesh_count]
-//     } mesh_lods[lod_count]
+//     f32 lod_thresholds[lod_count],
+//     u32 submesh_counts[lod_count],
+//     u32 size_of_mesh_data,
+//     struct{
+//         u8 positions[sizeof(f32) * 3 * vertex_count],     // sizeof(positions) must be a multiple of 4 bytes. Pad if needed.
+//         u8 elements[elements_size * vertex_count],        // sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
+//         u8 indices[index_size * index_count],             // sizeof(indices) must be a multiple of 4 bytes. Pad if needed.
+//     } submesh_data[total_submesh_count]
+// 
+//     struct{
+//         u32 elements_size, u32 vertex_count,
+//         u32 index_count, u32 elements_type, u32 primitive_topology
+//      } submesh_info[total_submesh_count]
 // } geometry;
 //
-// Output format
+// Output format:
 //
 // If geometry has more than one LOD or submesh:
 // struct {
 //     u32 lod_count,
-//     f32 thresholds[lod_count]
+//     f32 thresholds[lod_count],
 //     struct {
 //         u16 offset,
 //         u16 count
@@ -241,20 +243,16 @@ destroy_geometry_resource(id::id_type id)
     u8 *const  pointer{ geometry_hierarchies[id] };
     if ((uintptr_t)pointer & single_mesh_marker)
     {
-        graphics::remove_submesh(gpu_id_from_fake_pointer(pointer));
+        const id::id_type gpu_id{ gpu_id_from_fake_pointer(pointer) };
+        graphics::remove_mesh(&gpu_id, 1);
     }
     else
     {
         geometry_hierarchy_stream stream{ pointer };
         const u32 lod_count{ stream.lod_count() };
-        u32 id_index{ 0 };
-        for (u32 lod{ 0 }; lod < lod_count; ++lod)
-        {
-            for (u32 i{ 0 }; i < stream.lod_offsets()[lod].count; ++i)
-            {
-                graphics::remove_submesh(stream.gpu_ids()[id_index++]);
-            }
-        }
+        const lod_offset lod_offset{ stream.lod_offsets()[lod_count - 1] };
+        const u32 gpu_id_count{ (u32)lod_offset.offset + (u32)lod_offset.count };
+        graphics::remove_mesh(stream.gpu_ids(), gpu_id_count);
 
         free(pointer);
     }

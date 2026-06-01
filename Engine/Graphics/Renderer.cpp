@@ -444,16 +444,16 @@ camera::entity_id() const
     return entity_id;
 }
 
-id::id_type
-add_submesh(const u8*& data)
+void
+add_mesh(const u8 *const data, id::id_type *const ids, u32 count)
 {
-    return gfx.resources.add_submesh(data);
+    gfx.resources.add_mesh(data, ids, count);
 }
 
 void
-remove_submesh(id::id_type id)
+remove_mesh(const id::id_type *const ids, u32 count)
 {
-    gfx.resources.remove_submesh(id);
+    gfx.resources.remove_mesh(ids, count);
 }
 
 id::id_type

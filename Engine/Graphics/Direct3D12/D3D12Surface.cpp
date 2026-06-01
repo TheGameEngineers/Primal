@@ -18,7 +18,7 @@ to_non_srgb(DXGI_FORMAT format)
 u32
 get_flags()
 {
-    return core::allow_tearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+    return (core::allow_tearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0) | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 }
 
 } // anonymous namespace
@@ -66,8 +66,8 @@ d3d12_surface::create_swap_chain(IDXGIFactory7* factory, ID3D12CommandQueue* cmd
 void
 d3d12_surface::present() const
 {
-    assert(_swap_chain);
     u32 sync_interval{ core::vsync_enabled() ? (u32)1 : (u32)0 };
+    assert(_swap_chain);
     DXCall(_swap_chain->Present(sync_interval, sync_interval ? 0 : DXGI_PRESENT_ALLOW_TEARING));
     _current_bb_index = _swap_chain->GetCurrentBackBufferIndex();
 }
@@ -120,6 +120,8 @@ d3d12_surface::finalize()
     _viewport.MaxDepth = 1.f;
 
     _scissor_rect = { 0, 0, (s32)width, (s32)height };
+
+    DXCall(_swap_chain->SetMaximumFrameLatency(buffer_count));
 }
 
 void

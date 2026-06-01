@@ -177,7 +177,7 @@ remove(component c)
     id_mapping[id::index(last_id)] = index;
     id_mapping[id::index(id)] = id::invalid_id;
 
-    if (generations[index] < id::max_generation)
+    if (generations[id::index(id)] < id::max_generation)
     {
         free_ids.push_back(id);
     }

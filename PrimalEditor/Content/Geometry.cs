@@ -644,59 +644,66 @@ class Geometry : Asset
     /// Packs the geometry into a byte array which can be used by the engine.
     /// </summary>
     /// <returns>
-    /// A byte array that contains
+    /// Returns a byte array that contains
     /// struct{
     ///     u32 lod_count,
-    ///     struct {
-    ///         f32 lod_threshold,
-    ///         u32 submesh_count,
-    ///         u32 size_of_submeshes,
-    ///         struct {
-    ///             u32 element_size, u32 vertex_count,
-    ///             u32 index_count, u32 elements_type, u32 primitive_topology
-    ///             u8 positions[sizeof(f32) * 3 * vertex_count],     // sizeof(positions) must be a multiple of 4 bytes. Pad if needed.
-    ///             u8 elements[sizeof(element_size) * vertex_count], // sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
-    ///             u8 indices[index_size * index_count]
-    ///         } submeshes[submesh_count]
-    ///     } mesh_lods[lod_count]
+    ///     f32 lod_thresholds[lod_count],
+    ///     u32 submesh_counts[lod_count],
+    ///     u32 size_of_mesh_data,
+    ///     struct{
+    ///         u8 positions[sizeof(f32) * 3 * vertex_count],     // sizeof(positions) must be a multiple of 4 bytes. Pad if needed.
+    ///         u8 elements[elements_size * vertex_count],        // sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
+    ///         u8 indices[index_size * index_count],             // sizeof(indices) must be a multiple of 4 bytes. Pad if needed.
+    ///     } submesh_data[total_submesh_count]
+    /// 
+    ///     struct{
+    ///         u32 elements_size, u32 vertex_count,
+    ///         u32 index_count, u32 elements_type, u32 primitive_topology
+    ///      } submesh_info[total_submesh_count]
     /// } geometry;
     /// </returns>
     public override byte[] PackForEngine()
     {
         using var writer = new BinaryWriter(new MemoryStream());
 
-        writer.Write(GetLODGroup().LODs.Count);
-        foreach (var lod in GetLODGroup().LODs)
+        var lods = GetLODGroup().LODs;
+
+        writer.Write(lods.Count);
+        lods.ForEach(lod => writer.Write(lod.LodThreshold));
+        lods.ForEach(lod => writer.Write(lod.Meshes.Count));
+
+        var sizeOfSubmeshesPosition = writer.BaseStream.Position;
+        writer.Write(0);
+
+        lods.ForEach(lod => lod.Meshes.ForEach(mesh =>
         {
-            writer.Write(lod.LodThreshold);
-            writer.Write(lod.Meshes.Count);
-            var sizeOfSubmeshesPosition = writer.BaseStream.Position;
-            writer.Write(0);
-            foreach (var mesh in lod.Meshes)
-            {
-                writer.Write(mesh.ElementSize);
-                writer.Write(mesh.VertexCount);
-                writer.Write(mesh.IndexCount);
-                writer.Write((int)mesh.ElementsType);
-                writer.Write((int)mesh.PrimitiveTopology);
+            var alignedPositionBuffer = new byte[MathUtil.AlignSizeUp(mesh.Positions.Length, 4)];
+            Array.Copy(mesh.Positions, alignedPositionBuffer, mesh.Positions.Length);
+            var alignedElementBuffer = new byte[MathUtil.AlignSizeUp(mesh.Elements.Length, 4)];
+            Array.Copy(mesh.Elements, alignedElementBuffer, mesh.Elements.Length);
+            var alignedIndexBuffer = new byte[MathUtil.AlignSizeUp(mesh.Indices.Length, 4)];
+            Array.Copy(mesh.Indices, alignedIndexBuffer, mesh.Indices.Length);
 
-                var alignedPositionBuffer = new byte[MathUtil.AlignSizeUp(mesh.Positions.Length, 4)];
-                Array.Copy(mesh.Positions, alignedPositionBuffer, mesh.Positions.Length);
-                var alignedElementBuffer = new byte[MathUtil.AlignSizeUp(mesh.Elements.Length, 4)];
-                Array.Copy(mesh.Elements, alignedElementBuffer, mesh.Elements.Length);
+            writer.Write(alignedPositionBuffer);
+            writer.Write(alignedElementBuffer);
+            writer.Write(alignedIndexBuffer);
+        }));
 
-                writer.Write(alignedPositionBuffer);
-                writer.Write(alignedElementBuffer);
-                writer.Write(mesh.Indices);
-            }
+        var endOfSubmeshes = writer.BaseStream.Position;
+        var sizeOfSubmeshes = (int)(endOfSubmeshes - sizeOfSubmeshesPosition - sizeof(int));
 
-            var endOfSubmeshes = writer.BaseStream.Position;
-            var sizeOfSubmeshes = (int)(endOfSubmeshes - sizeOfSubmeshesPosition - sizeof(int));
+        writer.BaseStream.Position = sizeOfSubmeshesPosition;
+        writer.Write(sizeOfSubmeshes);
+        writer.BaseStream.Position = endOfSubmeshes;
 
-            writer.BaseStream.Position = sizeOfSubmeshesPosition;
-            writer.Write(sizeOfSubmeshes);
-            writer.BaseStream.Position = endOfSubmeshes;
-        }
+        lods.ForEach(lod => lod.Meshes.ForEach(mesh =>
+        {
+            writer.Write(mesh.ElementSize);
+            writer.Write(mesh.VertexCount);
+            writer.Write(mesh.IndexCount);
+            writer.Write((int)mesh.ElementsType);
+            writer.Write((int)mesh.PrimitiveTopology);
+        }));
 
         writer.Flush();
         var data = (writer.BaseStream as MemoryStream)?.ToArray();

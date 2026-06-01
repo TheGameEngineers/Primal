@@ -18,11 +18,12 @@ struct pso_id
 
 struct submesh_view
 {
-    D3D12_VERTEX_BUFFER_VIEW                    position_buffer_view{};
-    D3D12_VERTEX_BUFFER_VIEW                    element_buffer_view{};
-    D3D12_INDEX_BUFFER_VIEW                     index_buffer_view{};
-    D3D_PRIMITIVE_TOPOLOGY                      primitive_topology;
-    u32                                         elements_type{};
+    D3D12_VERTEX_BUFFER_VIEW    position_buffer_view{};
+    D3D12_VERTEX_BUFFER_VIEW    element_buffer_view{};
+    D3D12_INDEX_BUFFER_VIEW     index_buffer_view{};
+    D3D_PRIMITIVE_TOPOLOGY      primitive_topology;
+    u32                         elements_type{};
+    u32                         resource_index{ u32_invalid_id }; // index of the mesh buffer resource.
 };
 
 struct d3d12_render_item
@@ -34,9 +35,9 @@ struct d3d12_render_item
     id::id_type depth_pso_id;
 };
 
-utl::free_list<ID3D12Resource*>                 submesh_buffers{};
+utl::free_list<ID3D12Resource*>                 mesh_buffers{};
 utl::free_list<submesh_view>                    submesh_views{};
-std::mutex                                      submesh_mutex{};
+std::mutex                                      mesh_mutex{};
 
 utl::free_list<d3d12_texture>                   textures;
 utl::free_list<u32>                             descriptor_indices;
@@ -231,7 +232,7 @@ create_command_signature(material_type::type type, u32 root_sig_id)
     switch (type)
     {
     case material_type::opaque:
-
+    {
         using params = gpass::opaque_root_parameter;
         d3dx::d3d12_indirect_argument_desc args[params::count + 2]{};
 
@@ -253,8 +254,8 @@ create_command_signature(material_type::type type, u32 root_sig_id)
         {
             sizeof(gpass::draw_indexed_indirect_command), _countof(args), &args[0]
         }.create(root_signatures[root_sig_id]);
-
-        break;
+    }
+    break;
     }
 
     assert(cmd_signature);
@@ -665,7 +666,7 @@ shutdown()
         core::release(item);
     }
 
-    for(auto& item : cmd_signatures)
+    for (auto& item : cmd_signatures)
     {
         core::release(item);
     }
@@ -687,77 +688,97 @@ namespace submesh {
 
 // NOTE: Expects 'data' to contain:
 // 
-//     u32 element_size, u32 vertex_count,
-//     u32 index_count, u32 elements_type, u32 primitive_topology
+// u32 size_of_mesh_data
+// struct{
 //     u8 positions[sizeof(f32) * 3 * vertex_count],     // sizeof(positions) must be a multiple of 4 bytes. Pad if needed.
-//     u8 elements[sizeof(element_size) * vertex_count], // sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
-//     u8 indices[index_size * index_count],
+//     u8 elements[elements_size * vertex_count],        // sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
+//     u8 indices[index_size * index_count],             // sizeof(indices) must be a multiple of 4 bytes. Pad if needed.
+// } submesh_data[total_submesh_count]
+// 
+// struct{
+//     u32 elements_size, u32 vertex_count,
+//     u32 index_count, u32 elements_type, u32 primitive_topology
+// } submesh_info[total_submesh_count]
 //
 // Remarks:
-// - Advances the data pointer
 // - Position and element buffers should be padded to be a multiple of 4 bytes in length.
 //   This 16 bytes is defined as D3D12_STANDARD_MAXIMUM_ELEMENT_ALIGNMENT_BYTE_MULTIPLE.
-id::id_type
-add(const u8*& data)
+void
+add(const u8 *const data, id::id_type *const ids, u32 count)
 {
-    utl::blob_stream_reader blob{ (const u8*)data };
+    assert(data && ids && count);
 
-    const u32 element_size{ blob.read<u32>() };
-    const u32 vertex_count{ blob.read<u32>() };
-    const u32 index_count{ blob.read<u32>() };
-    const u32 elements_type{ blob.read<u32>() };
-    const u32 primitive_topology{ blob.read<u32>() };
-    const u32 index_size{ (vertex_count < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
+    utl::blob_stream_reader blob{ data };
+    const u32 mesh_data_size{ blob.read<u32>() };
+    ID3D12Resource* resource{ d3dx::create_buffer(blob.position(), mesh_data_size) };
+    D3D12_GPU_VIRTUAL_ADDRESS address{ resource->GetGPUVirtualAddress() };
+    blob.skip(mesh_data_size); // skip the mesh data to read submesh info.
 
-    // NOTE: element size may be 0, for position-only vertex formats.
-    const u32 position_buffer_size{ sizeof(math::v3) * vertex_count };
-    const u32 element_buffer_size{ element_size * vertex_count };
-    const u32 index_buffer_size{ index_size * index_count };
+    std::lock_guard lock{ mesh_mutex };
+
+    const u32 resource_id{ mesh_buffers.add(resource) };
 
     constexpr u32 alignment{ D3D12_STANDARD_MAXIMUM_ELEMENT_ALIGNMENT_BYTE_MULTIPLE };
-    const u32 aligned_position_buffer_size{ (u32)math::align_size_up<alignment>(position_buffer_size) };
-    const u32 aligned_element_buffer_size{ (u32)math::align_size_up<alignment>(element_buffer_size) };
-    const u32 total_buffer_size{ aligned_position_buffer_size + aligned_element_buffer_size + index_buffer_size };
 
-    ID3D12Resource* resource{ d3dx::create_buffer(blob.position(), total_buffer_size) };
-
-    blob.skip(total_buffer_size);
-    data = blob.position();
-
-    submesh_view view{};
-    view.position_buffer_view.BufferLocation = resource->GetGPUVirtualAddress();
-    view.position_buffer_view.SizeInBytes = position_buffer_size;
-    view.position_buffer_view.StrideInBytes = sizeof(math::v3);
-
-    if (element_size)
+    for (u32 i{ 0 }; i < count; ++i)
     {
-        view.element_buffer_view.BufferLocation = resource->GetGPUVirtualAddress() + aligned_position_buffer_size;
-        view.element_buffer_view.SizeInBytes = element_buffer_size;
-        view.element_buffer_view.StrideInBytes = element_size;
+        const u32 element_size{ blob.read<u32>() };
+        const u32 vertex_count{ blob.read<u32>() };
+        const u32 index_count{ blob.read<u32>() };
+        const u32 elements_type{ blob.read<u32>() };
+        const u32 primitive_topology{ blob.read<u32>() };
+        const u32 index_size{ (vertex_count < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
+
+        // NOTE: element size may be 0, for position-only vertex formats.
+        const u32 position_buffer_size{ sizeof(math::v3) * vertex_count };
+        const u32 element_buffer_size{ element_size * vertex_count };
+        const u32 index_buffer_size{ index_size * index_count };
+
+        const u32 aligned_position_buffer_size{ (u32)math::align_size_up<alignment>(position_buffer_size) };
+        const u32 aligned_element_buffer_size{ (u32)math::align_size_up<alignment>(element_buffer_size) };
+        const u32 aligned_index_buffer_size{ (u32)math::align_size_up<alignment>(index_buffer_size) };
+
+        submesh_view view{};
+        view.position_buffer_view.BufferLocation = address;
+        view.position_buffer_view.SizeInBytes = position_buffer_size;
+        view.position_buffer_view.StrideInBytes = sizeof(math::v3);
+
+        if (element_size)
+        {
+            view.element_buffer_view.BufferLocation = address + aligned_position_buffer_size;
+            view.element_buffer_view.SizeInBytes = element_buffer_size;
+            view.element_buffer_view.StrideInBytes = element_size;
+        }
+
+        view.index_buffer_view.BufferLocation = address + aligned_position_buffer_size + aligned_element_buffer_size;
+        view.index_buffer_view.SizeInBytes = index_buffer_size;
+        view.index_buffer_view.Format = (index_size == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+
+        view.primitive_topology = get_d3d_primitive_topology((primitive_topology::type)primitive_topology);
+        view.elements_type = elements_type;
+        view.resource_index = resource_id;
+
+        ids[i] = submesh_views.add(view);
+
+        address += aligned_position_buffer_size + aligned_element_buffer_size + aligned_index_buffer_size;
     }
-
-    view.index_buffer_view.BufferLocation = resource->GetGPUVirtualAddress() + aligned_position_buffer_size + aligned_element_buffer_size;
-    view.index_buffer_view.SizeInBytes = index_buffer_size;
-    view.index_buffer_view.Format = (index_size == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-
-
-
-    view.primitive_topology = get_d3d_primitive_topology((primitive_topology::type)primitive_topology);
-    view.elements_type = elements_type;
-
-    std::lock_guard lock{ submesh_mutex };
-    submesh_buffers.add(resource);
-    return submesh_views.add(view);
 }
 
 void
-remove(id::id_type id)
+remove(const id::id_type *const ids, u32 count)
 {
-    std::lock_guard lock{ submesh_mutex };
-    submesh_views.remove(id);
+    assert(ids && count);
+    std::lock_guard lock{ mesh_mutex };
+    const u32 resource_id{ submesh_views[ids[0]].resource_index };
+    assert(resource_id != u32_invalid_id);
 
-    core::deferred_release(submesh_buffers[id]);
-    submesh_buffers.remove(id);
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        submesh_views.remove(ids[i]);
+    }
+
+    core::deferred_release(mesh_buffers[resource_id]);
+    mesh_buffers.remove(resource_id);
 }
 
 void
@@ -767,7 +788,7 @@ get_views(const id::id_type *const gpu_ids, u32 id_count, const views_cache& cac
     assert(cache.position_buffers && cache.element_buffers && cache.index_buffer_views &&
            cache.primitive_topologies && cache.elements_types);
 
-    std::lock_guard lock{ submesh_mutex };
+    std::lock_guard lock{ mesh_mutex };
     for (u32 i{ 0 }; i < id_count; ++i)
     {
         const submesh_view& view{ submesh_views[gpu_ids[i]] };

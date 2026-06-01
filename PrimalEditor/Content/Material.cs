@@ -116,7 +116,7 @@ class AppliedMaterialInput : MaterialInput
 class MaterialSurface
 {
     [DataMember]
-    public Color BaseColor = Color.FromScRgb(1f, 0.7f, 0.2f, 0.7f);
+    public Color BaseColor = Color.FromScRgb(1f, 0.7f, 0.7f, 0.7f);
 
     [DataMember]
     public Color EmissiveColor = Color.FromScRgb(1f, 0f, 0f, 0f);
@@ -125,10 +125,10 @@ class MaterialSurface
     public float EmissiveIntensity = 1f;
 
     [DataMember]
-    public float Metallic = 1f;
+    public float Metallic = 0f;
 
     [DataMember]
-    public float Roughness = 0.3f;
+    public float Roughness = 0.9f;
 
     public byte InputMask = 0;
 

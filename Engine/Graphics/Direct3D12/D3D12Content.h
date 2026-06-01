@@ -19,8 +19,8 @@ struct views_cache
     u32 *const                          elements_types;
 };
 
-id::id_type add(const u8*& data);
-void remove(id::id_type id);
+void add(const u8 *const data, id::id_type *const ids, u32 count);
+void remove(const id::id_type *const ids, u32 count);
 void get_views(const id::id_type *const gpu_ids, u32 id_count, const views_cache& cache);
 } // namespace submesh
 
@@ -47,7 +47,7 @@ void remove(id::id_type id);
 void get_materials(const id::id_type *const material_ids, u32 material_count, const materials_cache& cache, u32& descriptor_index_count);
 } // namespace material
 
-namespace render_item{
+namespace render_item {
 
 struct items_cache
 {
