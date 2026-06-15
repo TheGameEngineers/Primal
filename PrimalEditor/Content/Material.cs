@@ -265,14 +265,18 @@ class AppliedMaterial : Asset
     }
 
 
+    private UploadedAsset _uploadedAsset;
     private Material _material;
+    public AssetInfo MaterialInfo => AssetRegistry.GetAssetInfo(_material.Guid);
+
     private ObservableCollection<AppliedMaterialInput> _inputs = [];
     public ReadOnlyObservableCollection<AppliedMaterialInput> Inputs { get; private set; }
     private List<IdType> _shaderIds = [];
 
     [DataMember]
     public MaterialSurface MaterialSurface { get; private set; } = new();
-    public UploadedAsset UploadedAsset { get; private set; }
+
+    public IdType ContentId => _uploadedAsset?.ContentId ?? ID.INVALID_ID;
 
     private byte[] _packedData = [];
     private byte[] _previousPackedData = [];
@@ -342,7 +346,7 @@ class AppliedMaterial : Asset
             // NOTE: SequenceEqual() is slow, but our data array is small in general and we don't do this very often.
             if (_packedData.SequenceEqual(_previousPackedData))
             {
-                Debug.Assert(UploadedAsset != null && UploadedAsset.GetContentId(Guid) == UploadedAsset.ContentId);
+                Debug.Assert(_uploadedAsset != null && UploadedAsset.GetContentId(Guid) == _uploadedAsset.ContentId);
                 UnloadShaders();
                 return true;
             }
@@ -368,7 +372,6 @@ class AppliedMaterial : Asset
                 // material is not new, but is unique and need a new guid.
                 if (ID.IsValid(UploadedAsset.GetContentId(Guid)))
                 {
-                    Debug.Assert(_previousPackedData.Length > 0 && UploadedAsset != null);
                     Guid = Guid.NewGuid();
                 }
 
@@ -382,12 +385,12 @@ class AppliedMaterial : Asset
             // Unload the old variant if any
             if (_previousPackedData.Length > 0)
             {
-                Debug.Assert(UploadedAsset != null && UploadedAsset.ContentId != uploadedAsset.ContentId);
+                Debug.Assert(_uploadedAsset != null && _uploadedAsset.ContentId != uploadedAsset.ContentId);
                 UnloadFromEngine();
             }
 
             _previousPackedData = _packedData;
-            UploadedAsset = uploadedAsset;
+            _uploadedAsset = uploadedAsset;
 
             return true;
         }
@@ -397,20 +400,20 @@ class AppliedMaterial : Asset
     {
         lock (_lock)
         {
-            Debug.Assert(UploadedAsset != null && _packedMaterialIds.ContainsKey(UploadedAsset.ContentId));
-            Debug.Assert(UploadedAsset.GetContentId(UploadedAsset.AssetInfo.Guid) == UploadedAsset.ContentId);
+            Debug.Assert(_uploadedAsset != null && _packedMaterialIds.ContainsKey(_uploadedAsset.ContentId));
+            Debug.Assert(UploadedAsset.GetContentId(_uploadedAsset.AssetInfo.Guid) == _uploadedAsset.ContentId);
 
-            if (_packedMaterialIds.TryGetValue(UploadedAsset.ContentId, out var dataString) &&
+            if (_packedMaterialIds.TryGetValue(_uploadedAsset.ContentId, out var dataString) &&
                 _packedMaterials.TryGetValue(dataString, out var uploadedAsset))
             {
                 // We need contentId since UploadedAsset.RemoveFromScene() will set UploadedAsset.ContentId to ID.Invalid_ID
                 // if the asset is removed from the scene.
                 var contentId = uploadedAsset.ContentId;
-                Debug.Assert(UploadedAsset == uploadedAsset);
+                Debug.Assert(_uploadedAsset == uploadedAsset);
                 UploadedAsset.RemoveFromScene(uploadedAsset);
                 UnloadShaders();
 
-                if (UploadedAsset.ReferenceCount == 0)
+                if (_uploadedAsset.ReferenceCount == 0)
                 {
                     _packedMaterialIds.Remove(contentId);
                     _packedMaterials.Remove(dataString);
@@ -418,7 +421,7 @@ class AppliedMaterial : Asset
 
                 _inputs.ToList().ForEach(x => x.Unload());
                 _previousPackedData = [];
-                UploadedAsset = null;
+                _uploadedAsset = null;
             }
         }
     }
@@ -486,7 +489,7 @@ class AppliedMaterial : Asset
         Debug.Assert(_material == null);
         Debug.Assert(materialAssetInfo != null && materialAssetInfo.Guid != Guid.Empty);
 
-        // Note: we increment the reference count when the applied material is uploaded.
+        // NOTE: we increment the reference count when the applied material is uploaded.
         if (_loadedMaterials.TryGetValue(materialAssetInfo.Guid, out var loadedMaterial))
         {
             _material = loadedMaterial.Material;
@@ -519,20 +522,42 @@ class AppliedMaterial : Asset
     {
         Debug.Assert(Type == AssetType.Material);
         Debug.Assert(_materialGuid != Guid.Empty);
-        var assetInfo = AssetRegistry.GetAssetInfo(_materialGuid) ?? Material.Default; // TODO: warn if material not found
+        var assetInfo = AssetRegistry.GetAssetInfo(_materialGuid);
+        var materialExists = assetInfo != null;
+        if (!materialExists)
+        {
+            assetInfo = Material.Default;
+            _materialGuid = assetInfo.Guid;
+            Logger.Log(MessageType.Warning, $"Material asset with GUID {_materialGuid} not found in the asset registry. Using default material.");
+        }
         Debug.Assert(assetInfo != null && assetInfo.Type == AssetType.Material);
         LoadMaterial(assetInfo);
 
-        _inputs = [];
-        Inputs = new(_inputs);
+        Debug.Assert(_material != null && _material.Guid == _materialGuid);
+        Debug.Assert(_inputGuids.Count == _inputNames.Count);
 
-        for (int i = 0; i < _inputGuids.Count; ++i)
+        _inputs = [];
+        if (_material.GetInputs().Count == _inputGuids.Count)
         {
-            var inputAssetInfo = AssetRegistry.GetAssetInfo(_inputGuids[i]) ?? Texture.Default; // TODO: warn if texture not found
-            Debug.Assert(inputAssetInfo != null && inputAssetInfo.Guid == _inputGuids[i]);
-            _inputs.Add(new(new(_inputNames[i]), inputAssetInfo));
+            for (int i = 0; i < _inputGuids.Count; ++i)
+            {
+                var inputAssetInfo = AssetRegistry.GetAssetInfo(_inputGuids[i]);
+                if (inputAssetInfo == null)
+                {
+                    inputAssetInfo = Texture.Default;
+                    Logger.Log(MessageType.Warning, $"Input asset with GUID {_inputGuids[i]} not found in the asset registry. Using default texture.");
+                }
+                Debug.Assert(inputAssetInfo != null && inputAssetInfo.Guid == _inputGuids[i]);
+                _inputs.Add(new(new(_inputNames[i]), inputAssetInfo));
+            }
+        }
+        else
+        {
+            // We can't know if the original material had the same inputs as the default material, so we don't use the input guids.
+            _material.GetInputs().ForEach(x => _inputs.Add(new(x)));
         }
 
+        Inputs = new(_inputs);
         Icon = _material.Icon;
         _shaderIds = [];
         _packedData = [];
@@ -541,6 +566,36 @@ class AppliedMaterial : Asset
         _materialGuid = Guid.Empty;
         _inputGuids.Clear();
         _inputNames.Clear();
+    }
+
+    public AppliedMaterial Clone()
+    {
+        AppliedMaterial clonedMaterial = new()
+        {
+            Guid = Guid,
+            Icon = Icon,
+            Name = Name,
+        };
+        clonedMaterial.LoadMaterial(MaterialInfo);
+        MaterialSurface.CopyTo(clonedMaterial.MaterialSurface);
+        Debug.Assert(clonedMaterial._inputs.Count == 0);
+        foreach (var input in _inputs)
+        {
+            clonedMaterial._inputs.Add(new(input));
+        }
+
+        for (int i = 0; i < _inputs.Count; ++i)
+        {
+            clonedMaterial.Inputs[i].SetInputAsset(_inputs[i].Asset);
+        }
+
+        return clonedMaterial;
+
+    }
+
+    private AppliedMaterial() : base(AssetType.Material)
+    {
+        Inputs = new(_inputs);
     }
 
     public AppliedMaterial(AssetInfo materialAssetInfo) : base(AssetType.Material)

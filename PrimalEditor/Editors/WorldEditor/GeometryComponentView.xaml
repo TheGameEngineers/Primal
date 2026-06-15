@@ -17,8 +17,121 @@
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
 
+        <Style x:Key="arrowHeaderStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <ControlTemplate.Resources>
+                            <Storyboard x:Key="arrow1anim1">
+                                <DoubleAnimation AutoReverse="True" RepeatBehavior="Forever" Storyboard.TargetProperty="Opacity"
+                                                 Storyboard.TargetName="arrow1" From="0.7" To="0.0" Duration="0:0:1" BeginTime="0:0:0.1"/>
+                            </Storyboard>
+                            <Storyboard x:Key="arrow2anim2">
+                                <DoubleAnimation AutoReverse="True" RepeatBehavior="Forever" Storyboard.TargetProperty="Opacity"
+                                                 Storyboard.TargetName="arrow2" From="0.7" To="0.0" Duration="0:0:1" BeginTime="0:0:0.3"/>
+                            </Storyboard>
+                            <Storyboard x:Key="arrow2anim1">
+                                <DoubleAnimation AutoReverse="True" RepeatBehavior="Forever" Storyboard.TargetProperty="Opacity"
+                                                 Storyboard.TargetName="arrow2" From="0.7" To="0.0" Duration="0:0:1" BeginTime="0:0:0.1"/>
+                            </Storyboard>
+                            <Storyboard x:Key="arrow1anim2">
+                                <DoubleAnimation AutoReverse="True" RepeatBehavior="Forever" Storyboard.TargetProperty="Opacity"
+                                                 Storyboard.TargetName="arrow1" From="0.7" To="0.0" Duration="0:0:1" BeginTime="0:0:0.3"/>
+                            </Storyboard>
+                        </ControlTemplate.Resources>
+                        <Border Padding="{TemplateBinding Padding}">
+                            <Grid Background="Transparent" SnapsToDevicePixels="False">
+                                <ContentPresenter Margin="4,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                  SnapsToDevicePixels="True" RecognizesAccessKey="True"/>
+                                <StackPanel Margin="0,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                            x:Name="arrowStack" Visibility="Collapsed">
+                                    <Path x:Name="arrow1" Stroke="#ffa8a4e0" StrokeThickness="2"
+                                          SnapsToDevicePixels="False" Data="M 1,1.5 L 5,5 L 9,1.5"/>
+                                    <Path x:Name="arrow2" Stroke="#ffa8a4e0" StrokeThickness="2" Margin="0,-1,0,0"
+                                          SnapsToDevicePixels="False" Data="M 1,1.5 L 5,5 L 9,1.5"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard Storyboard="{StaticResource arrow1anim1}" x:Name="arrow1anim1_bs"/>
+                                    <BeginStoryboard Storyboard="{StaticResource arrow2anim2}" x:Name="arrow2anim2_bs"/>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="arrow1anim1_bs"/>
+                                    <StopStoryboard BeginStoryboardName="arrow2anim2_bs"/>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Data" Value="M 1,4.5 L 5,1 L 9,4.5" TargetName="arrow1"/>
+                                <Setter Property="Data" Value="M 1,4.5 L 5,1 L 9,4.5" TargetName="arrow2"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard Storyboard="{StaticResource arrow1anim2}" x:Name="arrow1anim2_bs"/>
+                                    <BeginStoryboard Storyboard="{StaticResource arrow2anim1}" x:Name="arrow2anim1_bs"/>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="arrow1anim2_bs"/>
+                                    <StopStoryboard BeginStoryboardName="arrow2anim1_bs"/>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Visibility" Value="Visible" TargetName="arrowStack"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MaterialExpanderStyle" TargetType="{x:Type Expander}">
+            <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Expander}">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                Background="{TemplateBinding Background}" CornerRadius="3" SnapsToDevicePixels="True">
+                            <DockPanel>
+                                <ToggleButton x:Name="HeaderSite" DockPanel.Dock="Top" Margin="1"
+                                              Style="{StaticResource arrowHeaderStyle}"
+                                              FocusVisualStyle="{x:Null}"
+                                              IsChecked="{Binding Path=IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Content="{TemplateBinding Header}"
+                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              Padding="{TemplateBinding Padding}"
+                                              FontFamily="{TemplateBinding FontFamily}"
+                                              FontSize="{TemplateBinding FontSize}"
+                                              FontStyle="{TemplateBinding FontStyle}"
+                                              FontStretch="{TemplateBinding FontStretch}"
+                                              FontWeight="{TemplateBinding FontWeight}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Cursor="Hand"/>
+                                <ContentPresenter x:Name="ExpandSite" DockPanel.Dock="Bottom" Visibility="Collapsed" Focusable="False"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  Margin="{TemplateBinding Padding}"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter Property="Visibility" Value="Visible" TargetName="ExpandSite"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <DataTemplate DataType="{x:Type vm:MeshWithMaterial}">
-            <Border Margin="0,1,0,0" MinHeight="96" CornerRadius="5">
+            <Border Margin="0,1,0,0" CornerRadius="5">
                 <Border.Resources>
                     <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
                 </Border.Resources>
@@ -49,44 +162,41 @@
                             <TextBlock Margin="5,0,0,0" Text="{Binding MeshInfo.Name}" FontStyle="Italic" Foreground="{StaticResource Editor.Disabled.FontBrush}"/>
                         </StackPanel>
                     </Border>
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="5">
-                            <Border CornerRadius="5" BorderThickness="2" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" ClipToBounds="True" Width="64" Height="64">
-                                <Border.Background>
-                                    <VisualBrush Stretch="Fill">
-                                        <VisualBrush.Visual>
-                                            <Image Source="{Binding MeshInfo.Icon}"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </Border.Background>
-                            </Border>
-                            <StackPanel Margin="10,0">
-                                <StackPanel.Resources>
-                                    <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
-                                        <Setter Property="FontFamily" Value="Consolas"/>
-                                        <Setter Property="Foreground" Value="Moccasin"/>
-                                        <Setter Property="Opacity" Value="0.6"/>
-                                    </Style>
-                                </StackPanel.Resources>
-                                <TextBlock Text="{Binding MeshInfo.VertexCount, StringFormat=V: {0}}"/>
-                                <TextBlock Text="{Binding MeshInfo.IndexCount, StringFormat=I: {0}}"/>
-                                <TextBlock Text="{Binding MeshInfo.TriangleCount, StringFormat=T: {0}}"/>
-                                <TextBlock Text="{Binding Material.Name, StringFormat=M: {0}}"/>
+                    <Expander Margin="5" FocusVisualStyle="{x:Null}" Style="{StaticResource MaterialExpanderStyle}">
+                        <Expander.Header>
+                            <StackPanel Orientation="Horizontal" IsHitTestVisible="False">
+                                <Border CornerRadius="5" BorderThickness="2" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
+                                        ClipToBounds="True" Width="64" Height="64">
+                                    <Border.Background>
+                                        <VisualBrush Stretch="Fill">
+                                            <VisualBrush.Visual>
+                                                <Image Source="{Binding MeshInfo.Icon}"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Border.Background>
+                                </Border>
+                                <StackPanel Margin="10,0">
+                                    <StackPanel.Resources>
+                                        <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
+                                            <Setter Property="FontFamily" Value="Consolas"/>
+                                            <Setter Property="Foreground" Value="Moccasin"/>
+                                            <Setter Property="Opacity" Value="0.6"/>
+                                        </Style>
+                                    </StackPanel.Resources>
+                                    <TextBlock Text="{Binding MeshInfo.VertexCount, StringFormat=V: {0}}"/>
+                                    <TextBlock Text="{Binding MeshInfo.IndexCount, StringFormat=I: {0}}"/>
+                                    <TextBlock Text="{Binding MeshInfo.TriangleCount, StringFormat=T: {0}}"/>
+                                    <TextBlock Text="{Binding Material.Name, StringFormat=M: {0}}"/>
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                        <Expander Margin="5" Background="{StaticResource Editor.Window.GrayBrush2}">
-                            <Expander.Header>
-                                <TextBlock Text="Applied Material" Foreground="LavenderBlush" Opacity="0.7"/>
-                            </Expander.Header>
-                            <Border Height="50" Background="Red">
-                                <TextBlock Text="APPLIED MATERIAL VIEW" Foreground="Orange" HorizontalAlignment="Center"/>
-                            </Border>
-                        </Expander>
-                    </StackPanel>
+                        </Expander.Header>
+                        <local:AppliedMaterialProxyView DataContext="{Binding MaterialProxy}"/>
+
+                    </Expander>
                 </DockPanel>
             </Border>
         </DataTemplate>
-        
+
         <DataTemplate DataType="{x:Type vm:LodWithMaterials}">
             <Grid Background="{StaticResource Editor.Window.GrayBrush3}">
                 <Grid.Resources>
@@ -124,7 +234,7 @@
                 </ItemsControl>
             </Grid>
         </DataTemplate>
-        
+
     </UserControl.Resources>
 
     <ctrl:ComponentView Header="Geometry">
@@ -139,10 +249,22 @@
                 <TextBlock Text="{Binding GeometryWithMaterials.Name}" d:Text="CharacterModel" Foreground="Moccasin" Opacity="0.6" />
             </StackPanel>
 
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="0,5,0,0" Grid.Row="1">
-                <StackPanel Orientation="Horizontal">
+            <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="0,5,0,0" Grid.Row="1">
+                <Expander d:IsExpanded="True" VerticalAlignment="Top" FocusVisualStyle="{x:Null}"
+                          Visibility="{Binding Visibility, ElementName=meshInfoStackPanel}"
+                          Style="{StaticResource MaterialExpanderStyle}">
+                    <Expander.Header>
+                        <Border Height="{Binding ActualHeight, ElementName=iconBorder}"/>
+                    </Expander.Header>
+                    <local:AppliedMaterialProxyView DataContext="{Binding GeometryWithMaterials.LODs[0].Meshes[0].MaterialProxy}"/>
+                </Expander>
+                <Grid VerticalAlignment="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
                     <Grid>
-                        <Border Style="{StaticResource DropBorderStyle}" HorizontalAlignment="Left"
+                        <Border Style="{StaticResource DropBorderStyle}" HorizontalAlignment="Left" x:Name="iconBorder"
                                 Drop="OnGeometry_Border_Drop" MouseLeftButtonDown="OnGeometryBorder_Mouse_LBD">
                             <Border.Background>
                                 <ImageBrush ImageSource="{Binding GeometryWithMaterials.Icon}" />
@@ -169,7 +291,7 @@
                             </Border>
                         </Border>
                     </Grid>
-                    <StackPanel Margin="10,0,0,0" x:Name="meshInfoStackPanel" d:Visibility="Visible">
+                    <StackPanel Margin="10,0,0,0" x:Name="meshInfoStackPanel" d:Visibility="Visible" IsHitTestVisible="False" Grid.Column="1">
                         <StackPanel.Style>
                             <Style TargetType="{x:Type StackPanel}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -195,28 +317,37 @@
                         <TextBlock Text="{Binding MeshInfo.VertexCount, StringFormat=V: {0}}" d:Text="V: 80085"/>
                         <TextBlock Text="{Binding MeshInfo.IndexCount, StringFormat=I: {0}}" d:Text="I: 160170"/>
                         <TextBlock Text="{Binding MeshInfo.TriangleCount, StringFormat=T: {0}}" d:Text="T: 4044"/>
-                        <TextBlock Text="{Binding Material.Name, StringFormat=M: {0}}" d:Text="M: Material"/>
+                        <TextBlock Text="{Binding Material.Name, StringFormat='M: {0}'}" d:Text="M: Material"/>
                     </StackPanel>
-                    <Border Margin="10,0" BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="2" CornerRadius="5" d:Visibility="Visible">
+                    <Border Margin="5,0,0,0" BorderBrush="{StaticResource Editor.OrangeBrush}" Background="{StaticResource Editor.Window.GrayBrush2}"
+                            BorderThickness="2" CornerRadius="5" d:Visibility="Collapsed" Grid.Column="1">
                         <Border.Style>
                             <Style TargetType="{x:Type Border}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=applyButton}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <!-- TODO: APPLY MATERIAL BUTTONS GO HERE -->
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Opacity)" From="1.0" To="0.0"
+                                                         Duration="0:0:1" RepeatBehavior="Forever" AutoReverse="True"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
+                        <StackPanel Margin="10">
+                            <Button Content="Apply Changes" Width="96" Height="30" Command="{Binding ApplyChangesCommand}" x:Name="applyButton"/>
+                            <Button Content="Reset All" Margin="0,6,0,0" Width="96" Height="30" Command="{Binding ResetCommand}"/>
+                        </StackPanel>
                     </Border>
-                </StackPanel>
-
-                <Expander Margin="0,5,0,0" Background="{StaticResource Editor.Window.GrayBrush2}" d:IsExpanded="True"
-                          Visibility="{Binding Visibility, ElementName=meshInfoStackPanel}">
-                    <Expander.Header>
-                        <TextBlock Text="Applied Material" Foreground="LavenderBlush" Opacity="0.7"/>
-                    </Expander.Header>
-                    <Border Height="50" Background="Red">
-                        <TextBlock Text="APPLIED MATERIAL VIEW" Foreground="Orange" HorizontalAlignment="Center"/>
-                    </Border>
-                </Expander>
-            </StackPanel>
+                </Grid>
+            </Grid>
 
             <TabControl Background="Transparent" BorderThickness="0" SelectedIndex="0" Grid.Row="2" Margin="-2,10,-2,-2"
                         ItemsSource="{Binding GeometryWithMaterials.LODs}" SelectionChanged="OnTabControl_SelectionChanged"

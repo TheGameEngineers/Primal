@@ -432,6 +432,35 @@
         </Setter>
     </Style>
 
+    <Style x:Key="FlatImageButton" TargetType="{x:Type Button}">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush3}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush6}"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" ClipToBounds="True" CornerRadius="5"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Editor.MouseOver.BorderBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
     <SolidColorBrush x:Key="TabItem.Static.Foreground" Color="{StaticResource Editor.FontColor}"/>
     <SolidColorBrush x:Key="TabItem.Static.Background" Color="{StaticResource Editor.Window.GrayColor2}"/>
     <SolidColorBrush x:Key="TabItem.Static.Border" Color="{StaticResource Editor.Window.GrayColor3}"/>

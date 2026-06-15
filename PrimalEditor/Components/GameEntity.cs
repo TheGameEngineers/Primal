@@ -165,14 +165,17 @@ abstract class MSEntity : ViewModelBase
     private readonly ObservableCollection<IMSComponent> _components = [];
     public ReadOnlyObservableCollection<IMSComponent> Components { get; }
 
+    public List<GameEntity> SelectedEntities { get; }
+
+    public Scene ParentScene => SelectedEntities[0].ParentScene;
+
+    public static MSEntity CurrentSelection { get; private set; }
+
     public T GetMSComponent<T>() where T : IMSComponent
     {
         return (T)Components.FirstOrDefault(x => x.GetType() == typeof(T));
     }
 
-    public List<GameEntity> SelectedEntities { get; }
-
-    public static MSEntity CurrentSelection { get; private set; }
 
     private void MakeComponentList()
     {

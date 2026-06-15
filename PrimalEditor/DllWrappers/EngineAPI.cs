@@ -55,13 +55,13 @@ namespace PrimalEditor.EngineAPIStructs
         public GeometryComponent(Components.Geometry geometry)
         {
             GeometryContentId = geometry.ContentId;
-            MaterialCount = geometry.GeometryWithMaterials.LODs.Sum(x => x.Meshes.Count);
-            Debug.Assert(MaterialCount == geometry.MaterialsList.Count);
+            MaterialCount = geometry.MaterialsList.Count;
+            Debug.Assert(MaterialCount == geometry.GeometryWithMaterials.LODs.Sum(x => x.Meshes.Count));
 
             byte[] data = null;
             using (var writer = new BinaryWriter(new MemoryStream()))
             {
-                geometry.MaterialsList.ForEach(mtl => writer.Write(mtl.UploadedAsset.ContentId));
+                geometry.MaterialsList.ForEach(mtl => writer.Write(mtl.ContentId));
                 writer.Flush();
                 data = (writer.BaseStream as MemoryStream).ToArray();
             }
