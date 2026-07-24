@@ -6,49 +6,48 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 
-namespace PrimalEditor.Components
+namespace PrimalEditor.Components;
+
+interface IMSComponent { }
+
+[DataContract]
+abstract class Component : ViewModelBase
 {
-    interface IMSComponent { }
+    [DataMember]
+    public GameEntity Owner { get; init; }
 
-    [DataContract]
-    abstract class Component : ViewModelBase
+    public abstract IMSComponent GetMultiselectionComponent(MSEntity msEntity);
+    public abstract void WriteToBinary(BinaryWriter bw);
+
+    public virtual void Load() { }
+    public virtual void Unload() { }
+
+    public Component(GameEntity owner)
     {
-        [DataMember]
-        public GameEntity Owner { get; private set; }
+        Debug.Assert(owner != null);
+        Owner = owner;
+    }
+}
 
-        public abstract IMSComponent GetMultiselectionComponent(MSEntity msEntity);
-        public abstract void WriteToBinary(BinaryWriter bw);
+abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
+{
+    private bool _enableUpdates = true;
+    public List<T> SelectedComponents { get; }
 
-        public virtual void Load() { }
-        public virtual void Unload() { }
+    protected abstract bool UpdateComponents(string propertyName);
+    protected abstract bool UpdateMSComponent();
 
-        public Component(GameEntity owner)
-        {
-            Debug.Assert(owner != null);
-            Owner = owner;
-        }
+    public void Refresh()
+    {
+        _enableUpdates = false;
+        UpdateMSComponent();
+        _enableUpdates = true;
     }
 
-    abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
+    public MSComponent(MSEntity msEntity)
     {
-        private bool _enableUpdates = true;
-        public List<T> SelectedComponents { get; }
-
-        protected abstract bool UpdateComponents(string propertyName);
-        protected abstract bool UpdateMSComponent();
-
-        public void Refresh()
-        {
-            _enableUpdates = false;
-            UpdateMSComponent();
-            _enableUpdates = true;
-        }
-
-        public MSComponent(MSEntity msEntity)
-        {
-            Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
-            SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
-            PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
-        }
+        Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
+        SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
+        PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
     }
 }

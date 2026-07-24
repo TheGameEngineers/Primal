@@ -4,7 +4,6 @@ using PrimalEditor.Components;
 using PrimalEditor.Content;
 using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -19,7 +18,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for ProjectLayoutView.xaml
 /// </summary>
-public partial class ProjectLayoutView : UserControl
+partial class ProjectLayoutView : UserControl
 {
     private List<int> _previousSelectedIndices = [];
     private void OnRenameScene_Button_Click(object sender, RoutedEventArgs e)
@@ -136,7 +135,7 @@ public partial class ProjectLayoutView : UserControl
 
     private void RemoveGameEntities(List<GameEntity> entities)
     {
-        if(DataContext is Project { ActiveScene: Scene scene})
+        if (DataContext is Project { ActiveScene: Scene scene })
         {
             scene.RemoveGameEntities(entities);
         }
@@ -144,7 +143,7 @@ public partial class ProjectLayoutView : UserControl
 
     private void OnRemoveGameEntity_Button_Click(object sender, RoutedEventArgs e)
     {
-        if( sender is Button { DataContext: GameEntity entity})
+        if (sender is Button { DataContext: GameEntity entity })
         {
             RemoveGameEntities([entity]);
         }

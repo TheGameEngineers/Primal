@@ -7,80 +7,79 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace PrimalEditor
+namespace PrimalEditor;
+
+class BooleanToYesNoConverter : IValueConverter
 {
-    class BooleanToYesNoConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => (value is bool b && b) ? "Yes" : "No";
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => (value is bool b && b) ? "Yes" : "No";
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is string s && s.ToLower() == "yes";
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is string s && s.ToLower() == "yes";
+}
+
+class IndexOfConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values?.Length != 2 || values[0] == null || values[0] == DependencyProperty.UnsetValue ||
+            values[1] is not IList) return -1;
+
+        return (values[1] as IList).IndexOf(values[0]) + 1;
     }
 
-    class IndexOfConverter : IMultiValueConverter
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}
+
+class NullableBoolToBoolConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (values?.Length != 2 || values[0] == null || values[0] == DependencyProperty.UnsetValue ||
-                values[1] is not IList) return -1;
-
-            return (values[1] as IList).IndexOf(values[0]) + 1;
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        return value is bool b && b;
     }
 
-    public class NullableBoolToBoolConverter : IValueConverter
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value is bool b && b;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value is bool b && b;
-        }
+        return value is bool b && b;
     }
+}
 
-    class EnumDescriptionConverter : IValueConverter
+class EnumDescriptionConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        if (value is Array array)
         {
-            if (value is Array array)
+            var list = new List<string>();
+            foreach (var item in array)
             {
-                var list = new List<string>();
-                foreach (var item in array)
+                if (item is Enum e)
                 {
-                    if (item is Enum e)
-                    {
-                        list.Add(e.GetDescription());
-                    }
+                    list.Add(e.GetDescription());
                 }
-
-                return list;
-            }
-            else if (value is Enum e)
-            {
-                return e.GetDescription();
             }
 
-            return value;
+            return list;
         }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
-    }
-
-    class ReciprocalConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        else if (value is Enum e)
         {
-            if (value is double n && double.IsNormal(n))
-            {
-                return 1.0 / n;
-            }
-            return 1.0;
+            return e.GetDescription();
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Convert(value, targetType, parameter, culture);
+        return value;
     }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}
+
+class ReciprocalConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is double n && double.IsNormal(n))
+        {
+            return 1.0 / n;
+        }
+        return 1.0;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Convert(value, targetType, parameter, culture);
 }

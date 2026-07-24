@@ -5,43 +5,42 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+/// <summary>
+/// Interaction logic for SelectFolderDialog.xaml
+/// </summary>
+partial class SelectFolderDialog : Window
 {
-    /// <summary>
-    /// Interaction logic for SelectFolderDialog.xaml
-    /// </summary>
-    public partial class SelectFolderDialog : Window
+    public string SelectedFolder { get; private set; }
+    public SelectFolderDialog(string startFolder)
     {
-        public string SelectedFolder { get; private set; }
-        public SelectFolderDialog(string startFolder)
-        {
-            InitializeComponent();
+        InitializeComponent();
 
-            contentBrowserView.Loaded += (_, _) =>
+        contentBrowserView.Loaded += (_, _) =>
+        {
+            // TODO: make sure that all paths always end with a directory separator character, application-wide!
+            var startPath = startFolder + Path.DirectorySeparatorChar;
+
+            if (startPath.Contains(Project.Current.ContentPath))
             {
-                // TODO: make sure that all paths always end with a directory separator character, application-wide!
-                var startPath = startFolder + Path.DirectorySeparatorChar;
+                (contentBrowserView.DataContext as ContentBrowser).SelectedFolder = startFolder;
+            }
+        };
 
-                if (startPath.Contains(Project.Current.ContentPath))
-                {
-                    (contentBrowserView.DataContext as ContentBrowser).SelectedFolder = startFolder;
-                }
-            };
+        Closing += OnDialogClosing;
+    }
 
-            Closing += OnDialogClosing;
-        }
+    private void OnSelectFolder_Button_Click(object sender, RoutedEventArgs e)
+    {
+        var contentBrowser = contentBrowserView.DataContext as ContentBrowser;
+        SelectedFolder = contentBrowser.SelectedFolder;
+        DialogResult = true;
+        Close();
+    }
 
-        private void OnSelectFolder_Button_Click(object sender, RoutedEventArgs e)
-        {
-            var contentBrowser = contentBrowserView.DataContext as ContentBrowser;
-            SelectedFolder = contentBrowser.SelectedFolder;
-            DialogResult = true;
-            Close();
-        }
-
-        private void OnDialogClosing(object sender, CancelEventArgs e)
-        {
-            contentBrowserView.Dispose();
-        }
+    private void OnDialogClosing(object sender, CancelEventArgs e)
+    {
+        contentBrowserView.Dispose();
     }
 }

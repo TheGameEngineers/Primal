@@ -120,7 +120,7 @@ class PlainView : ViewBase
 /// <summary>
 /// Interaction logic for ContentBrowserView.xaml
 /// </summary>
-public partial class ContentBrowserView : UserControl, IDisposable
+partial class ContentBrowserView : UserControl, IDisposable
 {
     private string _sortedProperty = nameof(ContentInfo.FileName);
     private ListSortDirection _sortDirection;
@@ -500,7 +500,7 @@ _addCurrentDirectory:
         }
     }
 
-    private void TryEdit(ListBoxItem item)
+    private static void TryEdit(ListBoxItem item)
     {
         var textBox = item.FindVisualChild<TextBox>();
         if (textBox != null)
@@ -510,7 +510,7 @@ _addCurrentDirectory:
         }
     }
 
-    private bool TryEdit(ListView list, string path)
+    private static bool TryEdit(ListView list, string path)
     {
         foreach (ContentInfo item in list.Items)
         {
@@ -561,6 +561,7 @@ _addCurrentDirectory:
             Debug.WriteLine($"Error: failed to create new folder: {folder}");
         }
     }
+
     public void Dispose()
     {
         if (Application.Current?.MainWindow != null)

@@ -18,7 +18,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for GeometryComponentView.xaml
 /// </summary>
-public partial class GeometryComponentView : UserControl
+partial class GeometryComponentView : UserControl
 {
     public GeometryComponentView()
     {
@@ -27,7 +27,7 @@ public partial class GeometryComponentView : UserControl
 
     private static void ResetGeometry(List<(Components.Geometry Geometry, Guid Guid, List<AppliedMaterial> Materials)> selection)
     {
-        var entities = selection.Select(x=>x.Geometry.Owner).ToList();
+        var entities = selection.Select(x => x.Geometry.Owner).ToList();
 
         selection.ForEach(x =>
         {
@@ -51,7 +51,7 @@ public partial class GeometryComponentView : UserControl
                 if (assetInfo != null)
                 {
                     var undoSelection = vm.SelectedComponents.Select(geometry => (geometry, geometry.GeometryGuid, geometry.MaterialsList)).ToList();
-                    
+
                     await Task.Run(() => vm.SetGeometry(assetInfo.Guid));
 
                     var redoSelection = vm.SelectedComponents.Select(geometry => (geometry, assetInfo.Guid, geometry.MaterialsList)).ToList();

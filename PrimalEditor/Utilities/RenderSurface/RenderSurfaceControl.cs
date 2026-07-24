@@ -388,7 +388,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public void FocusPosition(Vector3 position)
     {
-        if(_isMouseOver || IsFocused)
+        if (_isMouseOver || IsFocused)
         {
             _camera.Goto(position);
         }

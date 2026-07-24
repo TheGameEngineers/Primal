@@ -2,14 +2,13 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System.Windows;
 
-namespace PrimalEditor.Utilities.Controls
+namespace PrimalEditor.Utilities.Controls;
+
+class ScalarBox : NumberBox
 {
-    class ScalarBox : NumberBox
+    static ScalarBox()
     {
-        static ScalarBox()
-        {
-            DefaultStyleKeyProperty.OverrideMetadata(typeof(ScalarBox),
-                new FrameworkPropertyMetadata(typeof(ScalarBox)));
-        }
+        DefaultStyleKeyProperty.OverrideMetadata(typeof(ScalarBox),
+            new FrameworkPropertyMetadata(typeof(ScalarBox)));
     }
 }

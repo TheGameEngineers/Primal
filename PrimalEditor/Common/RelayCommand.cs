@@ -3,27 +3,26 @@
 using System;
 using System.Windows.Input;
 
-namespace PrimalEditor
+namespace PrimalEditor;
+
+class RelayCommand<T>(Action<T> execute, Predicate<T> canExecute = null) : ICommand
 {
-    class RelayCommand<T>(Action<T> execute, Predicate<T> canExecute = null) : ICommand
+    private readonly Action<T> _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+    private readonly Predicate<T> _canExecute = canExecute;
+
+    public event EventHandler CanExecuteChanged
     {
-        private readonly Action<T> _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-        private readonly Predicate<T> _canExecute = canExecute;
+        add { CommandManager.RequerySuggested += value; }
+        remove { CommandManager.RequerySuggested -= value; }
+    }
 
-        public event EventHandler CanExecuteChanged
-        {
-            add { CommandManager.RequerySuggested += value; }
-            remove { CommandManager.RequerySuggested -= value; }
-        }
+    public bool CanExecute(object parameter)
+    {
+        return _canExecute?.Invoke((T)parameter) ?? true;
+    }
 
-        public bool CanExecute(object parameter)
-        {
-            return _canExecute?.Invoke((T)parameter) ?? true;
-        }
-
-        public void Execute(object parameter)
-        {
-            _execute((T)parameter);
-        }
+    public void Execute(object parameter)
+    {
+        _execute((T)parameter);
     }
 }

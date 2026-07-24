@@ -2,12 +2,10 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
 using PrimalEditor.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using System.Windows.Input;
 
@@ -18,35 +16,33 @@ class Scene : ViewModelBase
 {
     public ICommand RenameCommand { get; private set; }
 
-    private string _name;
     [DataMember]
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
 
     [DataMember]
-    public Project Project { get; private set; }
+    public Project Project { get; init; }
 
-    private bool _isActive;
     [DataMember]
     public bool IsActive
     {
-        get => _isActive;
+        get;
         set
         {
-            if (_isActive != value)
+            if (field != value)
             {
-                _isActive = value;
-                SetActiveGameEntities(_isActive);
+                field = value;
+                SetActiveGameEntities(field);
                 OnPropertyChanged(nameof(IsActive));
             }
         }
@@ -159,8 +155,8 @@ class Scene : ViewModelBase
     }
 
     public void EnableAndUpdate(List<(GameEntity Entity, bool IsEnabled)> enableList, bool update = true)
-    { 
-        enableList.ForEach(x=>x.Entity.IsEnabled = x.IsEnabled);
+    {
+        enableList.ForEach(x => x.Entity.IsEnabled = x.IsEnabled);
         if (update) Project.UpdateScene();
     }
 

@@ -13,7 +13,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for AppliedMaterialProxyView.xaml
 /// </summary>
-public partial class AppliedMaterialProxyView : UserControl
+partial class AppliedMaterialProxyView : UserControl
 {
     private string _previousName = string.Empty;
 
@@ -46,7 +46,7 @@ public partial class AppliedMaterialProxyView : UserControl
 
     private void OnRemoveInput_Button_Click(object sender, RoutedEventArgs e)
     {
-        if(sender is FrameworkElement { DataContext: InputProxy input })
+        if (sender is FrameworkElement { DataContext: InputProxy input })
         {
             input.Asset = Texture.Default;
             AppliedMaterialProxy.IsDirty = true;

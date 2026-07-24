@@ -17,7 +17,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for GameEntityView.xaml
 /// </summary>
-public partial class GameEntityView : UserControl
+partial class GameEntityView : UserControl
 {
     private Action _undoAction;
     private string _propertyName;

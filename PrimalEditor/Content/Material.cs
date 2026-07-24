@@ -34,15 +34,14 @@ class MaterialMetadata : AssetMetadata
 
 class MaterialInput : ViewModelBase
 {
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
@@ -58,20 +57,19 @@ class AppliedMaterialInput : MaterialInput
 {
     private UploadedAsset _uploadedAsset;
 
-    private AssetInfo _asset = Texture.Default;
     public AssetInfo Asset
     {
-        get => _asset;
+        get;
         private set
         {
-            if (_asset != value && _asset?.Guid != value.Guid)
+            if (field != value && field?.Guid != value.Guid)
             {
-                _asset = value;
+                field = value;
                 OnPropertyChanged(nameof(Asset));
                 OnPropertyChanged(nameof(Ignore));
             }
         }
-    }
+    } = Texture.Default;
 
     public bool Ignore => Asset.Guid == Texture.Default.Guid;
 
@@ -108,7 +106,7 @@ class AppliedMaterialInput : MaterialInput
     public AppliedMaterialInput(MaterialInput input, AssetInfo asset = null) : base(input.Name)
     {
         Debug.Assert(!(asset != null && asset.Guid == Guid.Empty));
-        SetInputAsset(asset ?? _asset);
+        SetInputAsset(asset ?? Asset);
     }
 }
 
@@ -249,20 +247,19 @@ class AppliedMaterial : Asset
     [DataMember(Name = "InputNames")]
     private readonly List<string> _inputNames = [];
 
-    private string _name = "Material";
     [DataMember]
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
-    }
+    } = "Material";
 
 
     private UploadedAsset _uploadedAsset;
@@ -274,7 +271,7 @@ class AppliedMaterial : Asset
     private List<IdType> _shaderIds = [];
 
     [DataMember]
-    public MaterialSurface MaterialSurface { get; private set; } = new();
+    public MaterialSurface MaterialSurface { get; init; } = new();
 
     public IdType ContentId => _uploadedAsset?.ContentId ?? ID.INVALID_ID;
 
@@ -616,29 +613,27 @@ class Material : Asset
     public static float MaxEmissiveIntensity => 10000f; // 10,000 cd/m^2
     private readonly Dictionary<ShaderType, ShaderGroup> _shaders = [];
 
-    private MaterialType _materialType;
     public MaterialType MaterialType
     {
-        get => _materialType;
+        get;
         set
         {
-            if (_materialType != value)
+            if (field != value)
             {
-                _materialType = value;
+                field = value;
                 OnPropertyChanged(nameof(MaterialType));
             }
         }
     }
 
-    private MaterialMode _materialMode;
     public MaterialMode MaterialMode
     {
-        get => _materialMode;
+        get;
         set
         {
-            if (_materialMode != value)
+            if (field != value)
             {
-                _materialMode = value;
+                field = value;
                 OnPropertyChanged(nameof(MaterialMode));
             }
         }
@@ -651,7 +646,7 @@ class Material : Asset
     public CodeMaterial CodeMaterial { get; } = new();
 
     public List<MaterialInput> GetInputs() =>
-        _materialMode switch
+        MaterialMode switch
         {
             MaterialMode.NoInput => [],
             MaterialMode.Default => DefaultMaterialInputs.GetInputs(),

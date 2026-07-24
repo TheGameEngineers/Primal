@@ -9,49 +9,48 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+class ContentSubfolderConverter : IValueConverter
 {
-    class ContentSubfolderConverter : IValueConverter
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        var contentFolder = Project.Current.ContentPath;
+        if (value is string folder && !string.IsNullOrEmpty(folder) && folder.Contains(contentFolder))
         {
-            var contentFolder = Project.Current.ContentPath;
-            if(value is string folder && !string.IsNullOrEmpty(folder) && folder.Contains(contentFolder))
-            {
-                return $@"{Path.DirectorySeparatorChar}{folder.Replace(contentFolder, "")}";
-            }
-
-            return null;
+            return $@"{Path.DirectorySeparatorChar}{folder.Replace(contentFolder, "")}";
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        return null;
     }
-    /// <summary>
-    /// Interaction logic for ChangeDestinationFolder.xaml
-    /// </summary>
-    public partial class ChangeDestinationFolder : UserControl
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}
+/// <summary>
+/// Interaction logic for ChangeDestinationFolder.xaml
+/// </summary>
+partial class ChangeDestinationFolder : UserControl
+{
+    public ChangeDestinationFolder()
     {
-        public ChangeDestinationFolder()
+        InitializeComponent();
+    }
+
+    private void OnChangeDestinationFolder_Button_Click(object sender, RoutedEventArgs e)
+    {
+        var proxy = (sender as Button).DataContext as AssetProxy;
+        var destinationFolder = proxy.DestinationFolder;
+        if (Path.EndsInDirectorySeparator(destinationFolder))
         {
-            InitializeComponent();
+            destinationFolder = Path.GetDirectoryName(destinationFolder);
         }
 
-        private void OnChangeDestinationFolder_Button_Click(object sender, RoutedEventArgs e)
+        var dlg = new SelectFolderDialog(destinationFolder);
+
+        if (dlg.ShowDialog() == true)
         {
-            var proxy = (sender as Button).DataContext as AssetProxy;
-            var destinationFolder = proxy.DestinationFolder;
-            if(Path.EndsInDirectorySeparator(destinationFolder))
-            {
-                destinationFolder = Path.GetDirectoryName(destinationFolder);
-            }
-
-            var dlg = new SelectFolderDialog(destinationFolder);
-
-            if(dlg.ShowDialog() == true)
-            {
-                Debug.Assert(!string.IsNullOrEmpty(dlg.SelectedFolder));
-                proxy.DestinationFolder = dlg.SelectedFolder;
-            }
+            Debug.Assert(!string.IsNullOrEmpty(dlg.SelectedFolder));
+            proxy.DestinationFolder = dlg.SelectedFolder;
         }
     }
 }

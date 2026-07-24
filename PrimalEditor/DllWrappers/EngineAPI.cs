@@ -13,7 +13,6 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace PrimalEditor.EngineAPIStructs
 {
@@ -224,8 +223,8 @@ namespace PrimalEditor.DllWrappers
         {
             Debug.Assert(!string.IsNullOrEmpty(shaderGroup?.Code));
             Debug.Assert(!string.IsNullOrEmpty(shaderGroup.FunctionName));
-            Debug.Assert(shaderGroup.ExtraArgs?.Any() == true);
-            Debug.Assert(!shaderGroup.ByteCode.Any() == true);
+            Debug.Assert(shaderGroup.ExtraArgs?.Count > 0);
+            Debug.Assert(shaderGroup.ByteCode.Count == 0);
             shaderGroup.ByteCode.Clear();
             shaderGroup.Errors.Clear();
             shaderGroup.Assembly.Clear();
@@ -239,7 +238,7 @@ namespace PrimalEditor.DllWrappers
                     data.Type = (int)shaderGroup.Type;
                     data.CodeSize = code.Length;
                     data.FunctionName = shaderGroup.FunctionName;
-                    data.ExtraArgs = args.Any() ? string.Join(";", args) : string.Empty;
+                    data.ExtraArgs = args.Count > 0 ? string.Join(";", args) : string.Empty;
                     data.Code = Marshal.AllocCoTaskMem(code.Length);
                     Marshal.Copy(code, 0, data.Code, data.CodeSize);
                     if (CompileShader(data) == 0) throw new Exception("Shader compilation failed.");

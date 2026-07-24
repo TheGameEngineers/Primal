@@ -41,8 +41,8 @@ class ShaderGroup
 {
     private class UploadedShaderGroup
     {
-        public IdType ContentId { get; private set; } = ID.INVALID_ID;
-        public byte[] CombinedHashes { get; private set; }
+        public IdType ContentId { get; init; } = ID.INVALID_ID;
+        public byte[] CombinedHashes { get; init; }
         public int ReferenceCount { get; private set; }
 
         private static readonly Lock _lock = new();

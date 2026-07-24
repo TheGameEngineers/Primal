@@ -14,7 +14,7 @@ class ComponentView : ContentControl
     }
 
     public static readonly DependencyProperty HeaderProperty =
-        DependencyProperty.Register(nameof(Header), typeof(string), typeof(ComponentView));    
+        DependencyProperty.Register(nameof(Header), typeof(string), typeof(ComponentView));
 
     static ComponentView()
     {

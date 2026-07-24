@@ -7,82 +7,81 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+class ContentModifiedEventArgs(string path) : EventArgs
 {
-    public class ContentModifiedEventArgs(string path) : EventArgs
+    public string FullPath { get; } = path;
+}
+
+static class ContentWatcher
+{
+    private static readonly DelayEventTimer _refreshTimer = new(TimeSpan.FromMilliseconds(250));
+    private static readonly FileSystemWatcher _contentWatcher = new()
     {
-        public string FullPath { get; } = path;
+        IncludeSubdirectories = true,
+        Filter = "",
+        NotifyFilter = NotifyFilters.CreationTime |
+                       NotifyFilters.DirectoryName |
+                       NotifyFilters.FileName |
+                       NotifyFilters.LastWrite
+    };
+
+    // File watcher is only enabled when this counter is 0.
+    private static int _fileWatcherEnableCounter = 0;
+    public static event EventHandler<ContentModifiedEventArgs> ContentModified;
+
+    public static void EnableFileWatcher(bool isEnabled)
+    {
+        if (_fileWatcherEnableCounter > 0 && isEnabled)
+        {
+            --_fileWatcherEnableCounter;
+        }
+        else if (!isEnabled)
+        {
+            ++_fileWatcherEnableCounter;
+        }
     }
 
-    static class ContentWatcher
+    public static void Reset(string contentFolder, string projectPath)
     {
-        private static readonly DelayEventTimer _refreshTimer = new(TimeSpan.FromMilliseconds(250));
-        private static readonly FileSystemWatcher _contentWatcher = new()
-        {
-            IncludeSubdirectories = true,
-            Filter = "",
-            NotifyFilter = NotifyFilters.CreationTime |
-                           NotifyFilters.DirectoryName |
-                           NotifyFilters.FileName |
-                           NotifyFilters.LastWrite
-        };
+        _contentWatcher.EnableRaisingEvents = false;
 
-        // File watcher is only enabled when this counter is 0.
-        private static int _fileWatcherEnableCounter = 0;
-        public static event EventHandler<ContentModifiedEventArgs> ContentModified;
+        ContentInfoCache.Reset(projectPath);
 
-        public static void EnableFileWatcher(bool isEnabled)
+        if (!string.IsNullOrEmpty(contentFolder))
         {
-            if (_fileWatcherEnableCounter > 0 && isEnabled)
-            {
-                --_fileWatcherEnableCounter;
-            }
-            else if (!isEnabled)
-            {
-                ++_fileWatcherEnableCounter;
-            }
+            Debug.Assert(Directory.Exists(contentFolder));
+            _contentWatcher.Path = contentFolder;
+            _contentWatcher.EnableRaisingEvents = true;
+            AssetRegistry.Reset(contentFolder, projectPath);
+        }
+    }
+
+    private static async void OnContentModified(object sender, FileSystemEventArgs e) => await Application.Current.Dispatcher.BeginInvoke(() => _refreshTimer.Trigger(e));
+
+    private static void Refresh(object sender, DelayEventTimerArgs e)
+    {
+        if (_fileWatcherEnableCounter > 0)
+        {
+            e.RepeatEvent = true;
+            return;
         }
 
-        public static void Reset(string contentFolder, string projectPath)
-        {
-            _contentWatcher.EnableRaisingEvents = false;
+        e.Data
+            .Cast<FileSystemEventArgs>()
+            .GroupBy(x => x.FullPath)
+            .Select(x => x.First())
+            .ToList().ForEach(x => ContentModified?.Invoke(null, new ContentModifiedEventArgs(x.FullPath)));
+    }
 
-            ContentInfoCache.Reset(projectPath);
+    static ContentWatcher()
+    {
+        _contentWatcher.Changed += OnContentModified;
+        _contentWatcher.Created += OnContentModified;
+        _contentWatcher.Deleted += OnContentModified;
+        _contentWatcher.Renamed += OnContentModified;
 
-            if (!string.IsNullOrEmpty(contentFolder))
-            {
-                Debug.Assert(Directory.Exists(contentFolder));
-                _contentWatcher.Path = contentFolder;
-                _contentWatcher.EnableRaisingEvents = true;
-                AssetRegistry.Reset(contentFolder, projectPath);
-            }
-        }
-
-        private static async void OnContentModified(object sender, FileSystemEventArgs e) => await Application.Current.Dispatcher.BeginInvoke(() => _refreshTimer.Trigger(e));
-
-        private static void Refresh(object sender, DelayEventTimerArgs e)
-        {
-            if (_fileWatcherEnableCounter > 0)
-            {
-                e.RepeatEvent = true;
-                return;
-            }
-
-            e.Data
-                .Cast<FileSystemEventArgs>()
-                .GroupBy(x => x.FullPath)
-                .Select(x => x.First())
-                .ToList().ForEach(x => ContentModified?.Invoke(null, new ContentModifiedEventArgs(x.FullPath)));
-        }
-
-        static ContentWatcher()
-        {
-            _contentWatcher.Changed += OnContentModified;
-            _contentWatcher.Created += OnContentModified;
-            _contentWatcher.Deleted += OnContentModified;
-            _contentWatcher.Renamed += OnContentModified;
-
-            _refreshTimer.Triggered += Refresh;
-        }
+        _refreshTimer.Triggered += Refresh;
     }
 }

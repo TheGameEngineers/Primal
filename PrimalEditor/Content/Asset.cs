@@ -67,18 +67,17 @@ abstract class Asset : ViewModelBase
 {
     public static string AssetFileExtension => ".asset";
     [DataMember]
-    public AssetType Type { get; private set; }
+    public AssetType Type { get; init; }
     public byte[] Icon { get; protected set; }
 
-    private string _fullPath;
     public string FullPath
     {
-        get => _fullPath;
+        get;
         set
         {
-            if (_fullPath != value)
+            if (field != value)
             {
-                _fullPath = value;
+                field = value;
                 OnPropertyChanged(nameof(FullPath));
                 OnPropertyChanged(nameof(FileName));
             }
@@ -195,8 +194,8 @@ class UploadedAsset
 {
     public IdType ContentId { get; private set; } = ID.INVALID_ID;
     public int ReferenceCount { get; private set; }
-    public AssetInfo AssetInfo { get; private set; }
-    public AssetMetadata Metadata { get; private set; }
+    public AssetInfo AssetInfo { get; init; }
+    public AssetMetadata Metadata { get; init; }
     private List<UploadedAsset> _referencedAssets = [];
 
     private static readonly Lock _lock = new();

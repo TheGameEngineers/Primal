@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace PrimalEditor.Dictionaries;
 
-public partial class ControlTemplates : ResourceDictionary
+partial class ControlTemplates : ResourceDictionary
 {
     private static void MoveUpFocus(UIElement element)
     {
@@ -64,7 +64,7 @@ public partial class ControlTemplates : ResourceDictionary
         var textBox = sender as TextBox;
         if (!textBox.IsVisible) return;
         var exp = textBox.GetBindingExpression(TextBox.TextProperty);
-        if(exp != null)
+        if (exp != null)
         {
             UpdateTextBoxSource(textBox, exp);
         }

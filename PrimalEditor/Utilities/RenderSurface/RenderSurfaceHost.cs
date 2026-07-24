@@ -29,13 +29,12 @@ partial class RenderSurfaceHost : HwndHost
         private static readonly List<int> _frameCounts = [];
         private static readonly Lock _lock = new();
         private static Thread _renderThread;
-        private static bool _isRunning;
 
-        public static bool IsRunning => _isRunning;
+        public static bool IsRunning { get; private set; }
 
         private static void Render(object obj)
         {
-            while (_isRunning)
+            while (IsRunning)
             {
                 lock (_lock)
                 {
@@ -96,15 +95,15 @@ partial class RenderSurfaceHost : HwndHost
                 IsBackground = true
             };
 
-            _isRunning = true;
+            IsRunning = true;
             _renderThread.Start();
         }
 
         private static void Stop()
-        { 
-            if(_renderThread != null)
+        {
+            if (_renderThread != null)
             {
-                _isRunning = false;
+                IsRunning = false;
                 _renderThread.Join();
                 _renderThread = null;
                 Debug.WriteLine("Render thread stopped.");

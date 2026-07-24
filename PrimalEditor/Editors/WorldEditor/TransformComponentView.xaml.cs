@@ -6,7 +6,6 @@ using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Windows;
@@ -18,7 +17,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for TransformComponentView.xaml
 /// </summary>
-public partial class TransformComponentView : UserControl
+partial class TransformComponentView : UserControl
 {
     private delegate void SetTransformAPI(IdType[] ids, float[] x, float[] y, float[] z, int count, int isLocal);
 

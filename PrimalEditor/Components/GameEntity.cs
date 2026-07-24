@@ -20,16 +20,15 @@ class GameEntity : ViewModelBase
 {
     public IdType EntityId { get; private set; } = ID.INVALID_ID;
 
-    private bool _isActive;
     public bool IsActive
     {
-        get => _isActive;
+        get;
         set
         {
-            if (_isActive != value)
+            if (field != value)
             {
-                _isActive = value;
-                if (_isActive)
+                field = value;
+                if (field)
                 {
                     _components.ToList().ForEach(x => x.Load());
                     EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
@@ -47,38 +46,36 @@ class GameEntity : ViewModelBase
         }
     }
 
-    private bool _isEnabled = true;
     [DataMember]
     public bool IsEnabled
     {
-        get => _isEnabled;
+        get;
         set
         {
-            if (_isEnabled != value)
+            if (field != value)
             {
-                _isEnabled = value;
+                field = value;
                 OnPropertyChanged(nameof(IsEnabled));
             }
         }
-    }
+    } = true;
 
-    private string _name;
     [DataMember]
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
 
     [DataMember]
-    public Scene ParentScene { get; private set; }
+    public Scene ParentScene { get; init; }
 
     [DataMember(Name = nameof(Components))]
     private readonly ObservableCollection<Component> _components = [];
@@ -134,29 +131,28 @@ abstract class MSEntity : ViewModelBase
 {
     // Enables updates to selected entities
     private bool _enableUpdates = true;
-    private bool? _isEnabled;
+
     public bool? IsEnabled
     {
-        get => _isEnabled;
+        get;
         set
         {
-            if (_isEnabled != value)
+            if (field != value)
             {
-                _isEnabled = value;
+                field = value;
                 OnPropertyChanged(nameof(IsEnabled));
             }
         }
     }
 
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
@@ -251,7 +247,7 @@ abstract class MSEntity : ViewModelBase
 
     public MSEntity(List<GameEntity> entities)
     {
-        Debug.Assert(entities?.Any() == true);
+        Debug.Assert(entities?.Count > 0);
         CurrentSelection = this;
         Components = new ReadOnlyObservableCollection<IMSComponent>(_components);
         SelectedEntities = entities;
