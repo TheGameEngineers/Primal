@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -122,5 +123,14 @@ partial class ControlTemplates : ResourceDictionary
     {
         var window = (Window)((FrameworkElement)sender).TemplatedParent;
         window.WindowState = WindowState.Minimized;
+    }
+
+    private void OnHorizontalSlider_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var slider = sender as Slider;
+        if (slider.TickPlacement != System.Windows.Controls.Primitives.TickPlacement.None)
+        {
+            slider.Value = Math.Clamp(slider.Value + Math.Sign(e.Delta) * slider.TickFrequency, slider.Minimum, slider.Maximum);
+        }
     }
 }

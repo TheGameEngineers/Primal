@@ -8,7 +8,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PrimalEditor.GameProject"
-        mc:Ignorable="d" ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True"
         Title="Project Browser" Height="600" Width="800"
         Style="{StaticResource PrimalDialogStyle}">
     <Window.Resources>
@@ -30,7 +31,7 @@
                         </TextBlock>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Editor.Window.GrayBrush4}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter Property="Foreground" Value="White"/>
@@ -61,7 +62,7 @@
                     <BlurEffect Radius="10" KernelType="Gaussian"/>
                 </Rectangle.Effect>
                 <Rectangle.Fill>
-                    <RadialGradientBrush GradientOrigin="0.5,1" Center="0.5,1" RadiusY="2">
+                    <RadialGradientBrush GradientOrigin="0.5,1" Center="0.5,0.5" RadiusY="2">
                         <RadialGradientBrush.GradientStops>
                             <GradientStop Color="White" Offset="0"/>
                             <GradientStop Color="Transparent" Offset="1"/>
@@ -69,7 +70,7 @@
                     </RadialGradientBrush>
                 </Rectangle.Fill>
                 <Rectangle.OpacityMask>
-                    <RadialGradientBrush GradientOrigin="0.5,1" Center="0.5,1" RadiusY="0.5">
+                    <RadialGradientBrush GradientOrigin="0.5,1" Center="0.5,0.5" RadiusY="0.5">
                         <RadialGradientBrush.GradientStops>
                             <GradientStop Color="White" Offset="0"/>
                             <GradientStop Color="Transparent" Offset="1"/>

@@ -576,7 +576,7 @@ determine_output_format(texture_data *const data, ScratchImage& scratch, const I
 {
     assert(data && data->import_settings.compress);
     using namespace primal::content;
-    const DXGI_FORMAT image_format{ image->format };
+    DXGI_FORMAT image_format{ image->format };
     DXGI_FORMAT output_format{ (DXGI_FORMAT)data->import_settings.output_format };
 
     // Determine the best block compressed format if import settings
@@ -608,9 +608,15 @@ determine_output_format(texture_data *const data, ScratchImage& scratch, const I
             scratch.OverrideFormat(MakeTypelessUNORM(MakeTypeless(image_format)));
         }
     }
-    // We exhausted all options. use an RGBA block compressed format.
+    // We exhausted all options. use an (s)RGBA block compressed format.
     else
     {
+        if (!IsSRGB(image_format))
+        {
+            image_format = MakeSRGB(image_format);
+            scratch.OverrideFormat(image_format);
+        }
+
         output_format = data->import_settings.prefer_bc7 ? DXGI_FORMAT_BC7_UNORM :
             scratch.IsAlphaAllOpaque() ? DXGI_FORMAT_BC1_UNORM : DXGI_FORMAT_BC3_UNORM;
     }

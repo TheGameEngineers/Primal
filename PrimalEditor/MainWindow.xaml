@@ -14,6 +14,15 @@
         Title="{Binding Name, StringFormat='Primal Editor [{0}]'}"
         Style="{StaticResource PrimalWindowStyle}">
     <Grid>
+        <Grid.Style>
+            <Style TargetType="{x:Type Grid}">
+                <Style.Triggers>
+                    <Trigger Property="DataContext" Value="{x:Null}">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Style>
         <editors:WorldEditorView />
     </Grid>
 </Window>

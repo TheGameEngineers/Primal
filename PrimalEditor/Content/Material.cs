@@ -62,7 +62,7 @@ class AppliedMaterialInput : MaterialInput
         get;
         private set
         {
-            if (field != value && field?.Guid != value.Guid)
+            if (value != null && field?.Guid != value.Guid)
             {
                 field = value;
                 OnPropertyChanged(nameof(Asset));
@@ -544,7 +544,7 @@ class AppliedMaterial : Asset
                     inputAssetInfo = Texture.Default;
                     Logger.Log(MessageType.Warning, $"Input asset with GUID {_inputGuids[i]} not found in the asset registry. Using default texture.");
                 }
-                Debug.Assert(inputAssetInfo != null && inputAssetInfo.Guid == _inputGuids[i]);
+                Debug.Assert(inputAssetInfo != null && (inputAssetInfo.Guid == _inputGuids[i] || inputAssetInfo.Guid == Texture.Default.Guid));
                 _inputs.Add(new(new(_inputNames[i]), inputAssetInfo));
             }
         }
@@ -578,16 +578,10 @@ class AppliedMaterial : Asset
         Debug.Assert(clonedMaterial._inputs.Count == 0);
         foreach (var input in _inputs)
         {
-            clonedMaterial._inputs.Add(new(input));
-        }
-
-        for (int i = 0; i < _inputs.Count; ++i)
-        {
-            clonedMaterial.Inputs[i].SetInputAsset(_inputs[i].Asset);
+            clonedMaterial._inputs.Add(new(input, input.Asset));
         }
 
         return clonedMaterial;
-
     }
 
     private AppliedMaterial() : base(AssetType.Material)

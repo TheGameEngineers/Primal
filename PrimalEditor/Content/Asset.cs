@@ -112,12 +112,12 @@ abstract class Asset : ViewModelBase
     private static AssetInfo GetAssetInfo(BinaryReader reader)
     {
         reader.BaseStream.Position = 0;
-        var info = new AssetInfo();
-
-        info.Type = (AssetType)reader.ReadInt32();
-        var idSize = reader.ReadInt32();
-        info.Guid = new Guid(reader.ReadBytes(idSize));
-        info.ImportDate = DateTime.FromBinary(reader.ReadInt64());
+        var info = new AssetInfo
+        {
+            Type = (AssetType)reader.ReadInt32(),
+            Guid = GuidExtensions.ReadFromBinary(reader),
+            ImportDate = DateTime.FromBinary(reader.ReadInt64())
+        };
         var hashSize = reader.ReadInt32();
         if (hashSize > 0)
         {
@@ -148,14 +148,12 @@ abstract class Asset : ViewModelBase
 
     protected void WriteAssetFileHeader(BinaryWriter writer)
     {
-        var id = Guid.ToByteArray();
         var importDate = DateTime.Now.ToBinary();
 
         writer.BaseStream.Position = 0;
 
         writer.Write((int)Type);
-        writer.Write(id.Length);
-        writer.Write(id);
+        Guid.WriteToBinary(writer);
         writer.Write(importDate);
         // asset hash is optional
         if (Hash?.Length > 0)

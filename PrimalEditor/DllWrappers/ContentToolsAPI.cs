@@ -83,19 +83,16 @@ namespace PrimalEditor.ContentToolsAPIStructs
         public int ImportError;
         public int Flags;
 
-        public TextureInfo Clone()
+        public TextureInfo Clone() => new()
         {
-            return new TextureInfo
-            {
-                Width = Width,
-                Height = Height,
-                ArraySize = ArraySize,
-                MipLevels = MipLevels,
-                Format = Format,
-                ImportError = ImportError,
-                Flags = Flags,
-            };
-        }
+            Width = Width,
+            Height = Height,
+            ArraySize = ArraySize,
+            MipLevels = MipLevels,
+            Format = Format,
+            ImportError = ImportError,
+            Flags = Flags,
+        };
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -136,11 +133,13 @@ namespace PrimalEditor.ContentToolsAPIStructs
                     var mipSlice = new List<Slice>();
                     for (var k = 0; k < depthPerMipLevel[j]; ++k)
                     {
-                        var slice = new Slice();
-                        slice.Width = reader.ReadInt32();
-                        slice.Height = reader.ReadInt32();
-                        slice.RowPitch = reader.ReadInt32();
-                        slice.SlicePitch = reader.ReadInt32();
+                        var slice = new Slice()
+                        {
+                            Width = reader.ReadInt32(),
+                            Height = reader.ReadInt32(),
+                            RowPitch = reader.ReadInt32(),
+                            SlicePitch = reader.ReadInt32()
+                        };
                         slice.RawContent = reader.ReadBytes(slice.SlicePitch);
 
                         mipSlice.Add(slice);
@@ -237,7 +236,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
 
         public TextureData Clone(Content.TextureImportSettings settings)
         {
-            TextureData data = new TextureData();
+            TextureData data = new();
             if (SubresourceData != IntPtr.Zero && SubresourceSize > 0)
             {
                 var bytes = new byte[SubresourceSize];
@@ -275,6 +274,7 @@ namespace PrimalEditor.ContentToolsAPIStructs
     [StructLayout(LayoutKind.Sequential)]
     class GeometryImportSettings
     {
+        // TODO: get from application settings
         public float SmoothingAngle = 178f;
         public byte CalculateNormals = 0;
         public byte CalculateTangents = 1;

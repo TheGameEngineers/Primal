@@ -125,6 +125,7 @@ partial class ContentBrowserView : UserControl, IDisposable
     private string _sortedProperty = nameof(ContentInfo.FileName);
     private ListSortDirection _sortDirection;
     private Point _clickPosition;
+    private bool _capturedLeft;
     private bool _startDrag;
 
     public SelectionMode SelectionMode
@@ -462,27 +463,27 @@ _addCurrentDirectory:
 
     private void OnFolderContent_ListView_PreviewMouse_LBD(object sender, MouseButtonEventArgs e)
     {
-        _clickPosition = e.GetPosition(this);
 
         var item = (e.OriginalSource as DependencyObject)?.FindVisualParent<ListViewItemEx>();
-        _startDrag = item != null;
-    }
-
-    private void OnFolderContent_ListView_PreviewMouse_LBU(object sender, MouseButtonEventArgs e)
-    {
-        _startDrag = false;
+        if (item != null)
+        {
+            _clickPosition = e.GetPosition(this);
+            _capturedLeft = true;
+        }
     }
 
     private void OnFolderContent_ListView_MouseMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed)
+        if (_capturedLeft && e.LeftButton == MouseButtonState.Pressed)
         {
             var mousePosition = e.GetPosition(this);
             var diff = mousePosition - _clickPosition;
 
             // NOTE: SystemParameters.MinimumHorizontalDragDistance etc. are too small for this use-case.
-            if (_startDrag && diff.LengthSquared > 100.0)
+            if (diff.LengthSquared > 100.0)
             {
+                _startDrag = true;
+
                 var files = new List<string>();
                 foreach (ContentInfo item in folderListView.SelectedItems)
                 {
@@ -493,10 +494,17 @@ _addCurrentDirectory:
                 {
                     var fileArray = files.ToArray();
                     var dataObj = new DataObject(DataFormats.FileDrop, fileArray);
-                    DragDrop.DoDragDrop(folderListView, dataObj, DragDropEffects.Copy | DragDropEffects.Move);
-                    _startDrag = false;
+                    DragDrop.DoDragDrop(folderListView, dataObj, DragDropEffects.Copy);
                 }
+
+                _startDrag = false;
+                _capturedLeft = false;
             }
+        }
+        else
+        {
+            _capturedLeft = false;
+            _startDrag = false;
         }
     }
 

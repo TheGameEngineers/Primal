@@ -17,10 +17,10 @@
             HorizontalAlignment="Center" Margin="0,30">
         <StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
-                <ListBox Width="195" Height="250" ItemsSource="{Binding Projects}" x:Name="projectsListBox"
-                     SelectedIndex="0">
+                <ListBox Width="195" Height="250" ItemsSource="{Binding Projects}" x:Name="projectsListBox" SelectedIndex="0">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem" BasedOn="{StaticResource ListBoxItemStyle}">
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                             <EventSetter Event="MouseDoubleClick" Handler="OnListBoxItem_Mouse_DoubleClick"/>
                         </Style>
                     </ListBox.ItemContainerStyle>
@@ -44,10 +44,9 @@
                     </Border.Background>
                 </Border>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
-                    Margin="0,30,0,0">
-                <Button Content="Open" Width="96" IsDefault="True" Click="OnOpen_Button_Click"/>
-                <Button Content="Exit" Width="96" Margin="30,0,0,0" IsCancel="True"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,30,0,0">
+                <Button Content="Open Project" Width="96" IsDefault="True" Click="OnOpen_Button_Click"/>
+                <Button Content="Exit" Width="96" Margin="32,0,0,0" IsCancel="True"/>
             </StackPanel>
         </StackPanel>
     </Border>

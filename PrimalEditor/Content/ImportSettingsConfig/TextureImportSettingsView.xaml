@@ -46,15 +46,15 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Dimension"/>
-        <WrapPanel VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" Margin="0,5" Orientation="Horizontal">
+        <WrapPanel VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" Margin="0,5" Orientation="Vertical">
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=0}"
-                         Margin="0,1,20,2" Content="1D" GroupName="Dimension" Foreground="{StaticResource Editor.FontBrush}"/>
+                         Margin="0,1,20,2" Content="1D" GroupName="Dimension"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=1}"
-                         Margin="0,1,20,2" Content="2D" GroupName="Dimension" d:IsChecked="True" Foreground="{StaticResource Editor.FontBrush}"/>
+                         Margin="0,1,20,2" Content="2D" GroupName="Dimension" d:IsChecked="True"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=2}"
-                         Margin="0,1,20,2" Content="3D" GroupName="Dimension" d:IsEnabled="False" Foreground="{StaticResource Editor.FontBrush}"/>
+                         Margin="0,1,20,2" Content="3D" GroupName="Dimension" d:IsEnabled="False"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=3}"
-                         Margin="0,1,20,2" Content="Cubemap" GroupName="Dimension" Foreground="{StaticResource Editor.FontBrush}"/>
+                         Margin="0,1,20,2" Content="Cubemap" GroupName="Dimension"/>
             <StackPanel d:Visibility="Visible">
                 <StackPanel.Style>
                     <Style TargetType="{x:Type StackPanel}">
@@ -91,7 +91,7 @@
         </WrapPanel>
         
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Mip Levels"/>
-        <Slider Grid.Row="1" Grid.Column="1" IsMoveToPointEnabled="True"
+        <Slider Style="{StaticResource HorizontalSliderStyle}" Grid.Row="1" Grid.Column="1" IsMoveToPointEnabled="True"
                 VerticalAlignment="Center" TickFrequency="1" TickPlacement="BottomRight"
                 Minimum="0" Maximum="{Binding Source={x:Static local:Texture.MaxMipLevels}}"
                 Value="{Binding MipLevels}" SmallChange="1"/>
@@ -130,7 +130,7 @@
         <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,5,0" Text="Alpha Threshold" x:Name="alphaTextBlock" d:Visibility="Visible">
             <TextBlock.Style>
                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
-                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Setter Property="Visibility" Value="Hidden"/>
                     <Style.Triggers>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
@@ -144,7 +144,7 @@
             </TextBlock.Style>
         </TextBlock>
         <Slider Grid.Row="4" Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding AlphaThreshold}"
-                VerticalAlignment="Center" LargeChange="0.1"
+                Style="{StaticResource HorizontalSliderStyle}" VerticalAlignment="Center" LargeChange="0.1"
                 Visibility="{Binding Path=Visibility, ElementName=alphaTextBlock}"/>
     </Grid>
 </UserControl>

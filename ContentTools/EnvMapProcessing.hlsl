@@ -283,7 +283,7 @@ float3 SampleHemisphereBrute(float3 normal)
                 {
                     float tmp = 1.f + pos.x * pos.x + pos.y * pos.y;
                     float weight = 4.f * cosTheta / (sqrt(tmp) * tmp);
-                    irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * weight * cosTheta;
+                    irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * weight;
                     sampleCount += weight;
                 }
             }

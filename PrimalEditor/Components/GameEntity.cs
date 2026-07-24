@@ -158,6 +158,20 @@ abstract class MSEntity : ViewModelBase
         }
     }
 
+    public bool IsActive
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(IsActive));
+            }
+        }
+    }
+
+
     private readonly ObservableCollection<IMSComponent> _components = [];
     public ReadOnlyObservableCollection<IMSComponent> Components { get; }
 
@@ -228,6 +242,7 @@ abstract class MSEntity : ViewModelBase
     {
         IsEnabled = GetMixedValue(SelectedEntities, new Func<GameEntity, bool>(x => x.IsEnabled));
         Name = GetMixedValue(SelectedEntities, new Func<GameEntity, string>(x => x.Name));
+        IsActive = SelectedEntities.All(x => x.IsActive);
 
         return true;
     }

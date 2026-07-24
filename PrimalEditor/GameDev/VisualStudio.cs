@@ -21,8 +21,8 @@ enum BuildConfiguration
 }
 static class VisualStudio
 {
-    private static readonly ManualResetEventSlim _resetEvent = new(false);
-    private static readonly string _progID = "VisualStudio.DTE.17.0";
+    private static readonly ManualResetEvent _resetEvent = new(false);
+    private static readonly string _progID = "VisualStudio.DTE.18.0";
     private static readonly Lock _lock = new();
     private static readonly string[] _buildConfigurationNames = ["Debug", "DebugEditor", "Release", "ReleaseEditor"];
     private static EnvDTE80.DTE2 _vsInstance = null;
@@ -50,6 +50,7 @@ static class VisualStudio
         });
 
         thread.SetApartmentState(ApartmentState.STA);
+        thread.IsBackground = true;
         thread.Start();
         thread.Join();
     }
@@ -57,24 +58,24 @@ static class VisualStudio
     private static void OpenVisualStudio_Internal(string solutionPath)
     {
         IRunningObjectTable rot = null;
-        IEnumMoniker monikerTable = null;
+        IEnumMoniker monikersTable = null;
         IBindCtx bindCtx = null;
         try
         {
             if (_vsInstance == null)
             {
-                // Finde and open visual
+                // Find and open visual
                 var hResult = GetRunningObjectTable(0, out rot);
                 if (hResult < 0 || rot == null) throw new COMException($"GetRunningObjectTable() returned HRESULT: {hResult:X8}");
 
-                rot.EnumRunning(out monikerTable);
-                monikerTable.Reset();
+                rot.EnumRunning(out monikersTable);
+                monikersTable.Reset();
 
                 hResult = CreateBindCtx(0, out bindCtx);
                 if (hResult < 0 || bindCtx == null) throw new COMException($"CreateBindCtx() returned HRESULT: {hResult:X8}");
 
                 IMoniker[] currentMoniker = new IMoniker[1];
-                while (monikerTable.Next(1, currentMoniker, IntPtr.Zero) == 0)
+                while (monikersTable.Next(1, currentMoniker, IntPtr.Zero) == 0)
                 {
                     string name = string.Empty;
                     currentMoniker[0]?.GetDisplayName(bindCtx, null, out name);
@@ -112,7 +113,7 @@ static class VisualStudio
         }
         finally
         {
-            if (monikerTable != null) Marshal.ReleaseComObject(monikerTable);
+            if (monikersTable != null) Marshal.ReleaseComObject(monikersTable);
             if (rot != null) Marshal.ReleaseComObject(rot);
             if (bindCtx != null) Marshal.ReleaseComObject(bindCtx);
         }
@@ -222,7 +223,8 @@ static class VisualStudio
 
     public static bool IsDebugging()
     {
-        lock (_lock) { return IsDebugging_Internal(); }
+        // TODO: //lock (_lock) { return IsDebugging_Internal(); }
+        return IsDebugging_Internal();
     }
 
     private static void BuildSolution_Internal(Project project, BuildConfiguration buildConfig, bool showWindow)
@@ -230,7 +232,7 @@ static class VisualStudio
 
         if (IsDebugging_Internal())
         {
-            Logger.Log(MessageType.Error, "Visual Studio is currenty running a process.");
+            Logger.Log(MessageType.Error, "Visual Studio is currently running a process.");
             return;
         }
 
@@ -262,7 +264,7 @@ static class VisualStudio
         {
             _vsInstance.Solution.SolutionBuild.SolutionConfigurations.Item(configName).Activate();
             _vsInstance.ExecuteCommand("Build.BuildSolution");
-            _resetEvent.Wait();
+            _resetEvent.WaitOne();
             _resetEvent.Reset();
         });
     }
@@ -305,7 +307,7 @@ static class VisualStudio
     }
 }
 
-// Class containing the IOleMEssageFilter thread error-handling function
+// Class containing the IOleMessageFilter thread error-handling function
 class MessageFilter : IMessageFilter
 {
     private const int SERVERCALL_ISHANDLED = 0;

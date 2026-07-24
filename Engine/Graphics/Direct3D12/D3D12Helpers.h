@@ -497,7 +497,7 @@ struct d3d12_indirect_argument_desc : public D3D12_INDIRECT_ARGUMENT_DESC
         UnorderedAccessView.RootParameterIndex = root_param_index;
     }
 
-    constexpr void as_inc_cons(u32 root_param_index, u32 offset)
+    constexpr void as_inc_const(u32 root_param_index, u32 offset)
     {
         Type = D3D12_INDIRECT_ARGUMENT_TYPE_INCREMENTING_CONSTANT;
         IncrementingConstant.RootParameterIndex = root_param_index;
@@ -533,7 +533,7 @@ struct d3d12_command_signature_desc : public D3D12_COMMAND_SIGNATURE_DESC
 };
 
 #pragma warning(push)
-#pragma warning(disable : 4324) // disable padding warining
+#pragma warning(disable : 4324) // disable padding warning
 template<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type, typename T>
 class alignas(void*) d3d12_pipeline_state_subobject
 {

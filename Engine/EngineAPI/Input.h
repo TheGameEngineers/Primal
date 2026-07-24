@@ -185,7 +185,7 @@ class input_system_base
 {
 public:
     virtual void on_event(input_source::type, input_code::code, const input_value&) = 0;
-    virtual void on_event(u64 binding, const input_value& value) = 0;
+    virtual void on_event(u64, const input_value&) = 0;
 protected:
     input_system_base();
     ~input_system_base();

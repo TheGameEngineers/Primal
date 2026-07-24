@@ -330,7 +330,7 @@ class TextureImportSettings : ViewModelBase, IAssetImportSettings
 
     public void ToBinary(BinaryWriter writer)
     {
-        writer.Write(string.Join(";", Sources.ToArray()));
+        writer.Write(string.Join(";", [.. Sources]));
         writer.Write((int)Dimension);
         writer.Write(MipLevels);
         writer.Write(AlphaThreshold);
@@ -526,9 +526,14 @@ class Texture : Asset
             {
                 field = value;
                 OnPropertyChanged(nameof(IsPrefilteredIBL));
+                OnPropertyChanged(nameof(IsDiffuseIBL));
+                OnPropertyChanged(nameof(IsSpecularIBL));
             }
         }
     }
+
+    public bool IsDiffuseIBL => IsPrefilteredIBL && ImportSettings.Sources.Count == 0;
+    public bool IsSpecularIBL => IsPrefilteredIBL && !IsDiffuseIBL;
 
     private static bool HasValidDimensions(int width, int height, int arrayOrDepth, bool is3D, string file)
     {
@@ -542,8 +547,7 @@ class Texture : Asset
 
         if (width % 4 != 0 || height % 4 != 0)
         {
-            Logger.Log(MessageType.Error, $"Image dimensions not a multiple of 4! (file: {file})");
-            result = false;
+            Logger.Log(MessageType.Warning, $"Image dimensions not a multiple of 4! (file: {file})");
         }
 
         if (is3D && (width > Max3DSize || height > Max3DSize || arrayOrDepth > Max3DSize))
@@ -562,7 +566,7 @@ class Texture : Asset
             Logger.Log(MessageType.Warning, $"Non-square image (width and height not equal)! (file: {file})");
         }
 
-        if (!MathUtil.IsPow2(width) || !MathUtil.IsPow2(height))
+        if (!int.IsPow2(width) || !int.IsPow2(height))
         {
             Logger.Log(MessageType.Warning, $"Image dimensions not power of 2! (file: {file})");
         }
@@ -834,17 +838,15 @@ class Texture : Asset
     }
 
     public override TextureMetadata GetMetadata()
-    {
-        return new()
+        => new()
         {
             Width = Width,
             Height = Height,
             DepthOrArraySize = ArraySize,
-            Format = Format,
             MipLevels = MipLevels,
+            Format = Format,
             Dimension = ImportSettings.Dimension,
         };
-    }
 
     public Texture() : base(AssetType.Texture) { }
 

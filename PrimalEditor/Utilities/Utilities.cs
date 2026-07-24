@@ -8,13 +8,13 @@ using System.Windows.Threading;
 
 namespace PrimalEditor.Utilities;
 
-public static class ID
+static class ID
 {
     public static IdType INVALID_ID => -1;
     public static bool IsValid(IdType id) => id != INVALID_ID;
 }
 
-public static class MathUtil
+static class MathUtil
 {
     public static float Epsilon => 1e-5f;
     public static float Pi => (float)Math.PI;
@@ -49,7 +49,7 @@ public static class MathUtil
         Debug.Assert(alignment > 0, "Alignment must be non-zero.");
         long mask = alignment - 1;
         Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
-        return ((size + mask) & ~mask);
+        return (size + mask) & ~mask;
     }
 
     // Align by rounding down. Will result in a multiple of 'alignment' that is less than or equal to 'size'.
@@ -58,7 +58,7 @@ public static class MathUtil
         Debug.Assert(alignment > 0, "Alignment must be non-zero.");
         long mask = alignment - 1;
         Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
-        return (size & ~mask);
+        return size & ~mask;
     }
 
     public static bool IsPow2(int x)
@@ -118,6 +118,5 @@ class DelayEventTimer
             Interval = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 0.5)
         };
         _timer.Tick += OnTimerTick;
-
     }
 }

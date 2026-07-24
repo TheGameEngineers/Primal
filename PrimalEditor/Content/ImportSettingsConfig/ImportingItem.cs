@@ -106,7 +106,7 @@ class ImportingItem : ViewModelBase
             if (!_stopwatch.IsRunning) _stopwatch.Start();
 
             var t = _stopwatch.Elapsed;
-            ImportDuration = string.Format("{0:00}:{1:00}:{2:00}", t.Minutes, t.Seconds, t.Milliseconds / 10);
+            ImportDuration = string.Format("{0:00}:{1:00}.{2:00}", t.Minutes, t.Seconds, t.Milliseconds / 10);
         }
         else
         {
@@ -139,7 +139,7 @@ static class ImportingItemCollection
 
     public static CollectionViewSource FilteredItems { get; private set; }
 
-    private static readonly Lock _lockObject = new();
+    private static readonly Lock _lock = new();
     private static AssetType _itemFilter = AssetType.Mesh;
 
     public static void SetItemFilter(AssetType assetType)
@@ -150,17 +150,17 @@ static class ImportingItemCollection
 
     public static void Add(ImportingItem item)
     {
-        lock (_lockObject) { Application.Current.Dispatcher.Invoke(() => _importingItems.Add(item)); }
+        lock (_lock) { Application.Current.Dispatcher.Invoke(() => _importingItems.Add(item)); }
     }
 
     public static void Remove(ImportingItem item)
     {
-        lock (_lockObject) { Application.Current.Dispatcher.Invoke(() => _importingItems.Remove(item)); }
+        lock (_lock) { Application.Current.Dispatcher.Invoke(() => _importingItems.Remove(item)); }
     }
 
     public static void Clear(AssetType assetType)
     {
-        lock (_lockObject)
+        lock (_lock)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -174,7 +174,7 @@ static class ImportingItemCollection
 
     public static ImportingItem GetItem(Asset asset)
     {
-        lock (_lockObject) { return _importingItems.FirstOrDefault(x => x.Asset == asset); }
+        lock (_lock) { return _importingItems.FirstOrDefault(x => x.Asset == asset); }
     }
 
     /// <summary>

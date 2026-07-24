@@ -28,6 +28,23 @@ static class EnumExtensions
     }
 }
 
+static class GuidExtensions
+{
+    public static void WriteToBinary(this Guid guid, BinaryWriter writer)
+    {
+        var bytes = guid.ToByteArray();
+        writer.Write(bytes.Length);
+        writer.Write(bytes);
+    }
+
+    public static Guid ReadFromBinary(BinaryReader reader)
+    {
+        var size = reader.ReadInt32();
+        var bytes = reader.ReadBytes(size);
+        return new(bytes);
+    }
+}
+
 static partial class MouseHelper
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -242,7 +259,7 @@ static class VisualExtensions
     }
 }
 
-public static class ContentHelper
+static class ContentHelper
 {
     public static string[] MeshFileExtensions { get; } = [".fbx"];
     public static string[] ImageFileExtensions { get; } = [".bmp", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr"];

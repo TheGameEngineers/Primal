@@ -329,7 +329,7 @@ class AppliedMaterialProxy : ViewModelBase
         get => _materialInfo;
         set
         {
-            if (_materialInfo != value && _materialInfo?.Guid != value.Guid && value.Guid != Guid.Empty)
+            if (value != null && _materialInfo?.Guid != value.Guid && value.Guid != Guid.Empty)
             {
                 _materialInfo = value;
                 OnPropertyChanged(nameof(MaterialInfo));

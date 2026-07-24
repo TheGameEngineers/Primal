@@ -169,7 +169,7 @@ private:
     u32                             _frame_index{ 0 };
 };
 
-constexpr UINT                  d3d12_sdk_version{ 618 };
+constexpr UINT                  d3d12_sdk_version{ D3D12_SDK_VERSION };
 constexpr const char*           d3d12_sdk_path{ ".\\D3D12\\" };
 constexpr D3D_FEATURE_LEVEL     minimum_feature_level{ D3D_FEATURE_LEVEL_11_0 };
 

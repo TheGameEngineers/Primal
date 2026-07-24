@@ -21,10 +21,10 @@ class ProjectData
     [DataMember]
     public DateTime Date { get; set; }
 
-    public string FullPath { get => $"{ProjectPath}{ProjectName}{Project.Extension}"; }
-    public byte[] Icon { get; set; }
-    public byte[] Screenshot { get; set; }
-}
+        public string FullPath => $"{ProjectPath}{ProjectName}{Project.Extension}";
+        public byte[] Icon { get; set; }
+        public byte[] Screenshot { get; set; }
+    }
 
 [DataContract]
 class ProjectDataList

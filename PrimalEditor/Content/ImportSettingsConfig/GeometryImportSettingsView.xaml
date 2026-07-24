@@ -9,7 +9,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Content"
              mc:Ignorable="d" d:DataContext="{d:DesignInstance Type={x:Type local:GeometryImportSettings}}"
-             d:DesignHeight="450" d:DesignWidth="800" Background="{StaticResource Editor.Window.GrayBrush3}">
+             d:DesignHeight="450" d:DesignWidth="400" Background="{StaticResource Editor.Window.GrayBrush3}">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
@@ -31,7 +31,8 @@
         <DockPanel VerticalAlignment="Center">
             <TextBlock Text="Smoothing Angle" Width="150"/>
             <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
-                    x:Name="angleSlider" Value="{Binding SmoothingAngle}"  d:Value="65"/>
+                    x:Name="angleSlider" Value="{Binding SmoothingAngle}" Style="{StaticResource HorizontalSliderStyle}"
+                    d:Value="65"/>
         </DockPanel>
         <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
             <TextBlock Text="Import Embedded Textures" Width="150"/>

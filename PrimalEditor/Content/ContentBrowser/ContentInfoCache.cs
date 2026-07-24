@@ -23,17 +23,17 @@ static class ContentInfoCache
             var fileInfo = new FileInfo(file);
             Debug.Assert(!fileInfo.IsDirectory());
 
-            if (!_contentInfoCache.TryGetValue(file, out ContentInfo value) || value.DateModified.IsOlder(fileInfo.LastWriteTime))
+            if (!_contentInfoCache.TryGetValue(file, out ContentInfo contentInfo) || contentInfo.DateModified.IsOlder(fileInfo.LastWriteTime))
             {
-                var info = AssetRegistry.GetAssetInfo(file) ?? Asset.GetAssetInfo(file);
+                var info = Asset.TryGetAssetInfo(file);
                 Debug.Assert(info != null);
-                value = new ContentInfo(file, info.Icon);
-                _contentInfoCache[file] = value;
+                contentInfo = new ContentInfo(file, info.Icon);
+                _contentInfoCache[file] = contentInfo;
                 _isDirty = true;
             }
 
             Debug.Assert(_contentInfoCache.ContainsKey(file));
-            return value;
+            return contentInfo;
         }
     }
 
@@ -83,6 +83,7 @@ static class ContentInfoCache
 
             Debug.WriteLine(ex.Message);
             Logger.Log(MessageType.Warning, "Failed to save Content Browser cache file.");
+            File.Delete(_cacheFilePath); // Delete the cache file if saving failed to avoid loading corrupted data next time.
         }
     }
 

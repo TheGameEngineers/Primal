@@ -149,7 +149,7 @@ create_one_game_entity(math::v3 position, math::v3 rotation, geometry::init_info
 {
     transform::init_info transform_info{};
     DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
-    math::v4a rot_quat;
+    math::v4a rot_quat{};
     DirectX::XMStoreFloat4A(&rot_quat, quat);
     memcpy(&transform_info.rotation[0], &rot_quat.x, sizeof(transform_info.rotation));
     memcpy(&transform_info.position[0], &position.x, sizeof(transform_info.position));

@@ -25,23 +25,23 @@ class EditorCamera
 
     public float OrbitRadius { get; private set; }
 
-    private float _speed = 5f;
     public float Speed
     {
-        get => _speed;
+        get;
         set
         {
             value = Math.Clamp(value, 1f, 10f);
-            if (!_speed.IsTheSameAs(value))
+            if (!field.IsTheSameAs(value))
             {
-                _speed = value;
+                field = value;
             }
         }
-    }
+    } = 5f;
 
     public float FoV
     {
-        get; set
+        get;
+        set
         {
             value = Math.Clamp(value, _minFov, _maxFov);
             if (!field.IsTheSameAs(value))
@@ -54,7 +54,8 @@ class EditorCamera
 
     public float NearZ
     {
-        get; set
+        get;
+        set
         {
             value = Math.Clamp(value, _minNearZ, FarZ - _minDiffNearZFarZ);
             if (!field.IsTheSameAs(value))
@@ -67,7 +68,8 @@ class EditorCamera
 
     public float FarZ
     {
-        get; set
+        get;
+        set
         {
             value = Math.Max(value, NearZ + _minDiffNearZFarZ);
             if (!field.IsTheSameAs(value))
@@ -116,7 +118,7 @@ class EditorCamera
         }
     }
 
-    public void Orbit(double dx, double dy, int dz) => Orbit(dx, dy, dz, false);
+    public void Orbit(double dx, double dy, int dz) => Orbit(dx, dy, dz, true);
 
     public void ChangePosition(Vector3 direction, float dt)
     {
@@ -206,7 +208,6 @@ class EditorCamera
     public EditorCamera()
     {
         OrbitRadius = 3f;
-        _speed = 5f;
         _position = _desiredPosition = new(0, 1, 10);
         _rotation = _desiredRotation = new(0, -MathUtil.Pi, 0);
         _target = new(0, 1, _position.Z - OrbitRadius);
