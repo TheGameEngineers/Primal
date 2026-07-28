@@ -25,8 +25,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="envdte" Version="17.13.40008" />
-    <PackageReference Include="envdte80" Version="17.13.40008" />
+    <PackageReference Include="envdte" Version="17.14.40260" />
+    <PackageReference Include="envdte80" Version="17.14.40260" />
   </ItemGroup>
 
   <ItemGroup>

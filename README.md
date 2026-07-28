@@ -1,78 +1,101 @@
-<img align=left src="https://github.com/Rashmatash/ImageRepo/blob/master/watermark.png?raw=true" />
 
 # Primal Engine
 
+<img align="left" alt="Primal watermark" src="https://github.com/Rashmatash/ImageRepo/blob/master/watermark.png?raw=true" />
+
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<br/>
+
 [![Discord chat](https://img.shields.io/discord/740606294846865549?logo=discord)](https://discord.gg/75ZmXwz)
-![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/primalnippleman)
-![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCU0ZLgIv87jlqS6G58DKPyg)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCU0ZLgIv87jlqS6G58DKPyg)](https://www.youtube.com/gameengineseries?sub_confirmation=1)
+[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/primalnippleman)](https://img.shields.io/twitter/follow/primalnippleman.svg?style=social)
 
+## Overview
 
-## Description
-Primal Engine is a cross-component 3D game engine and editor in active development since 2020. The engine core is a native C++ renderer and runtime that targets Direct3D12 and modern HLSL/Shader Model pipelines. The repository also contains native tooling (ContentTools) for importing and processing assets (FBX, textures, primitive meshes, normal-map detection, mip/texture work) and a managed WPF-based editor (PrimalEditor) written in C# targeting .NET 10.
+Primal Engine is an open-source, in-development 3D game engine and editor. The core engine is a native C++ static library and renderer (Direct3D 12). A managed WPF-based editor (PrimalEditor) is provided as a .NET front-end that connects to the native engine via an Engine DLL for editor-enabled builds. The repository also includes native tooling (ContentTools) for asset import and processing.
 
-Key features
-- Native C++ engine and renderer using Direct3D12 (D3D12/DXC shader toolchain).
-- Content import and processing tools (FBX importer, texture and primitive mesh utilities).
-- WPF-based editor and project templates that integrate with the native engine via an Engine DLL build used when running editor configurations.
-- Example/test application (EngineTest) for running renderer and scene tests.
+The project's development history is documented on the [Game Engine Series](https://www.youtube.com/gameengineseries) YouTube channel, which explains nearly every line of code committed up to June 15, 2026.
 
-## Requirements and dependencies
+## Key features
 
-- Visual Studio 2022 or later (x64 workloads for C++ and .NET/WPF)
+- Native C++ engine and renderer using Direct3D 12 (DXC shader toolchain)
+- Managed WPF editor (PrimalEditor) written in C#/.NET
+- Content import and processing (3D: FBX, 2D: JPEG/PNG/TGA/TIFF/BMP/DDS/HDR)
+- Engine DLL exposes a native API to the editor
+- Example/test native application (EngineTest)
+
+## Requirements
+
 - Windows 10 or later
-- DirectX 12 capable GPU (shader model support required by your target shaders)
-- FBX SDK 2020 (project references expect FBX SDK headers at e.g. C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include) for ContentTools
-- DirectXTex (provided via NuGet in ContentTools/Engine projects)
-- DXC/D3D12 NuGet packages (used by EngineDLL/Engine/EngineTest projects)
-- .NET 10 (PrimalEditor targets net10.0-windows7.0)
+- Visual Studio 2026 (x64 workloads: C++ and .NET/WPF)
+- DirectX 12 capable GPU (Shader Model 6.6 or later)
 
-Note: several native projects use custom MSBuild targets that require NuGet package restore and a working Windows SDK toolchain (FXC/DXC paths) for shader compilation.
+## Dependencies
 
-## How to build
-1. Open Primal.slnx in Visual Studio (ensure x64 platform is selected).
-2. Restore NuGet packages (Visual Studio does this automatically on solution load or use "Restore NuGet Packages").
-3. Install the FBX SDK (if you plan to build ContentTools) and ensure the include path in ContentTools.vcxproj matches your FBX install location.
-4. Select the appropriate solution configuration:
-   - DebugEditor / ReleaseEditor for editor-enabled builds (engine built with USE_WITH_EDITOR, editor executable output placed in ..\x64\<Configuration>\)
-   - Debug / Release for runtime/test builds
-5. Build the solution for all configurations (Debug, DebugEditor, Release, ReleaseEditor) to ensure all projects are built.
+- [FBX SDK 2020](https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2020-0) (manual install). Example expected include path: `C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7`
+- DirectXTex (automatically installed via vcpkg in ContentTools)
+- DXC / D3D12 Agility SDK (automatically installed via NuGet packages in EngineDLL/Engine/EngineTest)
+- EnvDTE and EnvDTE80 for Visual Studio automation (automatically installed via NuGet in PrimalEditor)
+
+## Repository layout (high level)
+
+- Engine/         — Core native static library (renderer, platform, input, components)
+- EngineDLL/      — Engine DLL wrapper exposing a native API to the editor
+- ContentTools/   — Native tools for importing and processing FBX files and textures
+- EngineTest/     — Native test application demonstrating renderer features
+- PrimalEditor/   — WPF (C#/.NET) editor and tooling front-end
+
+
+## Quick start
+
+1. Clone the repository: `git clone https://github.com/TheGameEngineers/Primal.git`
+2. Open Primal.slnx in Visual Studio 2026.
+3. Restore NuGet packages and vcpkg ports (Visual Studio will normally restore automatically).
+4. Install the FBX SDK and update the include/lib paths in ContentTools.vcxproj and FbxImporter.cpp if your install location differs from the example above.
+5. Select a solution configuration:
+   - DebugEditor / ReleaseEditor — editor-enabled builds
+   - Debug / Release — runtime/test builds
+6. Build the solution (x64). Building DebugEditor/ReleaseEditor will also produce the PrimalEditor output under the configured OutputPath (e.g. ..\x64\DebugEditor\).
 
 ## Running the editor
-1. Build the solution using the DebugEditor or ReleaseEditor configuration.
-2. Launch PrimalEditor (PrimalEditor\bin or the configured OutputPath e.g. ..\x64\DebugEditor\). The editor includes Resources/ProjectTemplates and Resources/DefaultAssets copied to the output directory by the project file.
-3. Use the Content Browser and built-in editors to import assets and create projects. The editor depends on the EngineDLL and native Engine artifacts when running editor-enabled builds.
 
-## Running EngineTest project
-EngineTest is a native test application that exercises the renderer, lighting and content pipeline. Before running EngineTest you must ensure the test content (meshes, textures, materials) used by the sample scenes is imported into the project's content folder.
+1. Build using DebugEditor or ReleaseEditor configuration.
+2. Run PrimalEditor from the build output directory. The project files will copy Resources/ProjectTemplates and Resources/DefaultAssets into the output as needed.
 
-1. Build the solution and the EngineTest project with the Debug or Release configuration (x64).
-2. Prepare the content used by EngineTest:
-   - Launch PrimalEditor (use DebugEditor/ReleaseEditor build) and open or create a project.
-   - Use the Content Browser to import the sample meshes and textures required by the tests. The editor provides import settings for geometry and textures.
-   - If you prefer to enable the editor's built-in sample import helpers, open the following files and enable the relevant code sections (they are intentionally guarded or commented out in the editor source):
-     - PrimalEditor/Content/Geometry.cs
-     - PrimalEditor/Content/Texture.cs
-   - After importing, verify that assets appear in your project's content folder (DefaultAssets or your project's asset folder copied to the EngineTest content path).
-3. Run the EngineTest executable (located in the project's output directory). The test runner will load content from the engine's expected content locations and run renderer/scene tests.
+## Running EngineTest
 
-If EngineTest fails to find assets at runtime, re-open the editor and confirm the imported assets are present and that the project's content destination matches the EngineTest content path. Also ensure NuGet packages are restored and the Windows SDK (with FXC/DXC) is installed if shader compilation is required.
+<img align="right" src="https://github.com/Rashmatash/ImageRepo/blob/master/Animation.gif?raw=true" width="480px"/>
 
-Temporary editor test packaging
-- For debugging convenience the editor source currently enables temporary packaging calls for imported assets. Specifically:
-  - PrimalEditor/Content/Geometry.cs: PackForEngine() is invoked in Load() and the packed geometry is written to ..\\..\\x64\\model.model
-  - PrimalEditor/Content/Texture.cs: PackForEngine() is invoked in Load() and the packed texture is written to ..\\..\\x64\\texture.img
-- These changes are intended for short-term testing only. Remove or revert these edits before committing or shipping the editor.
-- Safer alternatives you can apply now or later:
-  - Change the test output to a temp location (Path.GetTempPath()) or an explicit test-output folder inside your user or build artifacts directory.
-  - Wrap the test writes with a compilation guard (e.g. #if DEBUG ... #endif) or gate them behind a runtime "write test packages" setting in the editor UI.
-  - Revert the temporary changes by restoring the two files from source control: PrimalEditor/Content/Geometry.cs and PrimalEditor/Content/Texture.cs.
+EngineTest is a native application that demonstrates renderer and content pipeline behavior. Before running, ensure the sample content (meshes and textures) required by EngineTest is imported and available in the engine content path.
 
-## Repo layout (high level)
-- Engine/         -- Core native static library (renderer, platform, input, components)
-- EngineDLL/      -- Engine DLL wrapper used by the editor (shader compilation helpers)
-- ContentTools/   -- Native tools for importing and processing FBX, textures, and shaders
-- EngineTest/     -- Native test application demonstrating renderer features
-- PrimalEditor/   -- WPF (.NET 10) editor and tooling front-end
+1. Use PrimalEditor to import sample assets via the Content Browser. The editor includes helper code that can temporarily pack imported assets for EngineTest (see the notes below).
+
+2. If necessary, enable the export/pack code in the editor source to write model and texture files to the expected EngineTest locations:
+
+   - PrimalEditor/Content/Geometry.cs — PackForEngine() may write ..\..\x64\model.model
+   - PrimalEditor/Content/Texture.cs  — PackForEngine() may write ..\..\x64\texture.img
+
+   These sections are guarded/commented for safety; they were added for short-term testing. Revert any changes after exporting the required assets.
+
+3. Rename the model and texture files to match the expected names in EngineTest's RenderItem.cpp.
+ 
+4. Build the solution and the EngineTest project (x64, Debug or Release).
+
+5. Run the EngineTest.
+
+## Reporting issues
+
+Please open issues for bugs or feature requests on the GitHub Issues page.
 
 ## License
+
 This repository is licensed under the MIT License. See the LICENSE file in the repository root for full terms.
+
+## Troubleshooting & help
+
+- Join the [Discord](https://discord.gg/75ZmXwz) server for your questions or requesting help.
+- Report bugs in [GitHub Issues](https://github.com/TheGameEngineers/Primal/issues).
+- Watch the [Game Engine Series](https://www.youtube.com/gameengineseries) YouTube channel for development history and explanations of the code.

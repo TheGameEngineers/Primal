@@ -351,8 +351,8 @@ engine_test::run()
             f32 thresholds[4 + 12]{};
 
             graphics::frame_info info{};
-            info.render_item_ids = render_item_id_cache.data() + 1;
-            info.render_item_count = 4 + 12 - 1;
+            info.render_item_ids = render_item_id_cache.data() + 0;
+            info.render_item_count = 4 + 12 - 0;
             info.thresholds = &thresholds[0];
             info.light_set_key = light_set_key;
             info.average_frame_time = dt;
