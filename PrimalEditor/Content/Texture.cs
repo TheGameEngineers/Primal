@@ -385,6 +385,8 @@ class Texture : Asset
     public static int MaxArraySize => 2048;
     public static int Max3DSize => 2048;
     public static AssetInfo Default => DefaultAssets.DefaultTexture;
+    public static AssetInfo DefaultSpecularIBL => DefaultAssets.DefaultSpecularIBL;
+    public static AssetInfo DefaultDiffuseIBL => DefaultAssets.DefaultDiffuseIBL;
 
     private bool _isSaving;
 

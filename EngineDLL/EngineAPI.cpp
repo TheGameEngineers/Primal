@@ -119,7 +119,7 @@ patch_material_data(u8* data)
 
 void
 calculate_thresholds(const game_entity::entity_id *const entity_ids,
-                     f32 *const thresholds, u32 count, u32 surface_id)
+    f32 *const thresholds, u32 count, u32 surface_id)
 {
     game_entity::entity camera{ game_entity::entity_id{ surfaces[surface_id].camera.entity_id() } };
 
@@ -539,4 +539,248 @@ SetCameraFoV(u32 surface_id, f32 fov)
     assert(surface_id < surfaces.size());
     fov *= (1.f / 180.f);
     surfaces[surface_id].camera.field_of_view(fov);
+}
+
+EDITOR_INTERFACE u64
+CreateLightSet(const char* light_set_key)
+{
+    std::lock_guard lock{ mutex };
+    assert(light_set_key && light_set_key[0]);
+    const u64 key{ std::hash<std::string>()(light_set_key) };
+    graphics::create_light_set(key);
+    return key;
+}
+
+EDITOR_INTERFACE void
+RemoveLightSet(u64 light_set_key)
+{
+    std::lock_guard lock{ mutex };
+    graphics::remove_light_set(light_set_key);
+}
+
+// data = {
+//  u32         type;
+//  f32         intensity;
+//  math::v3    color;
+//  u32         is_enabled;
+//  math::u32v3 diffuse, specular, brdf_lut; (texture ids for ambient lights)
+//  f32         range; (for point and spot lights)
+//  math::v3    attenuation; (for point and spot lights)
+//  f32         umbra; (for spot lights)
+//  f32         penumbra; (for spot lights)
+// }
+//
+EDITOR_INTERFACE id::id_type
+CreateLight(id::id_type entity_id, u64 light_set_key, const u8 *const data, [[maybe_unused]] u32 data_size)
+{
+    std::lock_guard lock{ mutex };
+    assert(id::is_valid(entity_id) && data && data_size);
+    utl::blob_stream_reader blob{ data };
+    graphics::light_init_info info{};
+    info.light_set_key = light_set_key;
+    info.entity_id = entity_id;
+    info.type = (graphics::light::type)blob.read<id::id_type>();
+    info.intensity = blob.read<f32>();
+    info.color = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+    info.is_enabled = blob.read<u32>() != 0;
+
+    if (info.type == graphics::light::ambient)
+    {
+        info.ambient_params.diffuse_texture_id = blob.read<id::id_type>();
+        info.ambient_params.specular_texture_id = blob.read<id::id_type>();
+        info.ambient_params.brdf_lut_texture_id = blob.read<id::id_type>();
+    }
+    else if (info.type == graphics::light::point)
+    {
+        info.point_params.range = blob.read<f32>();
+        info.point_params.attenuation = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+    }
+    else   if (info.type == graphics::light::spot)
+    {
+        info.spot_params.range = blob.read<f32>();
+        info.spot_params.attenuation = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+        info.spot_params.umbra = blob.read<f32>() * math::to_rad;
+        info.spot_params.penumbra = blob.read<f32>() * math::to_rad;
+    }
+
+    return graphics::create_light(info).get_id();
+}
+
+EDITOR_INTERFACE void
+RemoveLight(id::id_type light_id, u64 light_set_key)
+{
+    std::lock_guard lock{ mutex };
+    assert(id::is_valid(light_id));
+    graphics::remove_light(graphics::light_id{ light_id }, light_set_key);
+}
+
+EDITOR_INTERFACE void
+GetLightIsEnabled(id::id_type* ids, u64* light_set_keys, u32* is_enabled, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && is_enabled && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        is_enabled[i] = light.is_enabled() ? 1 : 0;
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightIntensity(id::id_type* ids, u64* light_set_keys, f32* intensities, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && intensities && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        intensities[i] = light.intensity();
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightRange(id::id_type* ids, u64* light_set_keys, f32* ranges, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && ranges && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        ranges[i] = light.range();
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightConeAngles(id::id_type* ids, u64* light_set_keys, f32* umbras, f32* penumbras, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && umbras && penumbras && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        umbras[i] = light.umbra() * math::to_deg;
+        penumbras[i] = light.penumbra() * math::to_deg;
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightColor(id::id_type* ids, u64* light_set_keys, f32* r, f32* g, f32* b, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && r && g && b && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        const math::v3 color{ light.color() };
+        r[i] = color.x; g[i] = color.y; b[i] = color.z;
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* c, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && a && b && c && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        const math::v3 attenuation{ light.attenuation() };
+        a[i] = attenuation.x; b[i] = attenuation.y; c[i] = attenuation.z;
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightIsEnabled(id::id_type* ids, u64* light_set_keys, u32* is_enabled, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && is_enabled && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.is_enabled(is_enabled[i] != 0);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightIntensity(id::id_type* ids, u64* light_set_keys, f32* intensities, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && intensities && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.intensity(intensities[i]);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightRange(id::id_type* ids, u64* light_set_keys, f32* ranges, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && ranges && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.range(ranges[i]);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightConeAngles(id::id_type* ids, u64* light_set_keys, f32* umbras, f32* penumbras, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && umbras && penumbras && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.cone_angles(umbras[i] * math::to_rad, penumbras[i] * math::to_rad);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightColor(id::id_type* ids, u64* light_set_keys, f32* r, f32* g, f32* b, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && r && g && b && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.color({ r[i], g[i], b[i] });
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* c, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && a && b && c && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.attenuation({ a[i], b[i], c[i] });
+    }
 }

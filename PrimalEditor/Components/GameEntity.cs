@@ -20,7 +20,7 @@ class GameEntity : ViewModelBase
 {
     public IdType EntityId { get; private set; } = ID.INVALID_ID;
 
-    public bool IsActive
+    public virtual bool IsActive
     {
         get;
         set
@@ -40,7 +40,6 @@ class GameEntity : ViewModelBase
                     _components.ToList().ForEach(x => x.Unload());
                     EntityId = ID.INVALID_ID;
                 }
-
                 OnPropertyChanged(nameof(IsActive));
             }
         }
