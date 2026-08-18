@@ -55,7 +55,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <ScrollViewer.Style>
-            <Style TargetType="ScrollViewer">
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource {x:Type ScrollViewer}}">
                 <Style.Triggers>
                     <Trigger Property="DataContext" Value="{x:Null}">
                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -99,14 +99,7 @@
                 </StackPanel>
             </Grid>
             <ItemsControl ItemsSource="{Binding Components}" IsTabStop="False" SnapsToDevicePixels="True"
-                          IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBoolToBoolConverter}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-
-            </ItemsControl>
+                          IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBoolToBoolConverter}}" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

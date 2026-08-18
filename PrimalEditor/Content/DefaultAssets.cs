@@ -34,7 +34,7 @@ static class DefaultAssets
     /// </summary>
     public static void GenerateDefaultAssets()
     {
-        var defaultAssetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @".\Resources\DefaultAssets\");
+        var defaultAssetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\DefaultAssets\");
         if (!Directory.Exists(defaultAssetsPath))
         {
             Directory.CreateDirectory(defaultAssetsPath);

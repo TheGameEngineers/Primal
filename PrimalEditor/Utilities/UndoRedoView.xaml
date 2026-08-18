@@ -15,11 +15,6 @@
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
             <StackPanel x:Name="undoRedoStack">
                 <ItemsControl ItemsSource="{Binding UndoList}" x:Name="undoStack">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.FontBrush}"/>
@@ -27,11 +22,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <ItemsControl ItemsSource="{Binding RedoList}" x:Name="redoStack">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.Disabled.FontBrush}"/>

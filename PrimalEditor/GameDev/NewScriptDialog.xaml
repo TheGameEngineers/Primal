@@ -92,7 +92,7 @@
             <!-- The actual useful part -->
             <Grid>
                 <Grid.Style>
-                    <Style TargetType="Grid">
+                    <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5"/>

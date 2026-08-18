@@ -9,6 +9,7 @@ using System.Windows.Data;
 
 namespace PrimalEditor.Utilities;
 
+[Flags]
 enum MessageType
 {
     Info = 0x01,
@@ -29,29 +30,26 @@ class LogMessage(MessageType type, string msg, string file, string caller, int l
 
 static class Logger
 {
-    private static int _messageFilter = (int)(MessageType.Info | MessageType.Warning | MessageType.Error);
+    private static MessageType _messageFilter = MessageType.Info | MessageType.Warning | MessageType.Error;
     private static readonly ObservableCollection<LogMessage> _messages = [];
     public static ReadOnlyObservableCollection<LogMessage> Messages
     { get; } = new ReadOnlyObservableCollection<LogMessage>(_messages);
     public static CollectionViewSource FilteredMessages
     { get; } = new CollectionViewSource() { Source = Messages };
 
-    public static async void Log(MessageType type, string msg,
+    public static void Log(MessageType type, string msg,
         [CallerFilePath] string file = "", [CallerMemberName] string caller = "",
         [CallerLineNumber] int line = 0)
     {
-        await Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-        {
-            _messages.Add(new LogMessage(type, msg, file, caller, line));
-        }));
+        Application.Current.Dispatcher?.BeginInvoke(() => _messages.Add(new(type, msg, file, caller, line)));
     }
 
-    public static async void Clear()
+    public static void Clear()
     {
-        await Application.Current.Dispatcher.BeginInvoke(new Action(_messages.Clear));
+        Application.Current.Dispatcher?.BeginInvoke(_messages.Clear);
     }
 
-    public static void SetMessageFilter(int mask)
+    public static void SetMessageFilter(MessageType mask)
     {
         _messageFilter = mask;
         FilteredMessages.View.Refresh();
@@ -61,8 +59,8 @@ static class Logger
     {
         FilteredMessages.Filter += (s, e) =>
         {
-            var type = (int)(e.Item as LogMessage).MessageType;
-            e.Accepted = (type & _messageFilter) != 0;
+            var type = (e.Item as LogMessage)?.MessageType;
+            e.Accepted = type != null && (type & _messageFilter) != 0;
         };
     }
 }

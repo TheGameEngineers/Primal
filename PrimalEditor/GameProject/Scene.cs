@@ -140,7 +140,7 @@ class Scene : ViewModelBase
             .Select(c => c.GetComponentId())
             .ToList();
 
-        Debug.Assert(ids.All(id => ID.IsValid(id)));
+        Debug.Assert(ids.All(ID.IsValid));
         return ids;
     }
 

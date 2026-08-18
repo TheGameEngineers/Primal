@@ -225,13 +225,7 @@
                         <TextBlock Text="{Binding Threshold}" d:Text="12.34" Foreground="{StaticResource Editor.GreenBrush}"/>
                     </StackPanel>
                 </StackPanel>
-                <ItemsControl ItemsSource="{Binding Meshes}" AlternationCount="{Binding Meshes.Count}" Grid.Row="1">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding Meshes}" AlternationCount="{Binding Meshes.Count}" Grid.Row="1"/>
             </Grid>
         </DataTemplate>
 

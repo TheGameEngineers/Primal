@@ -201,7 +201,7 @@ class ShaderGroup
 
     private void PackForEngine(BinaryWriter writer)
     {
-        Keys.ForEach(key => writer.Write(key));
+        Keys.ForEach(writer.Write);
 
         for (int i = 0; i < Count; i++)
         {

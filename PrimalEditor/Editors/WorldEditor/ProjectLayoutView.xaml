@@ -22,11 +22,6 @@
                 Command="{Binding AddSceneCommand}"/>
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Scenes}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Expander Foreground="{StaticResource Editor.FontBrush}" IsExpanded="{Binding IsActive, Mode=OneWay}">

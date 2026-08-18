@@ -143,11 +143,6 @@
                                         <TextBlock Text="SOURCE IMAGES" FontWeight="Bold" Style="{StaticResource LightTextBlockStyle}"/>
                                     </Expander.Header>
                                     <ItemsControl ItemsSource="{Binding ImageSources}" Margin="23,5,0,10">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding FileInfo.Name}" Foreground="{StaticResource Editor.OrangeBrush}"

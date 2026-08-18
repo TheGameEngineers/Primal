@@ -41,7 +41,7 @@ partial class ProjectLayoutView : UserControl
         var vm = listBox.DataContext as Scene;
 
         var newSelection = listBox.SelectedItems.Cast<GameEntity>().ToList();
-        var newSelectedIndices = newSelection.Select(item => vm.GameEntities.IndexOf(item)).ToList();
+        var newSelectedIndices = newSelection.Select(vm.GameEntities.IndexOf).ToList();
         var previousSelectedIndices = _previousSelectedIndices.ToList();
         _previousSelectedIndices = [.. newSelectedIndices];
 

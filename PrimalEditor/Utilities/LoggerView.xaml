@@ -48,16 +48,11 @@
                       x:Name="scrollViewer" Background="{StaticResource Editor.Window.GrayBrush2}"
                       Margin="0,32,0,0">
             <ItemsControl ItemsSource="{Binding Source={x:Static local:Logger.FilteredMessages}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <DockPanel ToolTip="{Binding MetaData}">
                             <DockPanel.Style>
-                                <Style TargetType="DockPanel">
+                                <Style TargetType="{x:Type DockPanel}">
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
@@ -72,7 +67,7 @@
                             </DockPanel.Style>
                             <TextBlock Text="{Binding Time, StringFormat=hh:mm:ss}" Margin="5,0">
                                 <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="{x:Type TextBlock}">
                                         <Setter Property="Foreground" Value="LightGreen"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Warning}">

@@ -79,7 +79,7 @@ partial class RenderSurfaceHost : HwndHost
                     if (_callbackMap.Count == 0 && _renderThread != null)
                     {
                         // Call Stop on another thread so that it doesn't block this method and cause a deadlock.
-                        _ = Task.Run(() => Stop());
+                        _ = Task.Run(Stop);
                     }
                 }
             }
@@ -165,7 +165,7 @@ partial class RenderSurfaceHost : HwndHost
         base.Dispose(disposing);
     }
 
-    public async Task WaitReady() => await Task.Run(() => _resetEvent.WaitOne());
+    public async Task WaitReady() => await Task.Run(_resetEvent.WaitOne);
 
     protected override HandleRef BuildWindowCore(HandleRef hwndParent)
     {
