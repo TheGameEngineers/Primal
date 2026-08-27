@@ -136,7 +136,7 @@ class Project : ViewModelBase
         RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
         SaveCommand = new RelayCommand<object>(x => Save(this));
         DebugStartCommand = new RelayCommand<object>(async x => await RunGame(true), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
-        DebugStartWithoutDebuggingCommand = new RelayCommand<object>(async x => await RunGame(false), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
+        DebugStartWithoutDebuggingCommand = new RelayCommand<object>(async x => await RunGame(false), x => VisualStudio.BuildDone);
         DebugStopCommand = new RelayCommand<object>(async x => await StopGame(), x => VisualStudio.IsDebugging());
         BuildCommand = new RelayCommand<bool>(async x => await BuildGameCodeDLL(x), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
 
@@ -166,11 +166,11 @@ class Project : ViewModelBase
     public static Project Load(string file)
     {
         Debug.Assert(File.Exists(file));
-
         var path = System.IO.Path.GetDirectoryName(file);
         if (!path.EndsWith(System.IO.Path.DirectorySeparatorChar)) path += System.IO.Path.DirectorySeparatorChar;
 
         ContentWatcher.Reset($@"{path}Content\", path);
+        LightSet.AddLightSet(LightSet.DefaultKey, true);
 
         try
         {
@@ -199,6 +199,7 @@ class Project : ViewModelBase
         ActiveScene.GameEntities.ToList().ForEach(entity => entity.IsEnabled = false);
         UpdateScene();
         ActiveScene.IsActive = false;
+        LightSet.Reset();
         UnloadGameCodeDLL();
         VisualStudio.CloseVisualStudio();
         AssetRegistry.Save();
@@ -293,7 +294,7 @@ class Project : ViewModelBase
                 }
             }
 
-            MSEntity.CurrentSelection?.Refresh();
+            MSEntity.Refresh();
             return scriptNames;
         });
 
@@ -312,7 +313,7 @@ class Project : ViewModelBase
                 entity.AddComponent(script);
             }
 
-            MSEntity.CurrentSelection?.Refresh();
+            MSEntity.Refresh();
         });
     }
 

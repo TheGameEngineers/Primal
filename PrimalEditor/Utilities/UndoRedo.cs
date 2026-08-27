@@ -54,6 +54,7 @@ class UndoRedo
     {
         _redoList.Clear();
         _undoList.Clear();
+        _enableAdd = true;
     }
 
     public void Add(IUndoRedo cmd)

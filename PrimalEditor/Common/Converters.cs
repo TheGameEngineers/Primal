@@ -31,15 +31,16 @@ class IndexOfConverter : IMultiValueConverter
 
 class NullableBoolToBoolConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        return value is bool b && b;
-    }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value is bool b && b;
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        return value is bool b && b;
-    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Convert(value, targetType, parameter, culture);
+}
+
+class NegateBoolConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value is bool b && !b;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Convert(value, targetType, parameter, culture);
 }
 
 class EnumDescriptionConverter : IValueConverter

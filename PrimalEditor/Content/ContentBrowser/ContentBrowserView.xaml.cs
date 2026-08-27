@@ -340,11 +340,11 @@ _addCurrentDirectory:
                 case AssetType.Audio: break;
                 case AssetType.Material: break;
                 case AssetType.Mesh:
-                    editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor");
+                    editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor", true);
                     break;
                 case AssetType.Skeleton: break;
                 case AssetType.Texture:
-                    editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor");
+                    editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor", false);
                     break;
             }
         }
@@ -356,7 +356,7 @@ _addCurrentDirectory:
         return editor;
     }
 
-    private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title)
+    private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title, bool enableWindowTransparency)
         where T : FrameworkElement, new()
     {
         // First look for a window that's already open and is displaying the same asset.
@@ -372,12 +372,12 @@ _addCurrentDirectory:
         }
 
         // If not already open in an asset editor, we create a new window and load the asset.
-        var newEditor = CreateEditorWindow<T>(title);
+        var newEditor = CreateEditorWindow<T>(title, enableWindowTransparency);
         (newEditor.DataContext as IAssetEditor).SetAsset(info);
         return newEditor.DataContext as IAssetEditor;
     }
 
-    private static FrameworkElement CreateEditorWindow<T>(string title)
+    private static FrameworkElement CreateEditorWindow<T>(string title, bool enableWindowTransparency)
         where T : FrameworkElement, new()
     {
         var newEditor = new T();
@@ -389,7 +389,8 @@ _addCurrentDirectory:
             Title = title,
             Owner = Application.Current.MainWindow,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Style = Application.Current.FindResource("PrimalWindowStyle") as Style
+            Style = Application.Current.FindResource("PrimalWindowStyle") as Style,
+            AllowsTransparency = enableWindowTransparency,
         };
 
         win.Show();

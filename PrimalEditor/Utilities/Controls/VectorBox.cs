@@ -217,6 +217,7 @@ class VectorBox : Control
             oldValue[index] = (float)e.OldValue;
 
             // Raise a routed event with the old/new Vector4 values.
+            // TODO: The old values could be incorrect if any of the x, y, z, w components were null.
             var args = new RoutedPropertyChangedEventArgs<Vector4>(oldValue, newValue) { RoutedEvent = ValueChangedEvent };
             RaiseEvent(args);
         }
@@ -301,11 +302,18 @@ class VectorBox : Control
     {
         if (sender is VectorBox vb && _clipboard != null && _clipboard.Type == vb.VectorType)
         {
+            var oldValue = new Vector4((float)(vb.X ?? 0f), (float)(vb.Y ?? 0f), (float)(vb.Z ?? 0f), (float)(vb.W ?? 0f));
             // assign values from clipboard (float -> double implicit conversion)
             vb.X = _clipboard.Value.X;
             vb.Y = _clipboard.Value.Y;
             vb.Z = _clipboard.Value.Z;
             vb.W = _clipboard.Value.W;
+            var newValue = new Vector4((float)(vb.X ?? 0f), (float)(vb.Y ?? 0f), (float)(vb.Z ?? 0f), (float)(vb.W ?? 0f));
+
+            // Raise a routed event with the old/new Vector4 values.
+            // TODO: The old values could be incorrect if any of the x, y, z, w components were null.
+            var args = new RoutedPropertyChangedEventArgs<Vector4>(oldValue, newValue) { RoutedEvent = ValueChangedEvent };
+            vb.RaiseEvent(args);
         }
     }
 

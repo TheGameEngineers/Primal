@@ -817,8 +817,8 @@
     <ControlTemplate x:Key="SliderThumbHorizontalDefault" TargetType="{x:Type Thumb}">
         <Grid HorizontalAlignment="Center" VerticalAlignment="Center" UseLayoutRounding="True">
             <Rectangle x:Name="grip" Width="11" Height="18"
-             SnapsToDevicePixels="True" StrokeThickness="0" VerticalAlignment="Center" 
-             UseLayoutRounding="True" Stretch="Fill" Fill="Transparent"/>
+                       SnapsToDevicePixels="True" StrokeThickness="0" VerticalAlignment="Center" 
+                       UseLayoutRounding="True" Stretch="Fill" Fill="Transparent"/>
         </Grid>
         <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
@@ -1218,11 +1218,11 @@
             <Setter.Value>
                 <ContextMenu>
                     <MenuItem Header="Copy"
-                  Command="{x:Static ctrl:VectorBox.CopyVectorCommand}"
-                  CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                              Command="{x:Static ctrl:VectorBox.CopyVectorCommand}"
+                              CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <MenuItem Header="Paste"
-                  Command="{x:Static ctrl:VectorBox.PasteVectorCommand}"
-                  CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                              Command="{x:Static ctrl:VectorBox.PasteVectorCommand}"
+                              CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                 </ContextMenu>
             </Setter.Value>
         </Setter>
@@ -1422,7 +1422,10 @@
         </Setter>
     </Style>
 
+    <sys:Double x:Key="PrimalScrorlBarSize">12</sys:Double>
+
     <Style TargetType="{x:Type ScrollViewer}">
+        <EventSetter Event="PreviewMouseWheel" Handler="OnScrollViewer_PreviewMouseWheel"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ScrollViewer}">
@@ -1449,7 +1452,6 @@
 
                             <ScrollBar x:Name="PART_VerticalScrollBar" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"
                                        AutomationProperties.AutomationId="VerticalScrollBar"
-                                       Cursor="Arrow"
                                        Maximum="{TemplateBinding ScrollableHeight}"
                                        Minimum="0"
                                        Style="{DynamicResource ScrollBarStyle}"
@@ -1459,7 +1461,6 @@
 
                             <ScrollBar x:Name="PART_HorizontalScrollBar" Grid.Row="1" Grid.Column="0"
                                        AutomationProperties.AutomationId="HorizontalScrollBar"
-                                       Cursor="Arrow"
                                        Maximum="{TemplateBinding ScrollableWidth}"
                                        Minimum="0"
                                        Orientation="Horizontal"
@@ -1471,10 +1472,10 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger SourceName="PART_HorizontalScrollBar" Property="IsVisible" Value="True">
-                            <Setter TargetName="Corner" Property="Height" Value="{DynamicResource {x:Static SystemParameters.HorizontalScrollBarHeightKey}}"/>
+                            <Setter TargetName="Corner" Property="Height" Value="{StaticResource PrimalScrorlBarSize}"/>
                         </Trigger>
                         <Trigger SourceName="PART_VerticalScrollBar" Property="IsVisible" Value="True">
-                            <Setter TargetName="Corner" Property="Width" Value="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}"/>
+                            <Setter TargetName="Corner" Property="Width" Value="{StaticResource PrimalScrorlBarSize}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1482,15 +1483,14 @@
         </Setter>
     </Style>
 
-    <SolidColorBrush x:Key="ScrollBar.Pressed.Glyph" Color="White" />
-    <SolidColorBrush x:Key="ScrollBar.MouseOver.Glyph" Color="{StaticResource Editor.FontColor}" />
-    <SolidColorBrush x:Key="ScrollBar.Disabled.Glyph" Color="{StaticResource Editor.Disabled.FontColor}" />
-    <SolidColorBrush x:Key="ScrollBar.MouseOver.Thumb" Color="{StaticResource Editor.FontColor}" />
-    <SolidColorBrush x:Key="ScrollBar.Pressed.Thumb" Color="White" />
+    <SolidColorBrush x:Key="ScrollBar.Pressed.Glyph" Color="{StaticResource Editor.FontColor}" />
+    <SolidColorBrush x:Key="ScrollBar.MouseOver.Glyph" Color="{StaticResource Editor.Window.GrayColor6}" />
+    <SolidColorBrush x:Key="ScrollBar.MouseOver.Thumb" Color="{StaticResource Editor.Window.GrayColor6}" />
+    <SolidColorBrush x:Key="ScrollBar.Pressed.Thumb" Color="{StaticResource Editor.FontColor}" />
 
     <Style x:Key="ScrollBarButton" TargetType="{x:Type RepeatButton}">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Focusable" Value="false" />
@@ -1499,18 +1499,18 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type RepeatButton}">
                     <Border x:Name="border" Background="Transparent" SnapsToDevicePixels="true">
-                        <Path x:Name="Arrow" Margin="5,1" Data="M 0,5 0,4 2,0 3,0 5,4 5,5 z"
-                              Fill="{StaticResource Editor.Window.GrayBrush4}" Stretch="Uniform" />
+                        <Path x:Name="Arrow" Margin="2" Data="M 0,4 0,3 2,0 3,0 5,3 5,4 z"
+                              Fill="{StaticResource Editor.Window.GrayBrush5}" Stretch="Uniform" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Tag" Value="D">
-                            <Setter TargetName="Arrow" Property="Data" Value="M 0,1 0,0 5,0 5,1 3,5 2,5 z"/>
+                            <Setter TargetName="Arrow" Property="Data" Value="M 0,1 0,0 5,0 5,1 3,4 2,4 z"/>
                         </Trigger>
                         <Trigger Property="Tag" Value="L">
-                            <Setter TargetName="Arrow" Property="Data" Value="M 4,0 5,0 5,5 4,5 0,3 0,2 z"/>
+                            <Setter TargetName="Arrow" Property="Data" Value="M 3,0 4,0 4,5 3,5 0,3 0,2 z"/>
                         </Trigger>
                         <Trigger Property="Tag" Value="R">
-                            <Setter TargetName="Arrow" Property="Data" Value="M 0,0 1,0 5,2 5,3 1,5 0,5 z"/>
+                            <Setter TargetName="Arrow" Property="Data" Value="M 0,0 1,0 4,2 4,3 1,5 0,5 z"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="true">
                             <Setter Property="Fill" TargetName="Arrow" Value="{StaticResource ScrollBar.MouseOver.Glyph}"/>
@@ -1519,7 +1519,7 @@
                             <Setter Property="Fill" TargetName="Arrow" Value="{StaticResource ScrollBar.Pressed.Glyph}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="false">
-                            <Setter Property="Fill" TargetName="Arrow" Value="{StaticResource ScrollBar.Disabled.Glyph}"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1529,18 +1529,18 @@
 
     <Style x:Key="ScrollBarThumb" TargetType="{x:Type Thumb}">
         <Setter Property="OverridesDefaultStyle" Value="true" />
-        <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+        <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush5}"/>
         <Setter Property="IsTabStop" Value="false" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Thumb}">
                     <Grid Background="Transparent">
-                        <Border x:Name="rectangle" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Margin="5,0"
-                                Background="{TemplateBinding Background}" CornerRadius="5" SnapsToDevicePixels="True" />
+                        <Border x:Name="rectangle" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Margin="2,0"
+                                Background="{TemplateBinding Background}" CornerRadius="4" SnapsToDevicePixels="True" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Tag" Value="H">
-                            <Setter TargetName="rectangle" Property="Margin" Value="0,5" />
+                            <Setter TargetName="rectangle" Property="Margin" Value="0,2" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="true">
                             <Setter TargetName="rectangle" Property="Background" Value="{StaticResource ScrollBar.MouseOver.Thumb}" />
@@ -1562,8 +1562,8 @@
         <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}" />
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Width" Value="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
-        <Setter Property="MinWidth" Value="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+        <Setter Property="Width" Value="{StaticResource PrimalScrorlBarSize}" />
+        <Setter Property="MinWidth" Value="6" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ScrollBar}">
@@ -1593,13 +1593,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="False">
-                            <Setter TargetName="PART_LineUpButton" Property="Visibility" Value="Collapsed"/>
-                            <Setter TargetName="PART_LineDownButton" Property="Visibility" Value="Collapsed"/>
-                            <Setter TargetName="thumb" Property="Opacity" Value="0.4"/>
-                            <Setter TargetName="thumb" Property="Margin" Value="-7,0,0,0"/>
-                            <Setter TargetName="thumb" Property="Background" Value="{StaticResource ScrollBar.MouseOver.Thumb}"/>
-                            <Setter Property="Width" Value="5"/>
-                            <Setter Property="MinWidth" Value="5"/>
+                            <Setter TargetName="thumb" Property="Margin" Value="2,0,-2,0"/>
+                            <Setter TargetName="thumb" Property="IsHitTestVisible" Value="False"/>
+                            <Setter TargetName="thumb" Property="Background" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                            <Setter Property="Width" Value="6"/>
                             <Setter Property="Background" Value="Transparent"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -1610,8 +1607,8 @@
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
                 <Setter Property="MinWidth" Value="0" />
-                <Setter Property="Height" Value="{DynamicResource {x:Static SystemParameters.HorizontalScrollBarHeightKey}}" />
-                <Setter Property="MinHeight" Value="{DynamicResource {x:Static SystemParameters.HorizontalScrollBarHeightKey}}" />
+                <Setter Property="Height" Value="{StaticResource PrimalScrorlBarSize}" />
+                <Setter Property="MinHeight" Value="6" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Template">
                     <Setter.Value>
@@ -1642,13 +1639,10 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="False">
-                                    <Setter TargetName="PART_LineLeftButton" Property="Visibility" Value="Collapsed"/>
-                                    <Setter TargetName="PART_LineRightButton" Property="Visibility" Value="Collapsed"/>
-                                    <Setter TargetName="thumb" Property="Opacity" Value="0.4"/>
-                                    <Setter TargetName="thumb" Property="Margin" Value="0,5,0,0"/>
-                                    <Setter TargetName="thumb" Property="Background" Value="{StaticResource ScrollBar.MouseOver.Thumb}"/>
-                                    <Setter Property="Height" Value="5"/>
-                                    <Setter Property="MinHeight" Value="5"/>
+                                    <Setter TargetName="thumb" Property="Margin" Value="0,8,0,-2"/>
+                                    <Setter TargetName="thumb" Property="IsHitTestVisible" Value="False"/>
+                                    <Setter TargetName="thumb" Property="Background" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                                    <Setter Property="Height" Value="6"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>

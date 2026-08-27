@@ -266,7 +266,7 @@
                         </Border>
                         <Border IsHitTestVisible="False" CornerRadius="5" BorderThickness="2">
                             <Border.Background>
-                                <ImageBrush ImageSource="/Resources/TextureEditor/Checker64.png"/>
+                                <ImageBrush ImageSource="pack://application:,,,/PrimalEditor;component/Resources/TextureEditor/Checker64.png"/>
                             </Border.Background>
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">

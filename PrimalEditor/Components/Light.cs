@@ -294,15 +294,21 @@ class AmbientLight(Scene scene, string lightSetKey) : Light(scene, LightType.Amb
         get => base.IsActive;
         set
         {
-            if (base.IsActive != value)
+            if (base.IsActive == value)
             {
-                if (!value || (value && !ID.IsValid(SpecularContentId)))
-                {
-                    UnloadEnvMap();
-                }
-
-                base.IsActive = value;
+                return;
             }
+
+            if (value && !ID.IsValid(_uploadedSpecularIBL?.ContentId ?? ID.INVALID_ID))
+            {
+                UploadEnvMap();
+            }
+            else if (!value)
+            {
+                UnloadEnvMap();
+            }
+
+            base.IsActive = value;
         }
     }
 
@@ -402,7 +408,7 @@ abstract class MSLight<T> : MSEntity where T : Light
     public string LightSetKey
     {
         get;
-        private set
+        set
         {
             if (field != value)
             {
@@ -471,6 +477,8 @@ abstract class MSLight<T> : MSEntity where T : Light
         var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
         var index = 0;
 
+        //NOTE: IsEnabled is handled in GameEntityView because of heterogenous selections.
+        //      See note in GameEntityView.SetIsEnabled()
         switch (propertyName)
         {
             case nameof(LightSetKey):

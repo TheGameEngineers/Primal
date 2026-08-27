@@ -115,7 +115,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom"
                         HorizontalAlignment="Right" Margin="0,0,0,20">
-                    <Button Content="Create" Width="64" Margin="32,0" IsDefault="True" Click="OnCreate_Button_Click"/>
+                    <Button Content="Create" Width="64" Margin="10,0" IsDefault="True" Click="OnCreate_Button_Click"/>
                     <Button Content="Cancel" Width="64" IsCancel="True"/>
                 </StackPanel>
             </Grid>

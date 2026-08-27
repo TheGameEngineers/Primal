@@ -28,6 +28,11 @@ partial class WorldEditorView : UserControl
     private void OnWorldEditorDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         Focus();
+        var key = LightSet.GetKey(LightSet.DefaultKey);
+        sv1.RenderSurfaceControl.UseLightSet(key);
+        sv2.RenderSurfaceControl.UseLightSet(key);
+        sv3.RenderSurfaceControl.UseLightSet(key);
+        sv4.RenderSurfaceControl.UseLightSet(key);
     }
 
     private void OnSceneUpdated(object sender, EventArgs e)
@@ -55,10 +60,8 @@ partial class WorldEditorView : UserControl
         new PrimitiveMeshDialog().ShowDialog();
     }
 
-    private void UnloadAndCloseAllWindows()
+    private static void UnloadAndCloseAllWindows()
     {
-        Project.Current?.Unload();
-
         var mainWindow = Application.Current.MainWindow;
 
         foreach (Window win in Application.Current.Windows)

@@ -60,8 +60,17 @@ partial class MainWindow : Window
     private void Shutdown()
     {
         Closing -= OnMainWindowClosing;
-        Project.Current?.Unload();
+
+        foreach (Window win in Application.Current.Windows)
+        {
+            if (win != this)
+            {
+                win.Close();
+            }
+        }
+
         DataContext = null;
+        Project.Current?.Unload();
         ContentToolsAPI.ShutDownContentTools();
         EngineAPI.ShutdownEngine();
     }

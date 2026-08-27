@@ -12,6 +12,11 @@ using System.Windows.Input;
 namespace PrimalEditor.GameProject;
 
 [DataContract]
+[KnownType(typeof(GameEntity))]
+[KnownType(typeof(DirectionalLight))]
+[KnownType(typeof(PointLight))]
+[KnownType(typeof(Spotlight))]
+[KnownType(typeof(AmbientLight))]
 class Scene : ViewModelBase
 {
     public ICommand RenameCommand { get; private set; }
@@ -31,9 +36,6 @@ class Scene : ViewModelBase
     }
 
     [DataMember]
-    public Project Project { get; init; }
-
-    [DataMember]
     public bool IsActive
     {
         get;
@@ -48,9 +50,26 @@ class Scene : ViewModelBase
         }
     }
 
+    [DataMember]
+    public Project Project { get; init; }
+
     [DataMember(Name = nameof(GameEntities))]
     private readonly ObservableCollection<GameEntity> _gameEntities = [];
     public ReadOnlyObservableCollection<GameEntity> GameEntities { get; private set; }
+
+    [DataMember]
+    public string LightSetKey
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(LightSetKey));
+            }
+        }
+    } = LightSet.DefaultKey;
 
     private void SetActiveGameEntities(bool isActive)
     {
@@ -168,6 +187,8 @@ class Scene : ViewModelBase
             GameEntities = new ReadOnlyObservableCollection<GameEntity>(_gameEntities);
             OnPropertyChanged(nameof(GameEntities));
         }
+
+        LightSetKey ??= LightSet.DefaultKey;
 
         RenameCommand = new RelayCommand<string>(x =>
         {

@@ -133,4 +133,24 @@ partial class ControlTemplates : ResourceDictionary
             slider.Value = Math.Clamp(slider.Value + Math.Sign(e.Delta) * slider.TickFrequency, slider.Minimum, slider.Maximum);
         }
     }
+
+    private void OnScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ScrollViewer sv) return;
+
+        var lines = SystemParameters.WheelScrollLines;
+        // Honor the Windows “scroll one screen at a time” setting
+        if (lines == -1)
+        {
+            // Let the default handler do a page scroll
+            return;
+        }
+
+        // Scale by Delta (120 = one “notch”). The *10 factor is a common
+        // empirical value that feels close to native apps; tweak if you like.
+        var offset = e.Delta * 10.0 * lines / 120.0;
+
+        sv.ScrollToVerticalOffset(sv.VerticalOffset - offset);
+        e.Handled = true;   // stop the default (non-accelerated) handling
+    }
 }

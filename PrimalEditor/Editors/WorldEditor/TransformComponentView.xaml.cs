@@ -95,7 +95,7 @@ partial class TransformComponentView : UserControl
                 x[index] = v.X; y[index] = v.Y; z[index] = v.Z; ++index;
             });
             transform([.. oldValues.Select(x => x.Transform.Owner.EntityId)], x, y, z, count, 0);
-            var currentSelection = MSEntity.CurrentSelection?.GetMSComponent<MSTransform>();
+            var currentSelection = MSEntity.CurrentSelection.GetMSComponent<MSTransform>();
             currentSelection.Refresh();
             GetValues(currentSelection);
             _disableUndoRedo = false;

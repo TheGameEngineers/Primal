@@ -180,11 +180,20 @@ abstract class MSEntity : ViewModelBase
 
     public static MSEntity CurrentSelection { get; private set; }
 
+    /// <summary>
+    /// Updates the properties of MSEntity and its list of components.
+    /// </summary>
+    /// <remarks>
+    /// NOTE: Current selection could be null while using undo/redo rapidly with async operations
+    /// such as adding/removing a geometry component. This is fine, since classes that derive
+    ///  from MSEntity call Refresh() in their constructor.
+    /// </remarks>
+    public static void Refresh() => CurrentSelection?.Refresh_Internal();
+
     public T GetMSComponent<T>() where T : IMSComponent
     {
         return (T)Components.FirstOrDefault(x => x.GetType() == typeof(T));
     }
-
 
     private void MakeComponentList()
     {
@@ -231,7 +240,8 @@ abstract class MSEntity : ViewModelBase
     {
         switch (propertyName)
         {
-            case nameof(IsEnabled): SelectedEntities.ForEach(x => x.IsEnabled = IsEnabled.Value); return true;
+            //NOTE: IsEnabled is handled in GameEntityView because of heterogenous selections
+            //      see note in GameEntityView.SetIsEnabled()
             case nameof(Name): SelectedEntities.ForEach(x => x.Name = Name); return true;
         }
         return false;
@@ -251,7 +261,7 @@ abstract class MSEntity : ViewModelBase
         CurrentSelection = null;
     }
 
-    public void Refresh()
+    private void Refresh_Internal()
     {
         _enableUpdates = false;
         UpdateMSGameEntity();

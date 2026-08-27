@@ -8,67 +8,143 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Editors"
-             xmlns:proj ="clr-namespace:PrimalEditor.GameProject"
-             mc:Ignorable="d"
+             xmlns:proj ="clr-namespace:PrimalEditor.GameProject"             
+             xmlns:comp="clr-namespace:PrimalEditor.Components"
+             xmlns:primal="clr-namespace:PrimalEditor"
              d:DataContext="{d:DesignInstance Type=proj:Project}"
-             d:DesignHeight="450" d:DesignWidth="800">
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="250">
+    <UserControl.Resources>
+        <primal:NegateBoolConverter x:Key="negateBoolConverter"/>
+
+        <DataTemplate x:Key="sceneMenuHeaderTemplate">
+            <StackPanel Margin="0,3" Background="Transparent">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Opacity" Value="0.6"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}"/>
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}" Margin="3,2"/>
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}"/>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
-            <RowDefinition/>
+            <RowDefinition MinHeight="200"/>
+            <RowDefinition MinHeight="32" Height="Auto"/>
         </Grid.RowDefinitions>
-        <Button Content="Add Scene" Width="96" VerticalAlignment="Center" Focusable="False"
-                Grid.Row="0" HorizontalAlignment="Left" Margin="20,0,0,0"
-                Command="{Binding AddSceneCommand}"/>
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Scenes}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Expander Foreground="{StaticResource Editor.FontBrush}" IsExpanded="{Binding IsActive, Mode=OneWay}">
-                            <Expander.Header>
-                                <Grid>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Grid VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" Style="{StaticResource LightTextBlockStyle}"/>
-                                            <TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}"
-                                                     Style="{StaticResource TextBoxStyle_WithRename}" Tag="{Binding RenameCommand}" Visibility="Collapsed"/>
-                                        </Grid>
-                                        <Button Content="Remove"
-                                                Command="{Binding DataContext.RemoveSceneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}" Margin="20,0" Focusable="False"/>
-                                        <Button Content="Rename" Click="OnRenameScene_Button_Click" Tag="{Binding ElementName=renameTextBox}"/>
-                                        <Button Content="+" IsEnabled="{Binding IsActive}" Click="OnAddGameEntity_Button_Click" Margin="5,0"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Expander.Header>
-                            <ListBox Style="{StaticResource ListBoxNoScrollStyle}" IsEnabled="{Binding IsActive}" ItemsSource="{Binding GameEntities}"
-                                     SelectionMode="Extended" AllowDrop="True" MinHeight="48" HorizontalContentAlignment="Stretch"
-                                     SelectionChanged="OnGameEntities_ListBox_SelectionChanged" Loaded="OnGameEntities_ListBox_Loaded"
-                                     KeyDown="OnGameEntities_ListBox_KeyDown" Drop="OnGameEntities_ListBox_Drop">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Background="Transparent" MinHeight="24">
-                                            <Grid>
-                                                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Medium" VerticalAlignment="Center"/>
-                                                <TextBox Text="{Binding Name, UpdateSourceTrigger=Explicit}" Style="{StaticResource TextBoxStyle_WithRename}"
-                                                         Padding="1,0,0,0" Visibility="Collapsed"/>
-                                            </Grid>
-                                            <Button Style="{StaticResource RemoveButtonStyle}"
-                                                    x:Name="removeButton" Visibility="Collapsed" Margin="5,0" VerticalAlignment="Center"
-                                                    Click="OnRemoveGameEntity_Button_Click"/>
-                                        </Grid>
-                                        <DataTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Visibility" TargetName="removeButton" Value="Visible"/>
-                                            </Trigger>
-                                        </DataTemplate.Triggers>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </Expander>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <Button Content="New Scene" Grid.Row="0" Width="96" Margin="20,0,0,0" HorizontalAlignment="Left"  VerticalAlignment="Center"                 
+                Command="{Binding AddSceneCommand}" Focusable="False"/>
+        <Grid Grid.Row="1" DataContext="{Binding ActiveScene}">
+            <Expander Foreground="{StaticResource Editor.FontBrush}" IsExpanded="{Binding IsActive, Mode=OneWay}">
+                <Expander.Header>
+                    <Grid VerticalAlignment="Center" Height="24">
+                        <TextBlock FontWeight="Bold" Text="{Binding Name}" VerticalAlignment="Center"/>
+                        <TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
+                                 Style="{StaticResource TextBoxStyle_WithRename}" Tag="{Binding RenameCommand}" Visibility="Collapsed"/>
+                    </Grid>
+                </Expander.Header>
+                <ListBox IsEnabled="{Binding IsActive}" ItemsSource="{Binding GameEntities}"
+                         SelectionChanged="OnGameEntities_ListBox_SelectionChanged" SelectionMode="Extended" AllowDrop="True"
+                         Drop="OnGameEntities_ListBox_Drop" HorizontalContentAlignment="Stretch" Loaded="OnGameEntities_ListBox_Loaded"
+                         KeyDown="OnGameEntities_ListBox_KeyDown" x:Name="activeSceneListBox">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Background="Transparent" MinHeight="24">
+                                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Medium" VerticalAlignment="Center"/>
+                                <Button Style="{StaticResource RemoveButtonStyle}" Click="OnRemoveGameEntity_Button_Click"
+                                        x:Name="removeButton" Visibility="Collapsed" Margin="5,0" VerticalAlignment="Center"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Visibility" TargetName="removeButton" Value="Visible"/>
+                                </Trigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Expander>
+            <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="{StaticResource Editor.Window.GrayBrush5}">
+                <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Padding="0">
+                    <MenuItem Header="Empty Game Entity" Click="OnAddGameEntity_MenuItem_Click" Tag="0" IsEnabled="{Binding IsActive}"/>
+                    <Separator/>
+                    <MenuItem Header="Cube" Click="OnAddGameEntity_MenuItem_Click" Tag="1" IsEnabled="{Binding IsActive}"/>
+                    <Separator/>
+                    <MenuItem Header="Light" IsEnabled="{Binding IsActive}">
+                        <MenuItem Header="Directional Light" Click="OnAddGameEntity_MenuItem_Click" Tag="2"/>
+                        <MenuItem Header="Point Light" Click="OnAddGameEntity_MenuItem_Click" Tag="3"/>
+                        <MenuItem Header="Spotlight" Click="OnAddGameEntity_MenuItem_Click" Tag="4"/>
+                        <MenuItem Header="Ambient Light" Click="OnAddGameEntity_MenuItem_Click" Tag="5"/>
+                    </MenuItem>
+                    <MenuItem Header="Camera" IsEnabled="{Binding IsActive}">
+                        <MenuItem Header="Perspective Camera" Click="OnAddGameEntity_MenuItem_Click" Tag="6"/>
+                        <MenuItem Header="Orthographic Camera" Click="OnAddGameEntity_MenuItem_Click" Tag="7"/>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Header="Rename Scene" Click="OnRenameScene_MenuItem_Click" Tag="{Binding ElementName=renameTextBox}"/>
+                </MenuItem>
+            </Menu>
+        </Grid>
+
+        <GridSplitter VerticalAlignment="Top" HorizontalAlignment="Stretch" Grid.Row="2" Height="5" Background="{StaticResource Editor.Window.GrayBrush1}"/>
+
+        <Expander Grid.Row="2" Foreground="{StaticResource Editor.FontBrush}" Margin="0,5,0,0" IsExpanded="True">
+            <Expander.Header>
+                <TextBlock Text="Scenes" FontWeight="Bold"/>
+            </Expander.Header>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Scenes}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Border>
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid VerticalAlignment="Center" Height="24" Margin="5,0" Background="Transparent">
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Editor.GreenBrush}"/>
+                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
+                                                 Style="{StaticResource TextBoxStyle_WithRename}" Tag="{Binding RenameCommand}" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                                <!-- NOTE: Scene management is work in progress. -->
+                                <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="{StaticResource Editor.Window.GrayBrush5}">
+                                    <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Padding="0">
+                                        <MenuItem Header="Set Active Scene" IsEnabled="{Binding IsActive, Converter={StaticResource negateBoolConverter}}"/>
+                                        <MenuItem Header="Rename Scene" Click="OnRenameScene_MenuItem_Click" Tag="{Binding ElementName=renameTextBox}"/>
+                                        <MenuItem Header="Delete Scene" CommandParameter="{Binding}"
+                                                  Command="{Binding Path=DataContext.RemoveSceneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    </MenuItem>
+                                </Menu>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Expander>
     </Grid>
 </UserControl>

@@ -20,7 +20,6 @@
 #endif
 
 #include <Windows.h>
-#include <atlsafe.h>
 
 using namespace primal;
 
@@ -137,13 +136,6 @@ calculate_thresholds(const game_entity::entity_id *const entity_ids,
     }
 }
 
-// TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////a
-
-graphics::light lights[4]{};
-
-math::v3 rgb_to_color(u8 r, u8 g, u8 b) { return { r / 255.f, g / 255.f, b / 255.f }; }
-
 game_entity::entity
 create_one_game_entity(math::v3 position, math::v3 rotation, geometry::init_info* geometry_info, const char* script_name, math::v3 scale = { 1.f, 1.f, 1.f })
 {
@@ -185,54 +177,10 @@ void remove_camera(graphics::camera& camera)
     game_entity::remove(id);
 }
 
-void create_lights()
-{
-    graphics::create_light_set(0);
-
-    graphics::light_init_info info{};
-    info.entity_id = create_one_game_entity({}, { 0.23f, 5.28f, 0.f }, nullptr, nullptr).get_id();
-    info.type = graphics::light::directional;
-    info.light_set_key = 0;
-    info.intensity = 0.5f;
-    info.color = rgb_to_color(174, 174, 174);
-    lights[0] = graphics::create_light(info);
-
-    info.entity_id = create_one_game_entity({}, { 0.23f, 5.28f - math::pi, 0.f }, nullptr, nullptr).get_id();
-    info.intensity = 1.f;
-    lights[1] = graphics::create_light(info);
-
-    info.intensity = 0.5f;
-
-    info.entity_id = create_one_game_entity({}, { math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
-    info.color = rgb_to_color(17, 27, 48);
-    lights[2] = graphics::create_light(info);
-
-    info.entity_id = create_one_game_entity({}, { -math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
-    info.color = rgb_to_color(63, 47, 30);
-    lights[3] = graphics::create_light(info);
-}
-
-void
-remove_lights()
-{
-    for (u32 i{ 0 }; i < _countof(lights); ++i)
-    {
-        if (!lights[i].is_valid()) continue;
-        const game_entity::entity_id id{ lights[i].entity_id() };
-        graphics::remove_light(lights[i].get_id(), lights[i].light_set_key());
-        game_entity::remove(id);
-    }
-
-    graphics::remove_light_set(0);
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////a
-// TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-
 } // anonymous namespace
 
 extern utl::ticket_mutex mutex;
-math::v4 to_quat(math::v3 angles, bool is_degrees);
+math::v4 to_quat(math::v3 euler_angles, bool is_degrees);
 
 EDITOR_INTERFACE engine_init_error::error_code
 InitializeEngine()
@@ -240,19 +188,25 @@ InitializeEngine()
     while (!compile_shaders())
     {
         // Pop up a message box allowing the user to retry compilation.
-        if (MessageBox(nullptr, L"Failed to compile engine shaders.", L"Shader Compilation Error", MB_RETRYCANCEL) != IDRETRY)
+        if (MessageBoxA(nullptr, "Failed to compile engine shaders.", "Shader Compilation Error", MB_RETRYCANCEL) != IDRETRY)
             return engine_init_error::shader_compilation;
     }
 
-    return graphics::initialize(graphics::graphics_platform::direct3d12) ? engine_init_error::succeeded : engine_init_error::graphics;
+    if (!graphics::initialize(graphics::graphics_platform::direct3d12))
+    {
+        return engine_init_error::graphics;
+    }
+
+    // Create a light-set for uninitialized light-set keys in the editor
+    graphics::create_light_set(0);
+
+    return engine_init_error::succeeded;
 }
 
 EDITOR_INTERFACE void
 ShutdownEngine()
-{
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    if (lights[0].is_valid()) remove_lights();
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
+{    
+    graphics::remove_light_set(0);
     graphics::shutdown();
 }
 
@@ -295,10 +249,6 @@ EDITOR_INTERFACE u32
 CreateRenderSurface(HWND host, s32 width, s32 height)
 {
     std::lock_guard lock{ mutex };
-
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    if (!lights[0].is_valid()) create_lights();
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
 
     assert(host);
     platform::window_init_info info{ &WinProc, host, nullptr, 0, 0, width, height };
@@ -470,10 +420,6 @@ RenderFrame(u32 surface_id, id::id_type camera_id, u64 light_set)
 {
     std::lock_guard lock{ mutex };
     assert(surface_id < surfaces.size());
-
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    light_set = 0;
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
 
     const viewport_surface& surface{ surfaces[surface_id] };
     const u32 count{ (u32)surface.geometry_ids.size() };

@@ -21,13 +21,6 @@ namespace PrimalEditor.Editors;
 partial class ProjectLayoutView : UserControl
 {
     private List<int> _previousSelectedIndices = [];
-    private void OnRenameScene_Button_Click(object sender, RoutedEventArgs e)
-    {
-        var textBox = (TextBox)(sender as Button).Tag;
-        textBox.Visibility = Visibility.Visible;
-        textBox.Focus();
-    }
-
     private void OnAddGameEntity_Button_Click(object sender, RoutedEventArgs e)
     {
         var btn = sender as Button;
@@ -38,7 +31,7 @@ partial class ProjectLayoutView : UserControl
     private void OnGameEntities_ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var listBox = sender as ListBox;
-        var vm = listBox.DataContext as Scene;
+        if(listBox.DataContext is not Scene vm) return;
 
         var newSelection = listBox.SelectedItems.Cast<GameEntity>().ToList();
         var newSelectedIndices = newSelection.Select(vm.GameEntities.IndexOf).ToList();
@@ -72,22 +65,48 @@ partial class ProjectLayoutView : UserControl
 
         if (newSelection.Count != 0)
         {
-            msEntities = new MSGameEntity(newSelection);
+            var lights = newSelection.Where(x => x is Light).Cast<Light>().ToList();
+
+            if (lights.Count == newSelection.Count)
+            {
+                if (lights.All(x => x.Type == LightType.Directional))
+                {
+                    msEntities = new MSDirectionalLight(newSelection);
+                }
+                else if (lights.All(x => x.Type == LightType.Point))
+                {
+                    msEntities = new MSPointLight(newSelection);
+                }
+                else if (lights.All(x => x.Type == LightType.Spot))
+                {
+                    msEntities = new MSSpotlight(newSelection);
+                }
+                else if (lights.All(x => x.Type == LightType.Ambient))
+                {
+                    msEntities = new MSAmbientLight(newSelection);
+                }
+                else
+                {
+                    msEntities = new MSLight(newSelection);
+                }
+            }
+            else
+            {
+                msEntities = new MSGameEntity(newSelection);
+            }
         }
         GameEntityView.Instance.DataContext = msEntities;
     }
 
     private async void OnGameEntities_ListBox_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(DataFormats.FileDrop) && sender is FrameworkElement { DataContext: Scene scene } && scene.IsActive)
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && sender is FrameworkElement { DataContext: Scene scene } && scene.IsActive)
         {
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-
             List<GameEntity> entities = [];
 
             await Task.Run(() =>
             {
-                var fileList = files?
+                var fileList = files
                     .Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh);
 
                 foreach (var file in fileList)
@@ -95,15 +114,17 @@ partial class ProjectLayoutView : UserControl
                     Debug.Assert(!string.IsNullOrEmpty(file?.Trim()));
                     if (Asset.TryGetAssetInfo(file) is AssetInfo assetInfo)
                     {
-                        var entity = new GameEntity(scene) { Name = assetInfo.FileName.Trim() };
                         // NOTE: adding an entity to an active scene will automatically set its IsActive to true.
                         //       However, setting it to true here will create and upload entity resources without blocking the UI thread.
                         //       Also we can't add components to inactive entities, since they don't exist in the engine.
-                        entity.IsActive = true;
+                        var entity = new GameEntity(scene) { Name = assetInfo.FileName.Trim(), IsActive = true };
                         entity.AddComponent(new Components.Geometry(entity, assetInfo));
                         entities.Add(entity);
                     }
                 }
+
+            // TODO: If the scene hasn't an ambient light and there are textures in dropped files, then we can try to create one.
+            // TODO: add asset flags to AssetInfo, so that we can have more info about textures without reading them.
             });
 
             if (entities.Count > 0)
@@ -166,6 +187,52 @@ partial class ProjectLayoutView : UserControl
                 GameEntityView.Instance.DataContext = null;
             }
         }
+    }
+
+    private void OnAddGameEntity_MenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var menuItem = sender as MenuItem;
+        var tag = (string)menuItem.Tag;
+        var scene = menuItem.DataContext as Scene;
+
+        if (tag == "5" && scene.GameEntities.Any(x => x is AmbientLight))
+        {
+            Logger.Log(MessageType.Warning, "Scene already has an ambient light.");
+            return;
+        }
+
+        GameEntity entity = tag switch
+        {
+            "0" or "1" => new GameEntity(scene) { Name = "Empty Game Entity" },
+            "2" => new DirectionalLight(scene, scene.LightSetKey) { Name = "Directional Light" },
+            "3" => new PointLight(scene, scene.LightSetKey) { Name = "Point Light" },
+            "4" => new Spotlight(scene, scene.LightSetKey) { Name = "Spotlight" },
+            "5" => new AmbientLight(scene, scene.LightSetKey) { Name = "Ambient Light" },
+            "6" => null,
+            "7" => null,
+            _ => null
+        };
+
+        if (entity == null) return;
+
+        if (tag == "1")
+        {
+            entity.IsActive = true;
+            var c = new Components.Geometry(entity, DefaultAssets.DefaultGeometry);
+            entity.AddComponent(c);
+            entity.Name = "Cube";
+        }
+
+        scene.AddGameEntities([entity]);
+        activeSceneListBox.SelectedIndex = scene.GameEntities.Count - 1;
+        activeSceneListBox.Focus();
+    }
+
+    private void OnRenameScene_MenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var textBox = (TextBox)(sender as MenuItem).Tag;
+        textBox.Visibility = Visibility.Visible;
+        textBox.Focus();
     }
 
     public ProjectLayoutView()
