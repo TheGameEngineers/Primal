@@ -28,6 +28,15 @@
             <local:GeometryComponentView/>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vm:MSAmbientLight}">
+            <local:AmbientLightView Margin="5,0,5,5"/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MSSpotlight}">
+            <local:SpotlightView Margin="5,0,5,5"/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MSPointLight}">
+            <local:PointLightView Margin="5,0,5,5"/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:MSLight}">
             <local:LightView Margin="5,0,5,5"/>
         </DataTemplate>

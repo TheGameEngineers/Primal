@@ -277,6 +277,14 @@ public:
             assert(index < _non_cullable_lights.size());
             _non_cullable_lights[index].Color = color;
         }
+        else if (owner.type == graphics::light::ambient)
+        {
+            // TODO: ambient lights use environment maps. We could use
+            //       the SRV indices for RGB values in order to support
+            //       ambient lights with solid colors. Maybe use negative
+            //       intensity values to indicate that the indices
+            //       contains colors instead of pre-filtered cube maps.
+        }
         else
         {
             assert(_owners[_cullable_owners[index]].data_index == index);

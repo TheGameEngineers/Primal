@@ -42,6 +42,15 @@ partial class RenderSurfaceHost : HwndHost
                     {
                         var info = _callbacks[i](_frameCounts[i]++);
                         EngineAPI.RenderFrame(info.SurfaceId, info.CameraId, info.LightSetKey);
+#if DEBUG
+                        // Editor's UI becomes very sluggish when it's running in VS debugger while
+                        // rendering at full frame rate. Here we slow down the renderer which seems
+                        // to solve the issue.
+                        if (Debugger.IsAttached)
+                        {
+                            Thread.Sleep(8);
+                        }
+#endif
                     }
                 }
             }

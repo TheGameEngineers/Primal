@@ -99,6 +99,7 @@ partial class LightView : UserControl
             oldValues.ForEach(x => x.Light.LightSetKey = x.LightSetKey);
             MSEntity.Refresh();
             GetValues(MSEntity.CurrentSelection);
+            lightSetComboBox.SelectedItem = DataContext?.GetType().GetProperty(nameof(MSLight.LightSetKey))?.GetValue(DataContext) as string;
             _disableUndoRedo = false;
             _propertyName = string.Empty;
         });
@@ -238,6 +239,12 @@ partial class LightView : UserControl
         SetColorButtonBackground(v.X, v.Y, v.Z);
     }
 
+    private static void MoveUpFocus(UIElement element)
+    {
+        DependencyObject parent = element;
+        while ((parent = VisualTreeHelper.GetParent(parent)) != null && Keyboard.Focus(parent as UIElement) == element) ;
+    }
+
     private void OnLightSetKey_ComboBox_DropDownClosed(object sender, EventArgs e)
     {
         var comboBox = sender as ComboBox;
@@ -245,6 +252,8 @@ partial class LightView : UserControl
         {
             UseLightSet(text);
         }
+
+        MoveUpFocus(lightSetComboBox);
     }
 
     // Disable mouse wheel scrolling for the light set combo box to prevent accidental changes
@@ -270,6 +279,7 @@ partial class LightView : UserControl
             var lightSet = dlg.ShowDialog() == true ? dlg.LightSetName : dlg.CurrentLightSet;
             lightSetComboBox.SelectedItem = lightSet;
             UseLightSet(lightSet);
+            MoveUpFocus(lightSetComboBox);
         }, System.Windows.Threading.DispatcherPriority.Background);
     }
 

@@ -199,6 +199,7 @@ class Project : ViewModelBase
         ActiveScene.GameEntities.ToList().ForEach(entity => entity.IsEnabled = false);
         UpdateScene();
         ActiveScene.IsActive = false;
+        MSEntity.Reset();
         LightSet.Reset();
         UnloadGameCodeDLL();
         VisualStudio.CloseVisualStudio();

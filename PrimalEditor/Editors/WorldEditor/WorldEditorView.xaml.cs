@@ -26,13 +26,21 @@ partial class WorldEditorView : UserControl
     }
 
     private void OnWorldEditorDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-    {
+    {        
+        if (DataContext is Project vm)
+        {
+            var index = LightSet.LightSets.IndexOf(vm.ActiveScene.LightSetKey);
+            if (index < 0)
+            {
+                LightSet.AddLightSet(vm.ActiveScene.LightSetKey, true);
+                index = LightSet.LightSets.IndexOf(vm.ActiveScene.LightSetKey);
+                Debug.Assert(index >= 0);
+            }
+
+            lightSetComboBox.SelectedIndex = index;
+        }
+
         Focus();
-        var key = LightSet.GetKey(LightSet.DefaultKey);
-        sv1.RenderSurfaceControl.UseLightSet(key);
-        sv2.RenderSurfaceControl.UseLightSet(key);
-        sv3.RenderSurfaceControl.UseLightSet(key);
-        sv4.RenderSurfaceControl.UseLightSet(key);
     }
 
     private void OnSceneUpdated(object sender, EventArgs e)
@@ -73,6 +81,7 @@ partial class WorldEditorView : UserControl
         }
         // NOTE: the order of these lines matter!
         mainWindow.DataContext = null;
+        GameEntityView.Instance.DataContext = null;
         Project.Current?.Unload();
         mainWindow.Close();
     }
@@ -119,5 +128,24 @@ partial class WorldEditorView : UserControl
             sv3.RenderSurfaceControl.FocusPosition(avgPos);
             sv4.RenderSurfaceControl.FocusPosition(avgPos);
         }
+    }
+
+    private void OnLightSet_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is not Project vm) return;
+
+        var lightSetKey = (sender as ComboBox).SelectedItem as string;
+
+        var key = LightSet.GetKey(lightSetKey);
+        if(key == LightSet.InvalidKey)
+        {
+            key = LightSet.AddLightSet(lightSetKey, true);
+        }
+        Debug.Assert(key != LightSet.InvalidKey);
+        vm.ActiveScene.LightSetKey = lightSetKey;
+        sv1.RenderSurfaceControl.UseLightSet(key);
+        sv2.RenderSurfaceControl.UseLightSet(key);
+        sv3.RenderSurfaceControl.UseLightSet(key);
+        sv4.RenderSurfaceControl.UseLightSet(key);
     }
 }

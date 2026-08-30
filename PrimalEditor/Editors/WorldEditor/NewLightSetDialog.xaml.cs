@@ -10,7 +10,7 @@ namespace PrimalEditor.Editors
     /// <summary>
     /// Interaction logic for NewLightSetDialog.xaml
     /// </summary>
-    public partial class NewLightSetDialog : Window
+    partial class NewLightSetDialog : Window
     {
         public string CurrentLightSet { get; init; }
         public string LightSetName { get; private set; }

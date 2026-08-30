@@ -779,4 +779,10 @@ class MSAmbientLight(List<GameEntity> entities) : MSLight<AmbientLight>(entities
             OnPropertyChanged(nameof(EnvMap));
         }
     }
+
+    protected override bool UpdateMSGameEntity()
+    {
+        OnPropertyChanged(nameof(EnvMap));
+        return base.UpdateMSGameEntity();
+    }
 }

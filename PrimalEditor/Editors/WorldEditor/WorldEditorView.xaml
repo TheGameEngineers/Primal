@@ -9,16 +9,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Editors"
              xmlns:utl="clr-namespace:PrimalEditor.Utilities"
-             xmlns:ctlr="clr-namespace:PrimalEditor.Utilities.Controls"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:gameproject="clr-namespace:PrimalEditor.GameProject"
+             xmlns:proj="clr-namespace:PrimalEditor.GameProject"
              xmlns:c="clr-namespace:PrimalEditor.Content"
-             d:DataContext="{d:DesignInstance Type=gameproject:Project}"
+             xmlns:components="clr-namespace:PrimalEditor.Components"
+             d:DataContext="{d:DesignInstance Type=proj:Project}"
              mc:Ignorable="d" Focusable="True"
              d:DesignHeight="1080" d:DesignWidth="1920">
     <UserControl.Resources>
         <sys:Boolean x:Key="True">True</sys:Boolean>
         <sys:Boolean x:Key="False">False</sys:Boolean>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
     <UserControl.CommandBindings>
         <CommandBinding Command="ApplicationCommands.New" Executed="OnNewProject"/>
@@ -49,10 +50,10 @@
                 <Separator/>
                 <MenuItem Header="Exit" Command="ApplicationCommands.Close"/>
             </MenuItem>
-            <MenuItem Header="Settings"></MenuItem>
-            <MenuItem Header="View"></MenuItem>
-            <MenuItem Header="Create" IsEnabled="False"></MenuItem>
-            <MenuItem Header="Window"></MenuItem>
+            <MenuItem Header="Settings"/>
+            <MenuItem Header="View"/>
+            <MenuItem Header="Create" IsEnabled="False"/>
+            <MenuItem Header="Window"/>
         </Menu>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5">
             <Button Content="Undo" Command="{Binding UndoCommand}" Margin="10,0"/>
@@ -67,6 +68,9 @@
                 <ComboBoxItem Content="Release"/>
             </ComboBox>
             <Button Content="Primitive mesh" Click="OnCreatePrimitiveMesh_Button_Click" Margin="10,0"/>
+            <TextBlock Text="Light Set:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+            <ComboBox ItemsSource="{Binding Source={x:Static components:LightSet.LightSets}}" MinWidth="96" MaxWidth="200"
+                      x:Name="lightSetComboBox" SelectionChanged="OnLightSet_ComboBox_SelectionChanged" VerticalAlignment="Center"/>
         </StackPanel>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
@@ -98,8 +102,8 @@
                     <utl:RenderSurfaceView Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" x:Name="sv4" KeyDown="OnProjectLayoutView_KeyDown"/>
                 </Grid>
                                    
-                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"
-                          VerticalAlignment="Top" Background="Transparent"/>
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" Background="Transparent"/>
+                
                 <Grid Grid.Row="1" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*" MinWidth="250"/>
@@ -109,24 +113,22 @@
                     <utl:UndoRedoView DataContext="{Binding UndoRedo}" Grid.Column="0" Background="{StaticResource Editor.Window.GrayBrush2}"/>
                     <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Left" Background="Transparent"/>
                     <utl:LoggerView Grid.Column="1" Margin="5,0,0,0"/>
-                    <GridSplitter Grid.Column="2" Width="5" VerticalAlignment="Stretch"
-                                  HorizontalAlignment="Left" Background="Transparent"/>
+                    <GridSplitter Grid.Column="2" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Left" Background="Transparent"/>
                     <c:ContentBrowserView Grid.Column="2" Margin="5,0,0,0" AllowImport="True" Loaded="OnContentBrowser_Loaded"
                                           IsVisibleChanged="OnContentBrowser_IsVisibleChanged"/>
                 </Grid>
             </Grid>
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Left"
-                      VerticalAlignment="Stretch" Background="Transparent"/>
-            <Grid Grid.Column="1" Margin="5,0,0,0" MinWidth="250">
+            
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Left" VerticalAlignment="Stretch" Background="Transparent"/>
+
+            <Grid Grid.Column="1" MinWidth="250" Margin="5,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition MinHeight="400" Height="1*"/>
                     <RowDefinition MinHeight="400" Height="2*"/>
                 </Grid.RowDefinitions>
-                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"
-                          VerticalAlignment="Top" Background="Transparent"/>
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" Background="Transparent"/>
                 <local:ProjectLayoutView Background="{StaticResource Editor.Window.GrayBrush3}" KeyDown="OnProjectLayoutView_KeyDown"/>
-                <local:GameEntityView Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}"
-                                      Margin="0,5,0,0"/>
+                <local:GameEntityView Grid.Row="1" Margin="0,5,0,0"/>
             </Grid>
 
         </Grid>
