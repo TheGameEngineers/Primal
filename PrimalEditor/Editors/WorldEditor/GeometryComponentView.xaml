@@ -225,13 +225,7 @@
                         <TextBlock Text="{Binding Threshold}" d:Text="12.34" Foreground="{StaticResource Editor.GreenBrush}"/>
                     </StackPanel>
                 </StackPanel>
-                <ItemsControl ItemsSource="{Binding Meshes}" AlternationCount="{Binding Meshes.Count}" Grid.Row="1">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding Meshes}" AlternationCount="{Binding Meshes.Count}" Grid.Row="1"/>
             </Grid>
         </DataTemplate>
 
@@ -272,7 +266,7 @@
                         </Border>
                         <Border IsHitTestVisible="False" CornerRadius="5" BorderThickness="2">
                             <Border.Background>
-                                <ImageBrush ImageSource="/Resources/TextureEditor/Checker64.png"/>
+                                <ImageBrush ImageSource="pack://application:,,,/PrimalEditor;component/Resources/TextureEditor/Checker64.png"/>
                             </Border.Background>
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">

@@ -20,16 +20,15 @@ class GameEntity : ViewModelBase
 {
     public IdType EntityId { get; private set; } = ID.INVALID_ID;
 
-    private bool _isActive;
-    public bool IsActive
+    public virtual bool IsActive
     {
-        get => _isActive;
+        get;
         set
         {
-            if (_isActive != value)
+            if (field != value)
             {
-                _isActive = value;
-                if (_isActive)
+                field = value;
+                if (field)
                 {
                     _components.ToList().ForEach(x => x.Load());
                     EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
@@ -41,44 +40,41 @@ class GameEntity : ViewModelBase
                     _components.ToList().ForEach(x => x.Unload());
                     EntityId = ID.INVALID_ID;
                 }
-
                 OnPropertyChanged(nameof(IsActive));
             }
         }
     }
 
-    private bool _isEnabled = true;
     [DataMember]
     public bool IsEnabled
     {
-        get => _isEnabled;
+        get;
         set
         {
-            if (_isEnabled != value)
+            if (field != value)
             {
-                _isEnabled = value;
+                field = value;
                 OnPropertyChanged(nameof(IsEnabled));
             }
         }
-    }
+    } = true;
 
-    private string _name;
     [DataMember]
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
 
     [DataMember]
-    public Scene ParentScene { get; private set; }
+    public Scene ParentScene { get; init; }
 
     [DataMember(Name = nameof(Components))]
     private readonly ObservableCollection<Component> _components = [];
@@ -134,33 +130,46 @@ abstract class MSEntity : ViewModelBase
 {
     // Enables updates to selected entities
     private bool _enableUpdates = true;
-    private bool? _isEnabled;
+
     public bool? IsEnabled
     {
-        get => _isEnabled;
+        get;
         set
         {
-            if (_isEnabled != value)
+            if (field != value)
             {
-                _isEnabled = value;
+                field = value;
                 OnPropertyChanged(nameof(IsEnabled));
             }
         }
     }
 
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
+
+    public bool IsActive
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(IsActive));
+            }
+        }
+    }
+
 
     private readonly ObservableCollection<IMSComponent> _components = [];
     public ReadOnlyObservableCollection<IMSComponent> Components { get; }
@@ -171,11 +180,20 @@ abstract class MSEntity : ViewModelBase
 
     public static MSEntity CurrentSelection { get; private set; }
 
+    /// <summary>
+    /// Updates the properties of MSEntity and its list of components.
+    /// </summary>
+    /// <remarks>
+    /// NOTE: Current selection could be null while using undo/redo rapidly with async operations
+    /// such as adding/removing a geometry component. This is fine, since classes that derive
+    ///  from MSEntity call Refresh() in their constructor.
+    /// </remarks>
+    public static void Refresh() => CurrentSelection?.Refresh_Internal();
+
     public T GetMSComponent<T>() where T : IMSComponent
     {
         return (T)Components.FirstOrDefault(x => x.GetType() == typeof(T));
     }
-
 
     private void MakeComponentList()
     {
@@ -222,7 +240,8 @@ abstract class MSEntity : ViewModelBase
     {
         switch (propertyName)
         {
-            case nameof(IsEnabled): SelectedEntities.ForEach(x => x.IsEnabled = IsEnabled.Value); return true;
+            //NOTE: IsEnabled is handled in GameEntityView because of heterogenous selections
+            //      see note in GameEntityView.SetIsEnabled()
             case nameof(Name): SelectedEntities.ForEach(x => x.Name = Name); return true;
         }
         return false;
@@ -232,6 +251,7 @@ abstract class MSEntity : ViewModelBase
     {
         IsEnabled = GetMixedValue(SelectedEntities, new Func<GameEntity, bool>(x => x.IsEnabled));
         Name = GetMixedValue(SelectedEntities, new Func<GameEntity, string>(x => x.Name));
+        IsActive = SelectedEntities.All(x => x.IsActive);
 
         return true;
     }
@@ -241,7 +261,7 @@ abstract class MSEntity : ViewModelBase
         CurrentSelection = null;
     }
 
-    public void Refresh()
+    private void Refresh_Internal()
     {
         _enableUpdates = false;
         UpdateMSGameEntity();
@@ -251,7 +271,7 @@ abstract class MSEntity : ViewModelBase
 
     public MSEntity(List<GameEntity> entities)
     {
-        Debug.Assert(entities?.Any() == true);
+        Debug.Assert(entities?.Count > 0);
         CurrentSelection = this;
         Components = new ReadOnlyObservableCollection<IMSComponent>(_components);
         SelectedEntities = entities;

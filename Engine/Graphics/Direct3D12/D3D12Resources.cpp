@@ -11,7 +11,7 @@ descriptor_heap::initialize(u32 capacity, bool is_shader_visible)
     std::lock_guard lock{ _mutex };
     assert(capacity && capacity < D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_2);
     assert(!(_type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER &&
-             capacity > D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE));
+        capacity > D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE));
 
     if (_type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV ||
         _type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
@@ -37,10 +37,12 @@ descriptor_heap::initialize(u32 capacity, bool is_shader_visible)
     if (FAILED(hr)) return false;
 
     _free_handles = std::make_unique<u32[]>(capacity);
+    _allocated_slots = std::make_unique<u8[]>(capacity);
     _capacity = capacity;
     _size = 0;
 
     for (u32 i{ 0 }; i < capacity; ++i) _free_handles[i] = i;
+    memset(_allocated_slots.get(), 0, capacity);
     DEBUG_OP(for (u32 i{ 0 }; i < frame_buffer_count; ++i) assert(_deferred_free_indices[i].empty()));
 
     _descriptor_size = device->GetDescriptorHandleIncrementSize(_type);
@@ -69,8 +71,14 @@ descriptor_heap::process_deferred_free(u32 frame_idx)
     {
         for (auto index : indices)
         {
+            if (!_allocated_slots[index])
+            {
+                assert(false && "Descriptor slot is already free. Double free detected.");
+                continue;
+            }
             --_size;
             _free_handles[_size] = index;
+            _allocated_slots[index] = 0;
         }
         indices.clear();
     }
@@ -84,6 +92,10 @@ descriptor_heap::allocate()
     assert(_size < _capacity);
 
     const u32 index{ _free_handles[_size] };
+
+    assert(!_allocated_slots[index]);
+    _allocated_slots[index] = 1;
+
     const u32 offset{ index * _descriptor_size };
     ++_size;
 
@@ -123,7 +135,7 @@ d3d12_buffer::d3d12_buffer(const d3d12_buffer_init_info& info, bool is_cpu_acces
     assert(!_buffer && info.size && info.alignment);
     _size = (u32)math::align_size_up(info.size, info.alignment);
     _buffer = d3dx::create_buffer(info.data, _size, is_cpu_accessible, info.initial_state, info.flags,
-                                  info.heap, info.allocation_info.Offset);
+        info.heap, info.allocation_info.Offset);
     _gpu_address = _buffer->GetGPUVirtualAddress();
     NAME_D3D12_OBJECT_INDEXED(_buffer, _size, L"D3D12 Buffer - size");
 }
@@ -142,7 +154,7 @@ constant_buffer::constant_buffer(const d3d12_buffer_init_info& info)
     NAME_D3D12_OBJECT_INDEXED(buffer(), size(), L"Constant Buffer - size");
 
     D3D12_RANGE range{};
-    DXCall(buffer()->Map(0, &range, (void**)(&_cpu_address)));
+    DXCall(buffer()->Map(0, &range, (void**)&_cpu_address));
     assert(_cpu_address);
 }
 
@@ -198,9 +210,9 @@ d3d12_texture::d3d12_texture(d3d12_texture_init_info info)
 
     D3D12_CLEAR_VALUE *const clear_value
     {
-        (info.desc &&
+        info.desc &&
         (info.desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ||
-         info.desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL))
+         info.desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
         ? &info.clear_value : nullptr
     };
 

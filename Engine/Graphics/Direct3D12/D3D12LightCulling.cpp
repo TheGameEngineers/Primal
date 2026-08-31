@@ -73,7 +73,7 @@ create_root_signatures()
     light_culling_root_signature = d3dx::d3d12_root_signature_desc{ &parameters[0], _countof(parameters) }.create();
     NAME_D3D12_OBJECT(light_culling_root_signature, L"Light Culling Root Signature");
 
-    return light_culling_root_signature != nullptr;
+    return light_culling_root_signature;
 }
 
 bool
@@ -99,7 +99,7 @@ create_psos()
         light_culling_pso = d3dx::create_pipeline_state(&stream, sizeof(stream));
         NAME_D3D12_OBJECT(light_culling_pso, L"Light Culling PSO");
     }
-    return grid_frustum_pso != nullptr && light_culling_pso != nullptr;
+    return grid_frustum_pso && light_culling_pso;
 }
 
 void

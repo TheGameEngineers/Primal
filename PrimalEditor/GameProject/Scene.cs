@@ -2,59 +2,74 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
 using PrimalEditor.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using System.Windows.Input;
 
 namespace PrimalEditor.GameProject;
 
 [DataContract]
+[KnownType(typeof(GameEntity))]
+[KnownType(typeof(DirectionalLight))]
+[KnownType(typeof(PointLight))]
+[KnownType(typeof(Spotlight))]
+[KnownType(typeof(AmbientLight))]
 class Scene : ViewModelBase
 {
     public ICommand RenameCommand { get; private set; }
 
-    private string _name;
     [DataMember]
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
 
     [DataMember]
-    public Project Project { get; private set; }
-
-    private bool _isActive;
-    [DataMember]
     public bool IsActive
     {
-        get => _isActive;
+        get;
         set
         {
-            if (_isActive != value)
+            if (field != value)
             {
-                _isActive = value;
-                SetActiveGameEntities(_isActive);
+                field = value;
+                SetActiveGameEntities(field);
                 OnPropertyChanged(nameof(IsActive));
             }
         }
     }
 
+    [DataMember]
+    public Project Project { get; init; }
+
     [DataMember(Name = nameof(GameEntities))]
     private readonly ObservableCollection<GameEntity> _gameEntities = [];
     public ReadOnlyObservableCollection<GameEntity> GameEntities { get; private set; }
+
+    [DataMember]
+    public string LightSetKey
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(LightSetKey));
+            }
+        }
+    } = LightSet.DefaultKey;
 
     private void SetActiveGameEntities(bool isActive)
     {
@@ -144,7 +159,7 @@ class Scene : ViewModelBase
             .Select(c => c.GetComponentId())
             .ToList();
 
-        Debug.Assert(ids.All(id => ID.IsValid(id)));
+        Debug.Assert(ids.All(ID.IsValid));
         return ids;
     }
 
@@ -159,8 +174,8 @@ class Scene : ViewModelBase
     }
 
     public void EnableAndUpdate(List<(GameEntity Entity, bool IsEnabled)> enableList, bool update = true)
-    { 
-        enableList.ForEach(x=>x.Entity.IsEnabled = x.IsEnabled);
+    {
+        enableList.ForEach(x => x.Entity.IsEnabled = x.IsEnabled);
         if (update) Project.UpdateScene();
     }
 
@@ -172,6 +187,8 @@ class Scene : ViewModelBase
             GameEntities = new ReadOnlyObservableCollection<GameEntity>(_gameEntities);
             OnPropertyChanged(nameof(GameEntities));
         }
+
+        LightSetKey ??= LightSet.DefaultKey;
 
         RenameCommand = new RelayCommand<string>(x =>
         {

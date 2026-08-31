@@ -14,7 +14,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace PrimalEditor.GameProject;
@@ -39,16 +38,15 @@ class Project : ViewModelBase
     public string ContentPath => $@"{Path}Content\";
     public string TempFolder => $@"{Path}.Primal\Temp\";
 
-    private int _buildConfig;
     [DataMember]
     public int BuildConfig
     {
-        get => _buildConfig;
+        get;
         set
         {
-            if (_buildConfig != value)
+            if (field != value)
             {
-                _buildConfig = value;
+                field = value;
                 OnPropertyChanged(nameof(BuildConfig));
             }
         }
@@ -57,15 +55,14 @@ class Project : ViewModelBase
     public BuildConfiguration StandAloneBuildConfig => BuildConfig == 0 ? BuildConfiguration.Debug : BuildConfiguration.Release;
     public BuildConfiguration DLLBuildConfig => BuildConfig == 0 ? BuildConfiguration.DebugEditor : BuildConfiguration.ReleaseEditor;
 
-    private string[] _availableScripts;
     public string[] AvailableScripts
     {
-        get => _availableScripts;
+        get;
         private set
         {
-            if (_availableScripts != value)
+            if (field != value)
             {
-                _availableScripts = value;
+                field = value;
                 OnPropertyChanged(nameof(AvailableScripts));
             }
         }
@@ -77,15 +74,14 @@ class Project : ViewModelBase
     public ReadOnlyObservableCollection<Scene> Scenes
     { get; private set; }
 
-    private Scene _activeScene;
     public Scene ActiveScene
     {
-        get => _activeScene;
+        get;
         set
         {
-            if (_activeScene != value)
+            if (field != value)
             {
-                _activeScene = value;
+                field = value;
                 OnPropertyChanged(nameof(ActiveScene));
             }
         }
@@ -140,7 +136,7 @@ class Project : ViewModelBase
         RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
         SaveCommand = new RelayCommand<object>(x => Save(this));
         DebugStartCommand = new RelayCommand<object>(async x => await RunGame(true), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
-        DebugStartWithoutDebuggingCommand = new RelayCommand<object>(async x => await RunGame(false), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
+        DebugStartWithoutDebuggingCommand = new RelayCommand<object>(async x => await RunGame(false), x => VisualStudio.BuildDone);
         DebugStopCommand = new RelayCommand<object>(async x => await StopGame(), x => VisualStudio.IsDebugging());
         BuildCommand = new RelayCommand<bool>(async x => await BuildGameCodeDLL(x), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
 
@@ -170,11 +166,11 @@ class Project : ViewModelBase
     public static Project Load(string file)
     {
         Debug.Assert(File.Exists(file));
-
         var path = System.IO.Path.GetDirectoryName(file);
         if (!path.EndsWith(System.IO.Path.DirectorySeparatorChar)) path += System.IO.Path.DirectorySeparatorChar;
 
         ContentWatcher.Reset($@"{path}Content\", path);
+        LightSet.AddLightSet(LightSet.DefaultKey, true);
 
         try
         {
@@ -203,6 +199,8 @@ class Project : ViewModelBase
         ActiveScene.GameEntities.ToList().ForEach(entity => entity.IsEnabled = false);
         UpdateScene();
         ActiveScene.IsActive = false;
+        MSEntity.Reset();
+        LightSet.Reset();
         UnloadGameCodeDLL();
         VisualStudio.CloseVisualStudio();
         AssetRegistry.Save();
@@ -289,7 +287,7 @@ class Project : ViewModelBase
 
             foreach (var entity in ActiveScene.GameEntities)
             {
-                if(ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
+                if (ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
                 {
                     Debug.Assert(entity.IsActive && ID.IsValid(entity.EntityId));
                     scriptNames.Add((entity, script.Name));
@@ -297,7 +295,7 @@ class Project : ViewModelBase
                 }
             }
 
-            MSEntity.CurrentSelection?.Refresh();
+            MSEntity.Refresh();
             return scriptNames;
         });
 
@@ -316,7 +314,7 @@ class Project : ViewModelBase
                 entity.AddComponent(script);
             }
 
-            MSEntity.CurrentSelection?.Refresh();
+            MSEntity.Refresh();
         });
     }
 

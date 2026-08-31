@@ -2,16 +2,15 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System.Windows.Controls;
 
-namespace PrimalEditor.Editors
+namespace PrimalEditor.Editors;
+
+/// <summary>
+/// Interaction logic for GeometryEditorView.xaml
+/// </summary>
+partial class GeometryEditorView : UserControl
 {
-    /// <summary>
-    /// Interaction logic for GeometryEditorView.xaml
-    /// </summary>
-    public partial class GeometryEditorView : UserControl
+    public GeometryEditorView()
     {
-        public GeometryEditorView()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

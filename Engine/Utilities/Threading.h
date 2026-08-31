@@ -5,7 +5,7 @@
 
 namespace primal::utl {
 
-#if 0 //_WIN64
+#if _WIN64
 class ticket_mutex {
 public:
     ticket_mutex() = default;

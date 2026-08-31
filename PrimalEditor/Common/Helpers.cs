@@ -28,6 +28,23 @@ static class EnumExtensions
     }
 }
 
+static class GuidExtensions
+{
+    public static void WriteToBinary(this Guid guid, BinaryWriter writer)
+    {
+        var bytes = guid.ToByteArray();
+        writer.Write(bytes.Length);
+        writer.Write(bytes);
+    }
+
+    public static Guid ReadFromBinary(BinaryReader reader)
+    {
+        var size = reader.ReadInt32();
+        var bytes = reader.ReadBytes(size);
+        return new(bytes);
+    }
+}
+
 static partial class MouseHelper
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -242,7 +259,7 @@ static class VisualExtensions
     }
 }
 
-public static class ContentHelper
+static class ContentHelper
 {
     public static string[] MeshFileExtensions { get; } = [".fbx"];
     public static string[] ImageFileExtensions { get; } = [".bmp", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".tga", ".dds", ".hdr"];
@@ -299,14 +316,7 @@ public static class ContentHelper
     }
 
     public static byte[] ComputeHash(byte[] data, int offset = 0, int count = 0)
-    {
-        if (data?.Length > 0)
-        {
-            using var sha256 = SHA256.Create();
-            return sha256.ComputeHash(data, offset, count > 0 ? count : data.Length);
-        }
-        return null;
-    }
+        => data?.Length > 0 ? SHA256.HashData(data.AsSpan(offset, count > 0 ? count : data.Length)) : null;
 
     internal static IEnumerable<string> SaveAsset(this Asset asset)
     {
@@ -563,9 +573,7 @@ static class BitmapHelper
             // swap R and B channels: RGB -> BGR
             for (int i = 0; i < bgrData.Length; i += bytesPerPixel)
             {
-                var r = bgrData[i + 2];
-                bgrData[i + 2] = bgrData[i];
-                bgrData[i] = r;
+                (bgrData[i], bgrData[i + 2]) = (bgrData[i + 2], bgrData[i]);
             }
         }
         else if (bytesPerPixel == 4)

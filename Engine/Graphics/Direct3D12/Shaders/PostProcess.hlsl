@@ -103,16 +103,16 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position,
     return float4((float3)c, 1.f);
 #elif 0 // LIGHT GRID OPAQUE
     return Heatmap(LightGridOpaque, Position.xy, 0.75f);
-#elif 1 // SCENE
+#elif 0 // SCENE
 
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     return float4(gpassMain[Position.xy].xyz, 1.f);
-#elif 0 //
+#elif 1 //
 
     Texture2D gpassDepth = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
     float depth = gpassDepth[Position.xy].r;
 
-    if(depth > 0.f)
+    if (depth > 0.f || GlobalData.AmbientLight.Intensity < 0.0001f)
     {
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
         return gpassMain[Position.xy];        

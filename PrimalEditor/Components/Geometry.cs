@@ -19,31 +19,29 @@ class MeshWithMaterial : ViewModelBase
 {
     public MeshInfo MeshInfo { get; }
 
-    private AppliedMaterial _material;
     public AppliedMaterial Material
     {
-        get => _material;
+        get;
         set
         {
-            if (_material != value && value != null)
+            if (field != value && value != null)
             {
                 Debug.Assert(ID.IsValid(value.ContentId));
-                _material?.UnloadFromEngine();
-                _material = value;
+                field?.UnloadFromEngine();
+                field = value;
                 OnPropertyChanged(nameof(Material));
             }
         }
     }
 
-    private AppliedMaterialProxy _materialProxy;
     public AppliedMaterialProxy MaterialProxy
     {
-        get => _materialProxy;
+        get;
         set
         {
-            if (_materialProxy != value)
+            if (field != value)
             {
-                _materialProxy = value;
+                field = value;
                 OnPropertyChanged(nameof(MaterialProxy));
             }
         }
@@ -83,15 +81,14 @@ class Geometry : Component
     [DataMember(Name = "Materials")]
     private List<AppliedMaterial> _materials = [];
 
-    private GeometryWithMaterials _geometryWithMaterials;
     public GeometryWithMaterials GeometryWithMaterials
     {
-        get => _geometryWithMaterials;
+        get;
         private set
         {
-            if (_geometryWithMaterials != value)
+            if (field != value)
             {
-                _geometryWithMaterials = value;
+                field = value;
                 OnPropertyChanged(nameof(GeometryWithMaterials));
             }
         }
@@ -254,29 +251,27 @@ class Geometry : Component
 
 class InputProxy : ViewModelBase
 {
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
 
-    private AssetInfo _asset;
     public AssetInfo Asset
     {
-        get => _asset;
+        get;
         set
         {
-            if (value != null && _asset?.Guid != value.Guid)
+            if (value != null && field?.Guid != value.Guid)
             {
-                _asset = value;
+                field = value;
                 OnPropertyChanged(nameof(Asset));
                 OnPropertyChanged(nameof(Ignore));
             }
@@ -298,15 +293,14 @@ class InputProxy : ViewModelBase
 
 class AppliedMaterialProxy : ViewModelBase
 {
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
@@ -314,15 +308,14 @@ class AppliedMaterialProxy : ViewModelBase
 
     public bool IsMultipleMaterials { get; private set; }
 
-    private static bool _isDirty;
     public static bool IsDirty
     {
-        get => _isDirty;
+        get;
         set
         {
-            if (_isDirty != value)
+            if (field != value)
             {
-                _isDirty = value;
+                field = value;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -336,7 +329,7 @@ class AppliedMaterialProxy : ViewModelBase
         get => _materialInfo;
         set
         {
-            if (_materialInfo != value && _materialInfo?.Guid != value.Guid && value.Guid != Guid.Empty)
+            if (value != null && _materialInfo?.Guid != value.Guid && value.Guid != Guid.Empty)
             {
                 _materialInfo = value;
                 OnPropertyChanged(nameof(MaterialInfo));
@@ -453,21 +446,20 @@ sealed class MSGeometry : MSComponent<Geometry>
     public ICommand ApplyChangesCommand =>
         new RelayCommand<object>(x => OnApplyChangesCommand(), x => AppliedMaterialProxy.IsDirty || AppliedMaterialProxy.IsNameDirty);
 
-    private GeometryWithMaterials _geometryWithMaterials;
     public GeometryWithMaterials GeometryWithMaterials
     {
-        get => _geometryWithMaterials;
+        get;
         private set
         {
-            if (_geometryWithMaterials != value)
+            if (field != value)
             {
-                _geometryWithMaterials = value;
+                field = value;
                 OnPropertyChanged(nameof(GeometryWithMaterials));
             }
         }
     }
 
-    public Guid GeometryGuid => _geometryWithMaterials != null ? SelectedComponents.First().GeometryGuid : Guid.Empty;
+    public Guid GeometryGuid => GeometryWithMaterials != null ? SelectedComponents.First().GeometryGuid : Guid.Empty;
 
     public List<AppliedMaterialProxy> MaterialProxies { get; private set; } = [];
 

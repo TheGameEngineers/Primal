@@ -6,119 +6,117 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Threading;
 
-namespace PrimalEditor.Utilities
+namespace PrimalEditor.Utilities;
+
+static class ID
 {
-    public static class ID
+    public static IdType INVALID_ID => -1;
+    public static bool IsValid(IdType id) => id != INVALID_ID;
+}
+
+static class MathUtil
+{
+    public static float Epsilon => 1e-5f;
+    public static float Pi => (float)Math.PI;
+    public static float HalfPi => Pi * 0.5f;
+
+    public static float WrapAngle(float angle)
     {
-        public static IdType INVALID_ID => -1;
-        public static bool IsValid(IdType id) => id != INVALID_ID;
+        angle %= 360f;
+        if (angle < 0) angle += 360f;
+        return angle;
     }
 
-    public static class MathUtil
+    public static bool IsTheSameAs(this float value, float other)
     {
-        public static float Epsilon => 1e-5f;
-        public static float Pi => (float)Math.PI;
-        public static float HalfPi => Pi * 0.5f;
-
-        public static float WrapAngle(float angle)
-        {
-            angle %= 360f;
-            if (angle < 0) angle += 360f;
-            return angle;
-        }
-
-        public static bool IsTheSameAs(this float value, float other)
-        {
-            return Math.Abs(value - other) < Epsilon;
-        }
-
-        public static bool IsTheSameAs(this float? value, float? other)
-        {
-            if (!value.HasValue || !other.HasValue) return false;
-            return Math.Abs(value.Value - other.Value) < Epsilon;
-        }
-
-        public static bool IsTheSameAs(this double value, double other)
-        {
-            return Math.Abs(value - other) < Epsilon;
-        }
-
-        // Align by rounding up. Will result in a multiple of 'alignment' that is greater than or equal to 'size'.
-        public static long AlignSizeUp(long size, long alignment)
-        {
-            Debug.Assert(alignment > 0, "Alignment must be non-zero.");
-            long mask = alignment - 1;
-            Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
-            return ((size + mask) & ~mask);
-        }
-
-        // Align by rounding down. Will result in a multiple of 'alignment' that is less than or equal to 'size'.
-        public static long AlignSizeDown(long size, long alignment)
-        {
-            Debug.Assert(alignment > 0, "Alignment must be non-zero.");
-            long mask = alignment - 1;
-            Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
-            return (size & ~mask);
-        }
-
-        public static bool IsPow2(int x)
-        {
-            return (x != 0) && (x & (x - 1)) == 0;
-        }
+        return Math.Abs(value - other) < Epsilon;
     }
 
-    class DelayEventTimerArgs(IEnumerable<object> data) : EventArgs
+    public static bool IsTheSameAs(this float? value, float? other)
     {
-        public bool RepeatEvent { get; set; }
-        public IEnumerable<object> Data { get; set; } = data;
+        if (!value.HasValue || !other.HasValue) return false;
+        return Math.Abs(value.Value - other.Value) < Epsilon;
     }
 
-    class DelayEventTimer
+    public static bool IsTheSameAs(this double value, double other)
     {
-        private readonly DispatcherTimer _timer;
-        private readonly TimeSpan _delay;
-        private readonly List<object> _data = [];
-        private DateTime _lastEventTime = DateTime.Now;
+        return Math.Abs(value - other) < Epsilon;
+    }
 
-        public event EventHandler<DelayEventTimerArgs> Triggered;
+    // Align by rounding up. Will result in a multiple of 'alignment' that is greater than or equal to 'size'.
+    public static long AlignSizeUp(long size, long alignment)
+    {
+        Debug.Assert(alignment > 0, "Alignment must be non-zero.");
+        long mask = alignment - 1;
+        Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
+        return (size + mask) & ~mask;
+    }
 
-        public void Trigger(object data = null)
+    // Align by rounding down. Will result in a multiple of 'alignment' that is less than or equal to 'size'.
+    public static long AlignSizeDown(long size, long alignment)
+    {
+        Debug.Assert(alignment > 0, "Alignment must be non-zero.");
+        long mask = alignment - 1;
+        Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
+        return size & ~mask;
+    }
+
+    public static bool IsPow2(int x)
+    {
+        return (x != 0) && (x & (x - 1)) == 0;
+    }
+}
+
+class DelayEventTimerArgs(IEnumerable<object> data) : EventArgs
+{
+    public bool RepeatEvent { get; set; }
+    public IEnumerable<object> Data { get; set; } = data;
+}
+
+class DelayEventTimer
+{
+    private readonly DispatcherTimer _timer;
+    private readonly TimeSpan _delay;
+    private readonly List<object> _data = [];
+    private DateTime _lastEventTime = DateTime.Now;
+
+    public event EventHandler<DelayEventTimerArgs> Triggered;
+
+    public void Trigger(object data = null)
+    {
+        if (data != null)
         {
-            if (data != null)
-            {
-                _data.Add(data);
-            }
-
-            _lastEventTime = DateTime.Now;
-            _timer.IsEnabled = true;
+            _data.Add(data);
         }
 
-        public void Disable()
-        {
-            _timer.IsEnabled = false;
-        }
+        _lastEventTime = DateTime.Now;
+        _timer.IsEnabled = true;
+    }
 
-        private void OnTimerTick(object sender, EventArgs e)
-        {
-            if ((DateTime.Now - _lastEventTime) < _delay) return;
-            var eventArgs = new DelayEventTimerArgs(_data);
-            Triggered?.Invoke(this, eventArgs);
-            if (!eventArgs.RepeatEvent)
-            {
-                _data.Clear();
-            }
-            _timer.IsEnabled = eventArgs.RepeatEvent;
-        }
+    public void Disable()
+    {
+        _timer.IsEnabled = false;
+    }
 
-        public DelayEventTimer(TimeSpan delay, DispatcherPriority priority = DispatcherPriority.Normal)
+    private void OnTimerTick(object sender, EventArgs e)
+    {
+        if ((DateTime.Now - _lastEventTime) < _delay) return;
+        var eventArgs = new DelayEventTimerArgs(_data);
+        Triggered?.Invoke(this, eventArgs);
+        if (!eventArgs.RepeatEvent)
         {
-            _delay = delay;
-            _timer = new DispatcherTimer(priority)
-            {
-                Interval = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 0.5)
-            };
-            _timer.Tick += OnTimerTick;
-
+            _data.Clear();
         }
+        _timer.IsEnabled = eventArgs.RepeatEvent;
+    }
+
+    public DelayEventTimer(TimeSpan delay, DispatcherPriority priority = DispatcherPriority.Normal)
+    {
+        _delay = delay;
+        _timer = new DispatcherTimer(priority)
+        {
+            Interval = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 0.5)
+        };
+        _timer.Tick += OnTimerTick;
     }
 }

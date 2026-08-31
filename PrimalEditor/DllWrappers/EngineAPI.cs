@@ -13,7 +13,6 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace PrimalEditor.EngineAPIStructs
 {
@@ -27,7 +26,7 @@ namespace PrimalEditor.EngineAPIStructs
         ShaderCompilation,
         [Description("Graphics module initialization failed")]
         Graphics,
-    }
+    }    
 
     [StructLayout(LayoutKind.Sequential)]
     class TransformComponent
@@ -156,7 +155,11 @@ namespace PrimalEditor.DllWrappers
         private const string _engineDll = "EngineDll.dll";
 
         [LibraryImport(_engineDll)]
+        public static partial void GetEngineVersion(out int major, out int minor, out int revision);
+
+        [LibraryImport(_engineDll)]
         public static partial EngineInitError InitializeEngine();
+
         [LibraryImport(_engineDll)]
         public static partial void ShutdownEngine();
 
@@ -224,8 +227,8 @@ namespace PrimalEditor.DllWrappers
         {
             Debug.Assert(!string.IsNullOrEmpty(shaderGroup?.Code));
             Debug.Assert(!string.IsNullOrEmpty(shaderGroup.FunctionName));
-            Debug.Assert(shaderGroup.ExtraArgs?.Any() == true);
-            Debug.Assert(!shaderGroup.ByteCode.Any() == true);
+            Debug.Assert(shaderGroup.ExtraArgs?.Count > 0);
+            Debug.Assert(shaderGroup.ByteCode.Count == 0);
             shaderGroup.ByteCode.Clear();
             shaderGroup.Errors.Clear();
             shaderGroup.Assembly.Clear();
@@ -239,7 +242,7 @@ namespace PrimalEditor.DllWrappers
                     data.Type = (int)shaderGroup.Type;
                     data.CodeSize = code.Length;
                     data.FunctionName = shaderGroup.FunctionName;
-                    data.ExtraArgs = args.Any() ? string.Join(";", args) : string.Empty;
+                    data.ExtraArgs = args.Count > 0 ? string.Join(";", args) : string.Empty;
                     data.Code = Marshal.AllocCoTaskMem(code.Length);
                     Marshal.Copy(code, 0, data.Code, data.CodeSize);
                     if (CompileShader(data) == 0) throw new Exception("Shader compilation failed.");
@@ -328,6 +331,113 @@ namespace PrimalEditor.DllWrappers
 
         [LibraryImport(_engineDll)]
         public static partial void SetCameraFoV(int surfaceId, float fov);
+
+        [LibraryImport(_engineDll, StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
+        public static partial ulong CreateLightSet(string lightSetKey);
+
+        [LibraryImport(_engineDll, StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
+        public static partial void RemoveLightSet(ulong lightSetKey);
+
+        // data = {
+        //  u32         type;
+        //  f32         intensity;
+        //  math::v3    color;
+        //  u32         is_enabled;
+        //  math::u32v3 diffuse, specular, brdf_lut; (texture ids for ambient lights)
+        //  f32         range; (for point and spot lights)
+        //  math::v3    attenuation; (for point and spot lights)
+        //  f32         umbra; (for spot lights)
+        //  f32         penumbra; (for spot lights)
+        // }
+        //
+        [LibraryImport(_engineDll)]
+        private static partial IdType CreateLight(IdType entityId, ulong lightSetKey, [In] byte[] data, int dataSize);
+
+        public static IdType CreateLight(Light light)
+        {
+            Debug.Assert(ID.IsValid(light?.EntityId ?? ID.INVALID_ID));
+            Debug.Assert(!string.IsNullOrWhiteSpace(light.LightSetKey));
+            using var writer = new BinaryWriter(new MemoryStream());
+
+            writer.Write((int)light.Type);
+            writer.Write(light.Intensity);
+            writer.Write(light.Color.ScR);
+            writer.Write(light.Color.ScG);
+            writer.Write(light.Color.ScB);
+            writer.Write(light.IsEnabled ? 1 : 0);
+
+            if (light is AmbientLight ambientLight)
+            {
+                writer.Write(ambientLight.DiffuseContentId);
+                writer.Write(ambientLight.SpecularContentId);
+                writer.Write(ambientLight.BrdfLutContentId);
+            }
+            else if (light.Type != LightType.Directional)
+            {
+                var pointLight = light as PointLight;
+                writer.Write(pointLight.Range);
+                writer.Write(pointLight.Attenuation.X);
+                writer.Write(pointLight.Attenuation.Y);
+                writer.Write(pointLight.Attenuation.Z);
+
+                if (light is Spotlight spotlight)
+                {
+                    writer.Write(spotlight.Umbra);
+                    writer.Write(spotlight.Penumbra);
+                }
+            }
+
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream).ToArray();
+
+            var lightSetKey = LightSet.GetKey(light.LightSetKey);
+            if (lightSetKey == LightSet.InvalidKey)
+            {
+                lightSetKey = LightSet.AddLightSet(light.LightSetKey, true);
+            }
+            Debug.Assert(lightSetKey != LightSet.InvalidKey);
+
+            return CreateLight(light.EntityId, lightSetKey, data, data.Length);
+        }
+
+        [LibraryImport(_engineDll)]
+        public static partial void RemoveLight(IdType lightId, ulong lightSetKey);
+
+        [LibraryImport(_engineDll)]
+        public static partial void GetLightIsEnabled([In] IdType[] ids, [In] ulong[] lightSetKeys, [Out] int[] isEnabled, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void GetLightIntensity([In] IdType[] ids, [In] ulong[] lightSetKeys, [Out] float[] intensity, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void GetLightRange([In] IdType[] ids, [In] ulong[] lightSetKeys, [Out] float[] range, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void GetLightConeAngles([In] IdType[] ids, [In] ulong[] lightSetKeys, [Out] float[] umbra, [Out] float[] penumbra, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void GetLightColor([In] IdType[] ids, [In] ulong[] lightSetKeys, [Out] float[] r, [Out] float[] g, [Out] float[] b, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void GetLightAttenuation([In] IdType[] ids, [In] ulong[] lightSetKeys, [Out] float[] a, [Out] float[] b, [Out] float[] c, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetLightIsEnabled([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] int[] isEnabled, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetLightIntensity([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] float[] intensity, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetLightRange([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] float[] range, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetLightConeAngles([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] float[] umbra, [In] float[] penumbra, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetLightColor([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] float[] r, [In] float[] g, [In] float[] b, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetLightAttenuation([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] float[] a, [In] float[] b, [In] float[] c, int count);
 
         internal static partial class EntityAPI
         {
@@ -420,6 +530,7 @@ namespace PrimalEditor.DllWrappers
 
                 return UpdateComponent(entity.EntityId, desc, type) != 0;
             }
+
             [LibraryImport(_engineDll)]
             public static partial IdType GetComponentId(IdType entityId, ComponentType type);
 

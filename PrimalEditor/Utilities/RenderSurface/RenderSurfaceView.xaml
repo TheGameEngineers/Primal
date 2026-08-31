@@ -31,6 +31,12 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
+            <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" MaxHeight="200">
+                <Border.Background>
+                    <VisualBrush Visual="{StaticResource PrimalLogoShape}" Stretch="Uniform" Opacity="0.07"/>
+                </Border.Background>
+            </Border>
+            
             <local:RenderSurfaceControl x:Name="renderSurface" Grid.Row="1" x:FieldModifier="private"/>
 
             <Border Background="{StaticResource Editor.Window.GrayBrush3}" BorderThickness="0,0,0,2" Grid.Row="0"
@@ -77,27 +83,21 @@
                         <CheckBox Content="Lock Camera" IsChecked="{Binding IsXZLocked}" Foreground="{StaticResource Editor.FontBrush}"/>
                         <DockPanel>
                             <TextBlock Text="Camera Speed" Width="90" Margin="0,5"/>
-                            <TextBlock Text="{Binding CameraSpeed}" Margin="0,5" Width="32"/>
-                            <Slider Minimum="1" Maximum="10" VerticalAlignment="Center"
+                            <Slider Style="{StaticResource HorizontalSliderStyle}" Minimum="1" Maximum="10" VerticalAlignment="Center"
                                     Value="{Binding CameraSpeed}" TickFrequency="1" TickPlacement="BottomRight"/>
                         </DockPanel>
                         <DockPanel>
                             <TextBlock Text="Camera FoV" Width="90" Margin="0,5"/>
-                            <TextBlock Text="{Binding CameraFov, StringFormat=F1}" Margin="0,5" Width="32"/>
-                            <Slider Minimum="0.01" Maximum="180" VerticalAlignment="Center"
-                                    Value="{Binding CameraFov}"/>
+                            <Slider Style="{StaticResource HorizontalSliderStyle}" Minimum="0.01" Maximum="180"
+                                    Value="{Binding CameraFov}" VerticalAlignment="Center" />
                         </DockPanel>
                         <DockPanel>
                             <TextBlock Text="Camera NearZ" Width="90" Margin="0,5"/>
-                            <TextBlock Text="{Binding CameraNearZ, StringFormat=F1}" Margin="0,5" Width="32"/>
-                            <Slider Minimum="0.001" Maximum="{Binding CameraFarZ}" VerticalAlignment="Center"
-                                    Value="{Binding CameraNearZ}"/>
+                            <controls:ScalarBox Value="{Binding CameraNearZ}" Minimum="0.001" Maximum="{Binding CameraFarZ}"/>
                         </DockPanel>
                         <DockPanel>
-                            <TextBlock Text="Camera FoV" Width="90" Margin="0,5"/>
-                            <TextBlock Text="{Binding CameraFarZ, StringFormat=F1}" Margin="0,5" Width="32"/>
-                            <Slider Minimum="{Binding CameraNearZ}" Maximum="10000" VerticalAlignment="Center"
-                                    Value="{Binding CameraFarZ}"/>
+                            <TextBlock Text="Camera FarZ" Width="90" Margin="0,5"/>
+                            <controls:ScalarBox Value="{Binding CameraFarZ}" Minimum="{Binding CameraNearZ}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>

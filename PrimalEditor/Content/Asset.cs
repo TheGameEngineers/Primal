@@ -67,18 +67,17 @@ abstract class Asset : ViewModelBase
 {
     public static string AssetFileExtension => ".asset";
     [DataMember]
-    public AssetType Type { get; private set; }
+    public AssetType Type { get; init; }
     public byte[] Icon { get; protected set; }
 
-    private string _fullPath;
     public string FullPath
     {
-        get => _fullPath;
+        get;
         set
         {
-            if (_fullPath != value)
+            if (field != value)
             {
-                _fullPath = value;
+                field = value;
                 OnPropertyChanged(nameof(FullPath));
                 OnPropertyChanged(nameof(FileName));
             }
@@ -113,12 +112,12 @@ abstract class Asset : ViewModelBase
     private static AssetInfo GetAssetInfo(BinaryReader reader)
     {
         reader.BaseStream.Position = 0;
-        var info = new AssetInfo();
-
-        info.Type = (AssetType)reader.ReadInt32();
-        var idSize = reader.ReadInt32();
-        info.Guid = new Guid(reader.ReadBytes(idSize));
-        info.ImportDate = DateTime.FromBinary(reader.ReadInt64());
+        var info = new AssetInfo
+        {
+            Type = (AssetType)reader.ReadInt32(),
+            Guid = GuidExtensions.ReadFromBinary(reader),
+            ImportDate = DateTime.FromBinary(reader.ReadInt64())
+        };
         var hashSize = reader.ReadInt32();
         if (hashSize > 0)
         {
@@ -149,14 +148,12 @@ abstract class Asset : ViewModelBase
 
     protected void WriteAssetFileHeader(BinaryWriter writer)
     {
-        var id = Guid.ToByteArray();
         var importDate = DateTime.Now.ToBinary();
 
         writer.BaseStream.Position = 0;
 
         writer.Write((int)Type);
-        writer.Write(id.Length);
-        writer.Write(id);
+        Guid.WriteToBinary(writer);
         writer.Write(importDate);
         // asset hash is optional
         if (Hash?.Length > 0)
@@ -195,8 +192,8 @@ class UploadedAsset
 {
     public IdType ContentId { get; private set; } = ID.INVALID_ID;
     public int ReferenceCount { get; private set; }
-    public AssetInfo AssetInfo { get; private set; }
-    public AssetMetadata Metadata { get; private set; }
+    public AssetInfo AssetInfo { get; init; }
+    public AssetMetadata Metadata { get; init; }
     private List<UploadedAsset> _referencedAssets = [];
 
     private static readonly Lock _lock = new();

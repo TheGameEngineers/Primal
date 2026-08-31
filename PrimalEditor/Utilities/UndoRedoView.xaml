@@ -8,32 +8,33 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Utilities"
-             mc:Ignorable="d" 
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type={x:Type local:UndoRedo}}"
              d:DesignHeight="450" d:DesignWidth="800">
-    <StackPanel>
-        <ItemsControl ItemsSource="{Binding UndoList}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.FontBrush}"/>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <ItemsControl ItemsSource="{Binding RedoList}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.Disabled.FontBrush}"/>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </StackPanel>
+    <Grid>
+        <ScrollViewer x:Name="scrollViewer" Margin="0,32,0,0" Background="{StaticResource Editor.Window.GrayBrush2}" 
+                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <StackPanel x:Name="undoRedoStack">
+                <ItemsControl ItemsSource="{Binding UndoList}" x:Name="undoStack">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.FontBrush}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding RedoList}" x:Name="redoStack">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource Editor.Disabled.FontBrush}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+        <Border Height="32" VerticalAlignment="Top" Background="{StaticResource Editor.Window.GrayBrush3}" DockPanel.Dock="Top">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" Opacity="0.3" ShadowDepth="0"/>
+            </Border.Effect>
+            <TextBlock Margin="5,0" Text="History" VerticalAlignment="Center" Style="{StaticResource LightTextBlockStyle}"/>
+        </Border>
+    </Grid>
 </UserControl>

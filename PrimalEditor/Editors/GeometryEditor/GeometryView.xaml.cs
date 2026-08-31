@@ -14,7 +14,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for GeometryView.xaml
 /// </summary>
-public partial class GeometryView : UserControl
+partial class GeometryView : UserControl
 {
     private static readonly Lock _lock = new();
     private Point _clickedPosition;
@@ -122,7 +122,7 @@ public partial class GeometryView : UserControl
     private void OnGrid_Mouse_RBU(object sender, MouseButtonEventArgs e)
     {
         _capturedRight = false;
-        if(!_capturedLeft) Mouse.Capture(null);
+        if (!_capturedLeft) Mouse.Capture(null);
     }
 
     private void MoveCamera(double dx, double dy, int dz)

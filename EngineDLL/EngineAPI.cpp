@@ -20,7 +20,6 @@
 #endif
 
 #include <Windows.h>
-#include <atlsafe.h>
 
 using namespace primal;
 
@@ -119,7 +118,7 @@ patch_material_data(u8* data)
 
 void
 calculate_thresholds(const game_entity::entity_id *const entity_ids,
-                     f32 *const thresholds, u32 count, u32 surface_id)
+    f32 *const thresholds, u32 count, u32 surface_id)
 {
     game_entity::entity camera{ game_entity::entity_id{ surfaces[surface_id].camera.entity_id() } };
 
@@ -137,19 +136,12 @@ calculate_thresholds(const game_entity::entity_id *const entity_ids,
     }
 }
 
-// TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////a
-
-graphics::light lights[4]{};
-
-math::v3 rgb_to_color(u8 r, u8 g, u8 b) { return { r / 255.f, g / 255.f, b / 255.f }; }
-
 game_entity::entity
 create_one_game_entity(math::v3 position, math::v3 rotation, geometry::init_info* geometry_info, const char* script_name, math::v3 scale = { 1.f, 1.f, 1.f })
 {
     transform::init_info transform_info{};
     DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
-    math::v4a rot_quat;
+    math::v4a rot_quat{};
     DirectX::XMStoreFloat4A(&rot_quat, quat);
     memcpy(&transform_info.rotation[0], &rot_quat.x, sizeof(transform_info.rotation));
     memcpy(&transform_info.position[0], &position.x, sizeof(transform_info.position));
@@ -185,54 +177,18 @@ void remove_camera(graphics::camera& camera)
     game_entity::remove(id);
 }
 
-void create_lights()
-{
-    graphics::create_light_set(0);
-
-    graphics::light_init_info info{};
-    info.entity_id = create_one_game_entity({}, { 0.23f, 5.28f, 0.f }, nullptr, nullptr).get_id();
-    info.type = graphics::light::directional;
-    info.light_set_key = 0;
-    info.intensity = 0.5f;
-    info.color = rgb_to_color(174, 174, 174);
-    lights[0] = graphics::create_light(info);
-
-    info.entity_id = create_one_game_entity({}, { 0.23f, 5.28f - math::pi, 0.f }, nullptr, nullptr).get_id();
-    info.intensity = 1.f;
-    lights[1] = graphics::create_light(info);
-
-    info.intensity = 0.5f;
-
-    info.entity_id = create_one_game_entity({}, { math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
-    info.color = rgb_to_color(17, 27, 48);
-    lights[2] = graphics::create_light(info);
-
-    info.entity_id = create_one_game_entity({}, { -math::pi * 0.5f, 0, 0 }, nullptr, nullptr).get_id();
-    info.color = rgb_to_color(63, 47, 30);
-    lights[3] = graphics::create_light(info);
-}
-
-void
-remove_lights()
-{
-    for (u32 i{ 0 }; i < _countof(lights); ++i)
-    {
-        if (!lights[i].is_valid()) continue;
-        const game_entity::entity_id id{ lights[i].entity_id() };
-        graphics::remove_light(lights[i].get_id(), lights[i].light_set_key());
-        game_entity::remove(id);
-    }
-
-    graphics::remove_light_set(0);
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////a
-// TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-
 } // anonymous namespace
 
 extern utl::ticket_mutex mutex;
-math::v4 to_quat(math::v3 angles, bool is_degrees);
+math::v4 to_quat(math::v3 euler_angles, bool is_degrees);
+
+EDITOR_INTERFACE void
+GetEngineVersion(int* major, int* minor, int* revision)
+{
+    *major = primal::version.major;
+    *minor = primal::version.minor;
+    *revision = primal::version.revision;
+}
 
 EDITOR_INTERFACE engine_init_error::error_code
 InitializeEngine()
@@ -240,19 +196,25 @@ InitializeEngine()
     while (!compile_shaders())
     {
         // Pop up a message box allowing the user to retry compilation.
-        if (MessageBox(nullptr, L"Failed to compile engine shaders.", L"Shader Compilation Error", MB_RETRYCANCEL) != IDRETRY)
+        if (MessageBoxA(nullptr, "Failed to compile engine shaders.", "Shader Compilation Error", MB_RETRYCANCEL) != IDRETRY)
             return engine_init_error::shader_compilation;
     }
 
-    return graphics::initialize(graphics::graphics_platform::direct3d12) ? engine_init_error::succeeded : engine_init_error::graphics;
+    if (!graphics::initialize(graphics::graphics_platform::direct3d12))
+    {
+        return engine_init_error::graphics;
+    }
+
+    // Create a light-set for uninitialized light-set keys in the editor
+    graphics::create_light_set(0);
+
+    return engine_init_error::succeeded;
 }
 
 EDITOR_INTERFACE void
 ShutdownEngine()
-{
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    if (lights[0].is_valid()) remove_lights();
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
+{    
+    graphics::remove_light_set(0);
     graphics::shutdown();
 }
 
@@ -295,10 +257,6 @@ EDITOR_INTERFACE u32
 CreateRenderSurface(HWND host, s32 width, s32 height)
 {
     std::lock_guard lock{ mutex };
-
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    if (!lights[0].is_valid()) create_lights();
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
 
     assert(host);
     platform::window_init_info info{ &WinProc, host, nullptr, 0, 0, width, height };
@@ -471,10 +429,6 @@ RenderFrame(u32 surface_id, id::id_type camera_id, u64 light_set)
     std::lock_guard lock{ mutex };
     assert(surface_id < surfaces.size());
 
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-    light_set = 0;
-    // TEMPORARY //////////////////////////////////////////////////////////////////////////////////
-
     const viewport_surface& surface{ surfaces[surface_id] };
     const u32 count{ (u32)surface.geometry_ids.size() };
     const u64 item_id_buffer_size{ sizeof(id::id_type) * count };
@@ -539,4 +493,248 @@ SetCameraFoV(u32 surface_id, f32 fov)
     assert(surface_id < surfaces.size());
     fov *= (1.f / 180.f);
     surfaces[surface_id].camera.field_of_view(fov);
+}
+
+EDITOR_INTERFACE u64
+CreateLightSet(const char* light_set_key)
+{
+    std::lock_guard lock{ mutex };
+    assert(light_set_key && light_set_key[0]);
+    const u64 key{ std::hash<std::string>()(light_set_key) };
+    graphics::create_light_set(key);
+    return key;
+}
+
+EDITOR_INTERFACE void
+RemoveLightSet(u64 light_set_key)
+{
+    std::lock_guard lock{ mutex };
+    graphics::remove_light_set(light_set_key);
+}
+
+// data = {
+//  u32         type;
+//  f32         intensity;
+//  math::v3    color;
+//  u32         is_enabled;
+//  math::u32v3 diffuse, specular, brdf_lut; (texture ids for ambient lights)
+//  f32         range; (for point and spot lights)
+//  math::v3    attenuation; (for point and spot lights)
+//  f32         umbra; (for spot lights)
+//  f32         penumbra; (for spot lights)
+// }
+//
+EDITOR_INTERFACE id::id_type
+CreateLight(id::id_type entity_id, u64 light_set_key, const u8 *const data, [[maybe_unused]] u32 data_size)
+{
+    std::lock_guard lock{ mutex };
+    assert(id::is_valid(entity_id) && data && data_size);
+    utl::blob_stream_reader blob{ data };
+    graphics::light_init_info info{};
+    info.light_set_key = light_set_key;
+    info.entity_id = entity_id;
+    info.type = (graphics::light::type)blob.read<id::id_type>();
+    info.intensity = blob.read<f32>();
+    info.color = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+    info.is_enabled = blob.read<u32>() != 0;
+
+    if (info.type == graphics::light::ambient)
+    {
+        info.ambient_params.diffuse_texture_id = blob.read<id::id_type>();
+        info.ambient_params.specular_texture_id = blob.read<id::id_type>();
+        info.ambient_params.brdf_lut_texture_id = blob.read<id::id_type>();
+    }
+    else if (info.type == graphics::light::point)
+    {
+        info.point_params.range = blob.read<f32>();
+        info.point_params.attenuation = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+    }
+    else   if (info.type == graphics::light::spot)
+    {
+        info.spot_params.range = blob.read<f32>();
+        info.spot_params.attenuation = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+        info.spot_params.umbra = blob.read<f32>() * math::to_rad;
+        info.spot_params.penumbra = blob.read<f32>() * math::to_rad;
+    }
+
+    return graphics::create_light(info).get_id();
+}
+
+EDITOR_INTERFACE void
+RemoveLight(id::id_type light_id, u64 light_set_key)
+{
+    std::lock_guard lock{ mutex };
+    assert(id::is_valid(light_id));
+    graphics::remove_light(graphics::light_id{ light_id }, light_set_key);
+}
+
+EDITOR_INTERFACE void
+GetLightIsEnabled(id::id_type* ids, u64* light_set_keys, u32* is_enabled, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && is_enabled && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        is_enabled[i] = light.is_enabled() ? 1 : 0;
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightIntensity(id::id_type* ids, u64* light_set_keys, f32* intensities, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && intensities && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        intensities[i] = light.intensity();
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightRange(id::id_type* ids, u64* light_set_keys, f32* ranges, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && ranges && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        ranges[i] = light.range();
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightConeAngles(id::id_type* ids, u64* light_set_keys, f32* umbras, f32* penumbras, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && umbras && penumbras && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        umbras[i] = light.umbra() * math::to_deg;
+        penumbras[i] = light.penumbra() * math::to_deg;
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightColor(id::id_type* ids, u64* light_set_keys, f32* r, f32* g, f32* b, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && r && g && b && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        const math::v3 color{ light.color() };
+        r[i] = color.x; g[i] = color.y; b[i] = color.z;
+    }
+}
+
+EDITOR_INTERFACE void
+GetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* c, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && a && b && c && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        const math::v3 attenuation{ light.attenuation() };
+        a[i] = attenuation.x; b[i] = attenuation.y; c[i] = attenuation.z;
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightIsEnabled(id::id_type* ids, u64* light_set_keys, u32* is_enabled, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && is_enabled && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.is_enabled(is_enabled[i] != 0);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightIntensity(id::id_type* ids, u64* light_set_keys, f32* intensities, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && intensities && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.intensity(intensities[i]);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightRange(id::id_type* ids, u64* light_set_keys, f32* ranges, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && ranges && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.range(ranges[i]);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightConeAngles(id::id_type* ids, u64* light_set_keys, f32* umbras, f32* penumbras, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && umbras && penumbras && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.cone_angles(umbras[i] * math::to_rad, penumbras[i] * math::to_rad);
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightColor(id::id_type* ids, u64* light_set_keys, f32* r, f32* g, f32* b, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && r && g && b && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.color({ r[i], g[i], b[i] });
+    }
+}
+
+EDITOR_INTERFACE void
+SetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* c, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && light_set_keys && a && b && c && count);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        graphics::light light{ graphics::light_id{ ids[i] }, light_set_keys[i] };
+        light.attenuation({ a[i], b[i], c[i] });
+    }
 }

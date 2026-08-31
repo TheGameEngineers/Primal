@@ -120,11 +120,12 @@ class PlainView : ViewBase
 /// <summary>
 /// Interaction logic for ContentBrowserView.xaml
 /// </summary>
-public partial class ContentBrowserView : UserControl, IDisposable
+partial class ContentBrowserView : UserControl, IDisposable
 {
     private string _sortedProperty = nameof(ContentInfo.FileName);
     private ListSortDirection _sortDirection;
     private Point _clickPosition;
+    private bool _capturedLeft;
     private bool _startDrag;
 
     public SelectionMode SelectionMode
@@ -339,11 +340,11 @@ _addCurrentDirectory:
                 case AssetType.Audio: break;
                 case AssetType.Material: break;
                 case AssetType.Mesh:
-                    editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor");
+                    editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor", true);
                     break;
                 case AssetType.Skeleton: break;
                 case AssetType.Texture:
-                    editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor");
+                    editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor", false);
                     break;
             }
         }
@@ -355,7 +356,7 @@ _addCurrentDirectory:
         return editor;
     }
 
-    private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title)
+    private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title, bool enableWindowTransparency)
         where T : FrameworkElement, new()
     {
         // First look for a window that's already open and is displaying the same asset.
@@ -371,12 +372,12 @@ _addCurrentDirectory:
         }
 
         // If not already open in an asset editor, we create a new window and load the asset.
-        var newEditor = CreateEditorWindow<T>(title);
+        var newEditor = CreateEditorWindow<T>(title, enableWindowTransparency);
         (newEditor.DataContext as IAssetEditor).SetAsset(info);
         return newEditor.DataContext as IAssetEditor;
     }
 
-    private static FrameworkElement CreateEditorWindow<T>(string title)
+    private static FrameworkElement CreateEditorWindow<T>(string title, bool enableWindowTransparency)
         where T : FrameworkElement, new()
     {
         var newEditor = new T();
@@ -388,7 +389,8 @@ _addCurrentDirectory:
             Title = title,
             Owner = Application.Current.MainWindow,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Style = Application.Current.FindResource("PrimalWindowStyle") as Style
+            Style = Application.Current.FindResource("PrimalWindowStyle") as Style,
+            AllowsTransparency = enableWindowTransparency,
         };
 
         win.Show();
@@ -462,27 +464,27 @@ _addCurrentDirectory:
 
     private void OnFolderContent_ListView_PreviewMouse_LBD(object sender, MouseButtonEventArgs e)
     {
-        _clickPosition = e.GetPosition(this);
 
         var item = (e.OriginalSource as DependencyObject)?.FindVisualParent<ListViewItemEx>();
-        _startDrag = item != null;
-    }
-
-    private void OnFolderContent_ListView_PreviewMouse_LBU(object sender, MouseButtonEventArgs e)
-    {
-        _startDrag = false;
+        if (item != null)
+        {
+            _clickPosition = e.GetPosition(this);
+            _capturedLeft = true;
+        }
     }
 
     private void OnFolderContent_ListView_MouseMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed)
+        if (_capturedLeft && e.LeftButton == MouseButtonState.Pressed)
         {
             var mousePosition = e.GetPosition(this);
             var diff = mousePosition - _clickPosition;
 
             // NOTE: SystemParameters.MinimumHorizontalDragDistance etc. are too small for this use-case.
-            if (_startDrag && diff.LengthSquared > 100.0)
+            if (diff.LengthSquared > 100.0)
             {
+                _startDrag = true;
+
                 var files = new List<string>();
                 foreach (ContentInfo item in folderListView.SelectedItems)
                 {
@@ -493,14 +495,21 @@ _addCurrentDirectory:
                 {
                     var fileArray = files.ToArray();
                     var dataObj = new DataObject(DataFormats.FileDrop, fileArray);
-                    DragDrop.DoDragDrop(folderListView, dataObj, DragDropEffects.Copy | DragDropEffects.Move);
-                    _startDrag = false;
+                    DragDrop.DoDragDrop(folderListView, dataObj, DragDropEffects.Copy);
                 }
+
+                _startDrag = false;
+                _capturedLeft = false;
             }
+        }
+        else
+        {
+            _capturedLeft = false;
+            _startDrag = false;
         }
     }
 
-    private void TryEdit(ListBoxItem item)
+    private static void TryEdit(ListBoxItem item)
     {
         var textBox = item.FindVisualChild<TextBox>();
         if (textBox != null)
@@ -510,7 +519,7 @@ _addCurrentDirectory:
         }
     }
 
-    private bool TryEdit(ListView list, string path)
+    private static bool TryEdit(ListView list, string path)
     {
         foreach (ContentInfo item in list.Items)
         {
@@ -561,6 +570,7 @@ _addCurrentDirectory:
             Debug.WriteLine($"Error: failed to create new folder: {folder}");
         }
     }
+
     public void Dispose()
     {
         if (Application.Current?.MainWindow != null)

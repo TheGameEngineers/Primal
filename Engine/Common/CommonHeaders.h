@@ -37,6 +37,15 @@
 #define DEBUG_OP(x)
 #endif
 
+namespace primal {
+constexpr const struct version_t
+{
+    const int major{ 0 };
+    const int minor{ 0 };
+    const int revision{ 1 };
+} version;
+}
+
 // common headers
 #include "PrimitiveTypes.h"
 #include "../Utilities/Utilities.h"

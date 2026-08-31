@@ -14,7 +14,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for MaterialSurfaceView.xaml
 /// </summary>
-public partial class MaterialSurfaceView : UserControl
+partial class MaterialSurfaceView : UserControl
 {
     private bool _enableUpdate = true;
 

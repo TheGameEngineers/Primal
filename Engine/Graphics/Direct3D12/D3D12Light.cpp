@@ -277,6 +277,14 @@ public:
             assert(index < _non_cullable_lights.size());
             _non_cullable_lights[index].Color = color;
         }
+        else if (owner.type == graphics::light::ambient)
+        {
+            // TODO: ambient lights use environment maps. We could use
+            //       the SRV indices for RGB values in order to support
+            //       ambient lights with solid colors. Maybe use negative
+            //       intensity values to indicate that the indices
+            //       contains colors instead of pre-filtered cube maps.
+        }
         else
         {
             assert(_owners[_cullable_owners[index]].data_index == index);
@@ -677,7 +685,7 @@ public:
 
             if (current_size < needed_size)
             {
-                resize_buffer(light_buffer::non_cullable_light, needed_size, frame_index);
+                resize_buffer(light_buffer::non_cullable_light, needed_size);
             }
 
             set.non_cullable_lights((hlsl::DirectionalLightParameters *const)_buffers[light_buffer::non_cullable_light].cpu_address,
@@ -699,9 +707,9 @@ public:
             {
                 // NOTE: we create buffers about 150% larger than needed to avoid recreating them
                 //       everytime a few lights are added.
-                resize_buffer(light_buffer::cullable_light, (needed_light_buffer_size * 3) >> 1, frame_index);
-                resize_buffer(light_buffer::culling_info, (needed_culling_buffer_size * 3) >> 1, frame_index);
-                resize_buffer(light_buffer::bounding_spheres, (needed_spheres_buffer_size * 3) >> 1, frame_index);
+                resize_buffer(light_buffer::cullable_light, (needed_light_buffer_size * 3) >> 1);
+                resize_buffer(light_buffer::culling_info, (needed_culling_buffer_size * 3) >> 1);
+                resize_buffer(light_buffer::bounding_spheres, (needed_spheres_buffer_size * 3) >> 1);
                 buffers_resized = true;
             }
 
@@ -773,13 +781,13 @@ private:
         u8*             cpu_address{ nullptr };
     };
 
-    void resize_buffer(light_buffer::type type, u32 size, [[maybe_unused]] u32 frame_index)
+    void resize_buffer(light_buffer::type type, u32 size)
     {
         assert(type < light_buffer::count);
         if (!size || _buffers[type].buffer.size() >= math::align_size_up<D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT>(size)) return;
 
         _buffers[type].buffer = d3d12_buffer{ constant_buffer::get_default_init_info(size), true };
-        NAME_D3D12_OBJECT_INDEXED(_buffers[type].buffer.buffer(), frame_index,
+        NAME_D3D12_OBJECT_INDEXED(_buffers[type].buffer.buffer(), core::current_frame_index(),
                                   type == light_buffer::non_cullable_light ? L"Non-cullable Light Buffer" :
                                   type == light_buffer::cullable_light ? L"Cullable Light Buffer" :
                                   type == light_buffer::culling_info ? L"Light Culling Info Buffer" : L"Bounding Spheres Buffer");

@@ -6,7 +6,6 @@ using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Windows;
@@ -18,7 +17,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for TransformComponentView.xaml
 /// </summary>
-public partial class TransformComponentView : UserControl
+partial class TransformComponentView : UserControl
 {
     private delegate void SetTransformAPI(IdType[] ids, float[] x, float[] y, float[] z, int count, int isLocal);
 
@@ -96,7 +95,7 @@ public partial class TransformComponentView : UserControl
                 x[index] = v.X; y[index] = v.Y; z[index] = v.Z; ++index;
             });
             transform([.. oldValues.Select(x => x.Transform.Owner.EntityId)], x, y, z, count, 0);
-            var currentSelection = MSEntity.CurrentSelection?.GetMSComponent<MSTransform>();
+            var currentSelection = MSEntity.CurrentSelection.GetMSComponent<MSTransform>();
             currentSelection.Refresh();
             GetValues(currentSelection);
             _disableUndoRedo = false;

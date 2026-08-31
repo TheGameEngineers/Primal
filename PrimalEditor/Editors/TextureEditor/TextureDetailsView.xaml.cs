@@ -5,39 +5,38 @@ using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace PrimalEditor.Editors
-{
-    class TextureSizeToStringConverter : IMultiValueConverter
-    {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (values?.Length>0 && values[0] is TextureEditor editor && editor.Texture != null && editor.SelectedSlice != null)
-            {
-                var texture = editor.Texture;
-                var size = $"{texture.Width} x {texture.Height}";
-                var mipSize = $" ({editor.SelectedSlice.Width} x {editor.SelectedSlice.Height}";
-                if (texture.IsVolumeMap)
-                {
-                    size += $" x {texture.Slices[0][0].Count}";
-                    mipSize += $" x {texture.Slices[0][editor.MipIndex].Count}";
-                }
+namespace PrimalEditor.Editors;
 
-                return $"{size}{mipSize})";
+class TextureSizeToStringConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values?.Length > 0 && values[0] is TextureEditor editor && editor.Texture != null && editor.SelectedSlice != null)
+        {
+            var texture = editor.Texture;
+            var size = $"{texture.Width} x {texture.Height}";
+            var mipSize = $" ({editor.SelectedSlice.Width} x {editor.SelectedSlice.Height}";
+            if (texture.IsVolumeMap)
+            {
+                size += $" x {texture.Slices[0][0].Count}";
+                mipSize += $" x {texture.Slices[0][editor.MipIndex].Count}";
             }
 
-            return string.Empty;
+            return $"{size}{mipSize})";
         }
 
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)=> throw new NotImplementedException();
+        return string.Empty;
     }
-    /// <summary>
-    /// Interaction logic for TextureDetailsView.xaml
-    /// </summary>
-    public partial class TextureDetailsView : UserControl
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}
+/// <summary>
+/// Interaction logic for TextureDetailsView.xaml
+/// </summary>
+partial class TextureDetailsView : UserControl
+{
+    public TextureDetailsView()
     {
-        public TextureDetailsView()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

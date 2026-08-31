@@ -200,10 +200,10 @@
                 </GridViewColumn.Header>
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
-                        <DockPanel>
+                        <DockPanel HorizontalAlignment="Stretch">
                             <Image Style="{StaticResource SmallIconStyle}" Width="18" Margin="5,0" VerticalAlignment="Center"/>
                             <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
-                                <TextBlock Text="{Binding FileName}" Margin="5,2,0,2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FileName}" Margin="5,2,0,2" TextTrimming="CharacterEllipsis"/>
                                 <TextBox Margin="0,-2" HorizontalAlignment="Stretch" Padding="2,0,0,0" Style="{StaticResource TextBoxStyle_WithRename}"
                                          Tag="{Binding RenameCommand}" Text="{Binding FileName, UpdateSourceTrigger=Explicit, Mode=OneWay}"
                                          Visibility="Collapsed"/>
@@ -234,6 +234,9 @@
 
         <DataTemplate x:Key="tileTemplate">
             <StackPanel Width="{StaticResource AssetIconWidth}" HorizontalAlignment="Center">
+                <StackPanel.CacheMode>
+                    <BitmapCache EnableClearType="True" RenderAtScale="1"/>
+                </StackPanel.CacheMode>
                 <Border MinHeight="{StaticResource AssetIconWidth}">
                     <Image Style="{StaticResource LargeIconStyle}">
                         <Image.Clip>
@@ -244,8 +247,8 @@
                 </Border>
                 <Grid>
                     <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
-                           Foreground="{StaticResource Editor.FontBrush}" HorizontalAlignment="Center"
-                           Margin="2,0" MaxHeight="60" TextAlignment="Center"/>
+                               Foreground="{StaticResource Editor.FontBrush}" HorizontalAlignment="Center"
+                               Margin="2,0" MaxHeight="60" TextAlignment="Center"/>
                     <TextBox Margin="0,-2" HorizontalContentAlignment="Center" Padding="0" Style="{StaticResource TextBoxStyle_WithRename}"
                              Tag="{Binding RenameCommand}" Text="{Binding FileName, UpdateSourceTrigger=Explicit, Mode=OneWay}"
                              Visibility="Collapsed" VerticalAlignment="Stretch" TextWrapping="Wrap"/>
@@ -256,7 +259,7 @@
         <local:PlainView x:Key="tileView" ItemTemplate="{StaticResource tileTemplate}">
             <local:PlainView.ItemContainerStyle>
                 <Style TargetType="{x:Type controls:ListViewItemEx}" BasedOn="{StaticResource ListBoxItemStyle}">
-                    <Setter Property="Padding" Value="2"/>
+                    <Setter Property="Padding" Value="10,5"/>
                     <EventSetter Event="MouseDoubleClick" Handler="OnContent_Item_MouseDoubleClick"/>
                     <EventSetter Event="KeyDown" Handler="OnContent_Item_KeyDown"/>
                 </Style>
@@ -312,11 +315,17 @@
                     <EventSetter Event="DragEnter" Handler="OnFolderContent_ListView_DragEnter"/>
                     <EventSetter Event="SelectionChanged" Handler="OnFolderContent_ListView_SelectionChanged"/>
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnFolderContent_ListView_PreviewMouse_LBD"/>
-                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="OnFolderContent_ListView_PreviewMouse_LBU"/>
                     <EventSetter Event="MouseMove" Handler="OnFolderContent_ListView_MouseMove"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Path=IsChecked, ElementName=listViewToggle}" Value="False">
                             <Setter Property="View" Value="{StaticResource tileView}"/>
+                        </DataTrigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding SelectedFolder}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Hidden"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -453,21 +462,23 @@
                                     <ControlTemplate TargetType="{x:Type Button}">
                                         <Grid SnapsToDevicePixels="True">
                                             <Border x:Name="borderSelected" SnapsToDevicePixels="true" CornerRadius="1" BorderThickness="0" BorderBrush="Transparent"/>
-                                            <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                            <ContentPresenter x:Name="contentPresenter" Margin="{TemplateBinding Padding}"
+                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                              Focusable="False" RecognizesAccessKey="True"
+                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                                         </Grid>
 
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="true">
-                                                <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="White"/>
-                                                <Setter Property="Background" TargetName="borderSelected" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
-                                                <Setter Property="Opacity" TargetName="borderSelected" Value="0.4"/>
+                                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="White"/>
+                                                <Setter TargetName="borderSelected" Property="Background" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                                                <Setter TargetName="borderSelected" Property="Opacity" Value="0.4"/>
                                             </Trigger>
                                             <Trigger Property="IsPressed" Value="true">
-                                                <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="White"/>
-                                                <Setter Property="Background" TargetName="borderSelected" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
-                                                <Setter Property="Opacity" TargetName="borderSelected" Value="1"/>
+                                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="White"/>
+                                                <Setter TargetName="borderSelected" Property="Background" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                                                <Setter TargetName="borderSelected" Property="Opacity" Value="1"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>

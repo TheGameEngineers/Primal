@@ -13,11 +13,6 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Border Background="{StaticResource Editor.Window.GrayBrush2}">
             <ItemsControl ItemsSource="{Binding Source={x:Static local:ImportingItemCollection.FilteredItems}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type local:ImportingItem}">
                         <Grid Background="{StaticResource Editor.Window.GrayBrush1}" Margin="1" x:Name="itemGrid" ClipToBounds="True">

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows7.0</TargetFramework>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <XamlDebuggingInformation>True</XamlDebuggingInformation>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -10,6 +10,7 @@
     <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Resources\Icons\Primal.ico</ApplicationIcon>
+    <Version>0.0.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
@@ -25,8 +26,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="envdte" Version="17.13.40008" />
-    <PackageReference Include="envdte80" Version="17.13.40008" />
+    <PackageReference Include="envdte" Version="17.14.40260" />
+    <PackageReference Include="envdte80" Version="17.14.40260" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,13 +48,6 @@
   <ItemGroup>
     <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\DefaultAssets\**" Link=".\Resources\DefaultAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Resources\RenderSurface\CameraSettings.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Resources\Icons\Primal.ico" />
   </ItemGroup>
 

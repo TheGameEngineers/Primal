@@ -20,10 +20,16 @@
         <Grid Margin="32,0">
             <!-- Busy animation -->
             <Grid HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Hidden"
-              x:Name="busyAnimation">
+              x:Name="busyAnimation" d:Visibility="Visible">
                 <Grid.Resources>
                     <SolidColorBrush Color="{StaticResource Editor.FontColor}" x:Key="busyBrush"/>
                 </Grid.Resources>
+                <Border Width="100" Height="100" Margin="-155,0,0,0">
+                    <Border.Background>
+                        <VisualBrush Visual="{StaticResource PrimalLogoShape}" Stretch="Uniform"/>
+                    </Border.Background>
+                </Border>
+                
                 <Ellipse Width="164" Height="164" Stroke="{StaticResource busyBrush}"
                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-155,0,0,0"
                      StrokeThickness="1" RenderTransformOrigin="0.5,0.5"/>
@@ -86,7 +92,7 @@
             <!-- The actual useful part -->
             <Grid>
                 <Grid.Style>
-                    <Style TargetType="Grid">
+                    <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5"/>
@@ -109,7 +115,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom"
                         HorizontalAlignment="Right" Margin="0,0,0,20">
-                    <Button Content="Create" Width="64" Margin="32,0" IsDefault="True" Click="OnCreate_Button_Click"/>
+                    <Button Content="Create" Width="64" Margin="10,0" IsDefault="True" Click="OnCreate_Button_Click"/>
                     <Button Content="Cancel" Width="64" IsCancel="True"/>
                 </StackPanel>
             </Grid>

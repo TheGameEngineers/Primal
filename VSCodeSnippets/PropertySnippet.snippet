@@ -23,20 +23,18 @@
                     <Default>MyProperty</Default>
                 </Literal>                
             </Declarations>
-            <Code Language="csharp"><![CDATA[private $type$ _$property$;
-    public $type$ $property$
+            <Code Language="csharp"><![CDATA[public $type$ $property$
     {
-        get => _$property$;
+        get;
         set 
         {
-		   if (_$property$ != value)
+		   if (field != value)
 		   {
-              _$property$ = value;
+              field = value;
               OnPropertyChanged(nameof($property$));
 		   }
         }
-    }
-    $end$]]>
+    }$end$]]>
             </Code>
         </Snippet>
     </CodeSnippet>

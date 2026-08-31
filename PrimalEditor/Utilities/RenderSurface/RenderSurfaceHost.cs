@@ -29,13 +29,12 @@ partial class RenderSurfaceHost : HwndHost
         private static readonly List<int> _frameCounts = [];
         private static readonly Lock _lock = new();
         private static Thread _renderThread;
-        private static bool _isRunning;
 
-        public static bool IsRunning => _isRunning;
+        public static bool IsRunning { get; private set; }
 
         private static void Render(object obj)
         {
-            while (_isRunning)
+            while (IsRunning)
             {
                 lock (_lock)
                 {
@@ -43,6 +42,15 @@ partial class RenderSurfaceHost : HwndHost
                     {
                         var info = _callbacks[i](_frameCounts[i]++);
                         EngineAPI.RenderFrame(info.SurfaceId, info.CameraId, info.LightSetKey);
+#if DEBUG
+                        // Editor's UI becomes very sluggish when it's running in VS debugger while
+                        // rendering at full frame rate. Here we slow down the renderer which seems
+                        // to solve the issue.
+                        if (Debugger.IsAttached)
+                        {
+                            Thread.Sleep(8);
+                        }
+#endif
                     }
                 }
             }
@@ -80,7 +88,7 @@ partial class RenderSurfaceHost : HwndHost
                     if (_callbackMap.Count == 0 && _renderThread != null)
                     {
                         // Call Stop on another thread so that it doesn't block this method and cause a deadlock.
-                        _ = Task.Run(() => Stop());
+                        _ = Task.Run(Stop);
                     }
                 }
             }
@@ -96,15 +104,15 @@ partial class RenderSurfaceHost : HwndHost
                 IsBackground = true
             };
 
-            _isRunning = true;
+            IsRunning = true;
             _renderThread.Start();
         }
 
         private static void Stop()
-        { 
-            if(_renderThread != null)
+        {
+            if (_renderThread != null)
             {
-                _isRunning = false;
+                IsRunning = false;
                 _renderThread.Join();
                 _renderThread = null;
                 Debug.WriteLine("Render thread stopped.");
@@ -166,7 +174,7 @@ partial class RenderSurfaceHost : HwndHost
         base.Dispose(disposing);
     }
 
-    public async Task WaitReady() => await Task.Run(() => _resetEvent.WaitOne());
+    public async Task WaitReady() => await Task.Run(_resetEvent.WaitOne);
 
     protected override HandleRef BuildWindowCore(HandleRef hwndParent)
     {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props')" />
+  <Import Project="..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.props" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -22,34 +22,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+	<LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+	<LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Label="Shared">
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
+  </ImportGroup>  
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -57,13 +48,19 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)Engine\Common\;$(SolutionDir)Engine\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -74,7 +71,10 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)Engine\Common\;$(SolutionDir)Engine\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -83,6 +83,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Lights.cpp" />
@@ -97,18 +100,40 @@
     <ClInclude Include="TestRenderer.h" />
     <ClInclude Include="TestWindow.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets')" />
+    <Import Project="..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.9.2602.24\build\native\Microsoft.Direct3D.DXC.targets'))" />
   </Target>
+  <!-- Download and unpack asset binaries -->
+  <PropertyGroup>
+    <DropboxZipUrl>https://www.dropbox.com/scl/fi/hdjgbdjo09nb76ni7ef1h/EngineTestAssets.zip?rlkey=iovobxovyosktny6t85vfkiwa&amp;st=42q50fbx&amp;dl=1</DropboxZipUrl>
+	<ZipHash>5D130987004C874CA465FBD56E84DD04B95F3BAE53B97A08E64C3F11E1637D4A</ZipHash>
+	<ZipFile>$(SolutionDir)x64\engine-test-assets.zip</ZipFile>
+	<ExtractDir>$(SolutionDir)x64</ExtractDir>
+	<!-- A file that only exists after a successful extract – used for incremental builds -->
+	<ExtractMarker>$(ExtractDir)\.extracted</ExtractMarker>
+  </PropertyGroup>
+  <Target Name="DownloadAndUnpackDropbox" BeforeTargets="PrepareForBuild" Condition="!Exists('$(ExtractMarker)')">
+    <Message Text="Downloading models and textures for EngineTest ..." Importance="high" />
+    <Message Text="This may take a minute. Please wait ..." Importance="high" />
+	<DownloadFile SourceUrl="$(DropboxZipUrl)" DestinationFolder="$(ExtractDir)" DestinationFileName="engine-test-assets.zip">
+      <Output TaskParameter="DownloadedFile" PropertyName="ZipFile" />
+    </DownloadFile>
+    <Message Text="Verifying SHA-256 hash..." Importance="high" />
+    <VerifyFileHash File="$(ZipFile)" Hash="$(ZipHash)" Algorithm="SHA256" HashEncoding="hex" />
+    <Message Text="Hash OK – unpacking..." Importance="high" />
+    <MakeDir Directories="$(ExtractDir)" />
+    <Unzip SourceFiles="$(ZipFile)" DestinationFolder="$(ExtractDir)" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
+    <Message Text="Done." Importance="high" />
+    <Delete Files="$(ZipFile)" />
+    <!-- Create the marker so the target is skipped on subsequent builds -->
+    <Touch Files="$(ExtractMarker)" AlwaysCreate="true" />
+</Target>
 </Project>

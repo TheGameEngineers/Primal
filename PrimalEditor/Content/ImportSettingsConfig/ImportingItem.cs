@@ -10,192 +10,187 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Threading;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+enum ImportStatus
 {
-    enum ImportStatus
+    Importing,
+    Succeeded,
+    Failed
+}
+
+class ImportingItem : ViewModelBase
+{
+    private DispatcherTimer _timer;
+    private Stopwatch _stopwatch;
+
+    public string ImportDuration
     {
-        Importing,
-        Succeeded,
-        Failed
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(ImportDuration));
+            }
+        }
     }
 
-    class ImportingItem : ViewModelBase
+    public string Name { get; }
+    public Asset Asset { get; }
+
+    public ImportStatus Status
     {
-        private DispatcherTimer _timer;
-        private Stopwatch _stopwatch;
-
-        private string _importDuration;
-        public string ImportDuration
+        get;
+        set
         {
-            get => _importDuration;
-            private set
+            if (field != value)
             {
-                if (_importDuration != value)
-                {
-                    _importDuration = value;
-                    OnPropertyChanged(nameof(ImportDuration));
-                }
+                field = value;
+                OnPropertyChanged(nameof(Status));
             }
         }
+    }
 
-        public string Name { get; }
-        public Asset Asset { get; }
-        private ImportStatus _status;
-        public ImportStatus Status
+    public double ProgressMaximum
+    {
+        get;
+        private set
         {
-            get => _status;
-            set
+            if (!field.IsTheSameAs(value))
             {
-                if (_status != value)
-                {
-                    _status = value;
-                    OnPropertyChanged(nameof(Status));
-                }
+                field = value;
+                OnPropertyChanged(nameof(ProgressMaximum));
             }
         }
+    }
 
-        private double _progressMaximum;
-        public double ProgressMaximum
+    public double ProgressValue
+    {
+        get;
+        private set
         {
-            get => _progressMaximum;
-            private set
+            if (!field.IsTheSameAs(value))
             {
-                if (!_progressMaximum.IsTheSameAs(value))
-                {
-                    _progressMaximum = value;
-                    OnPropertyChanged(nameof(ProgressMaximum));
-                }
+                field = value;
+                OnPropertyChanged(nameof(ProgressValue));
             }
         }
+    }
 
-        private double _progressValue;
-        public double ProgressValue
+    public double NormalizedValue
+    {
+        get;
+        private set
         {
-            get => _progressValue;
-            private set
+            if (!field.IsTheSameAs(value))
             {
-                if (!_progressValue.IsTheSameAs(value))
-                {
-                    _progressValue = value;
-                    OnPropertyChanged(nameof(ProgressValue));
-                }
+                field = value;
+                OnPropertyChanged(nameof(NormalizedValue));
             }
         }
+    }
 
-        private double _normalizedValue;
-        public double NormalizedValue
+    public void SetProgress(int progress, int maxValue)
+    {
+        ProgressMaximum = maxValue;
+        ProgressValue = progress;
+        NormalizedValue = maxValue > 0 ? Math.Clamp(progress / maxValue, 0, 1) : 0.0;
+    }
+
+    private void UpdateTimer(object sender, EventArgs e)
+    {
+        if (Status == ImportStatus.Importing)
         {
-            get => _normalizedValue;
-            private set
-            {
-                if (!_normalizedValue.IsTheSameAs(value))
-                {
-                    _normalizedValue = value;
-                    OnPropertyChanged(nameof(NormalizedValue));
-                }
-            }
+            if (!_stopwatch.IsRunning) _stopwatch.Start();
+
+            var t = _stopwatch.Elapsed;
+            ImportDuration = string.Format("{0:00}:{1:00}.{2:00}", t.Minutes, t.Seconds, t.Milliseconds / 10);
         }
-
-        public void SetProgress(int progress, int maxValue)
+        else
         {
-            ProgressMaximum = maxValue;
-            ProgressValue = progress;
-            NormalizedValue = maxValue > 0 ? Math.Clamp(progress / maxValue, 0, 1) : 0.0;
+            _timer.Stop();
+            _stopwatch.Stop();
         }
+    }
 
-        private void UpdateTimer(object sender, EventArgs e)
+    public ImportingItem(string name, Asset asset)
+    {
+        Debug.Assert(!string.IsNullOrEmpty(name) && asset != null);
+        Asset = asset;
+        Name = name;
+
+        Application.Current.Dispatcher.Invoke(() =>
         {
-            if (Status == ImportStatus.Importing)
-            {
-                if (!_stopwatch.IsRunning) _stopwatch.Start();
+            _stopwatch = new();
+            _timer = new();
+            _timer.Interval = TimeSpan.FromMilliseconds(100);
+            _timer.Tick += UpdateTimer;
+            _timer.Start();
+        });
+    }
+}
 
-                var t = _stopwatch.Elapsed;
-                ImportDuration = string.Format("{0:00}:{1:00}:{2:00}", t.Minutes, t.Seconds, t.Milliseconds / 10);
-            }
-            else
-            {
-                _timer.Stop();
-                _stopwatch.Stop();
-            }
-        }
+static class ImportingItemCollection
+{
+    private static readonly ObservableCollection<ImportingItem> _importingItems;
+    public static ReadOnlyObservableCollection<ImportingItem> ImportingItems { get; private set; }
 
-        public ImportingItem(string name, Asset asset)
+    public static CollectionViewSource FilteredItems { get; private set; }
+
+    private static readonly Lock _lock = new();
+    private static AssetType _itemFilter = AssetType.Mesh;
+
+    public static void SetItemFilter(AssetType assetType)
+    {
+        _itemFilter = assetType;
+        FilteredItems.View.Refresh();
+    }
+
+    public static void Add(ImportingItem item)
+    {
+        lock (_lock) { Application.Current.Dispatcher.Invoke(() => _importingItems.Add(item)); }
+    }
+
+    public static void Remove(ImportingItem item)
+    {
+        lock (_lock) { Application.Current.Dispatcher.Invoke(() => _importingItems.Remove(item)); }
+    }
+
+    public static void Clear(AssetType assetType)
+    {
+        lock (_lock)
         {
-            Debug.Assert(!string.IsNullOrEmpty(name) && asset != null);
-            Asset = asset;
-            Name = name;
-
             Application.Current.Dispatcher.Invoke(() =>
             {
-                _stopwatch = new();
-                _timer = new();
-                _timer.Interval = TimeSpan.FromMilliseconds(100);
-                _timer.Tick += UpdateTimer;
-                _timer.Start();
+                foreach (var item in _importingItems.Where(x => x.Asset.Type == assetType).ToList())
+                {
+                    _importingItems.Remove(item);
+                }
             });
         }
     }
 
-    static class ImportingItemCollection
+    public static ImportingItem GetItem(Asset asset)
     {
-        private static ObservableCollection<ImportingItem> _importingItems;
-        public static ReadOnlyObservableCollection<ImportingItem> ImportingItems { get; private set; }
+        lock (_lock) { return _importingItems.FirstOrDefault(x => x.Asset == asset); }
+    }
 
-        public static CollectionViewSource FilteredItems { get; private set; }
+    /// <summary>
+    /// Calling this on a UI thread makes sure that all collections are created on the same thread.
+    /// </summary>
+    public static void Init() { }
 
-        private static readonly Lock _lockObject = new();
-        private static AssetType _itemFilter = AssetType.Mesh;
-
-        public static void SetItemFilter(AssetType assetType)
+    static ImportingItemCollection()
+    {
+        _importingItems = [];
+        ImportingItems = new(_importingItems);
+        FilteredItems = new() { Source = ImportingItems };
+        FilteredItems.Filter += (s, e) =>
         {
-            _itemFilter = assetType;
-            FilteredItems.View.Refresh();
-        }
-
-        public static void Add(ImportingItem item)
-        {
-            lock (_lockObject) { Application.Current.Dispatcher.Invoke(() => _importingItems.Add(item)); }
-        }
-
-        public static void Remove(ImportingItem item)
-        {
-            lock (_lockObject) { Application.Current.Dispatcher.Invoke(() => _importingItems.Remove(item)); }
-        }
-
-        public static void Clear(AssetType assetType)
-        {
-            lock (_lockObject)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    foreach (var item in _importingItems.Where(x => x.Asset.Type == assetType).ToList())
-                    {
-                        _importingItems.Remove(item);
-                    }
-                });
-            }
-        }
-
-        public static ImportingItem GetItem(Asset asset)
-        {
-            lock (_lockObject) { return _importingItems.FirstOrDefault(x => x.Asset == asset); }
-        }
-
-        /// <summary>
-        /// Calling this on a UI thread makes sure that all collections are created on the same thread.
-        /// </summary>
-        public static void Init() { }
-
-        static ImportingItemCollection()
-        {
-            _importingItems = [];
-            ImportingItems = new(_importingItems);
-            FilteredItems = new() { Source = ImportingItems };
-            FilteredItems.Filter += (s, e) =>
-            {
-                var type = (e.Item as ImportingItem).Asset.Type;
-                e.Accepted = type == _itemFilter;
-            };
-        }
+            var type = (e.Item as ImportingItem).Asset.Type;
+            e.Accepted = type == _itemFilter;
+        };
     }
 }

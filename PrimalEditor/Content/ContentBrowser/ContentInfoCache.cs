@@ -7,116 +7,116 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+static class ContentInfoCache
 {
-    static class ContentInfoCache
+    private static readonly Lock _lock = new();
+    private static readonly Dictionary<string, ContentInfo> _contentInfoCache = [];
+    private static bool _isDirty;
+    private static string _cacheFilePath = string.Empty;
+
+    public static ContentInfo Add(string file)
     {
-        private static readonly Lock _lock = new();
-        private static readonly Dictionary<string, ContentInfo> _contentInfoCache = [];
-        private static bool _isDirty;
-        private static string _cacheFilePath = string.Empty;
-
-        public static ContentInfo Add(string file)
+        lock (_lock)
         {
-            lock (_lock)
+            var fileInfo = new FileInfo(file);
+            Debug.Assert(!fileInfo.IsDirectory());
+
+            if (!_contentInfoCache.TryGetValue(file, out ContentInfo contentInfo) || contentInfo.DateModified.IsOlder(fileInfo.LastWriteTime))
             {
-                var fileInfo = new FileInfo(file);
-                Debug.Assert(!fileInfo.IsDirectory());
-
-                if (!_contentInfoCache.ContainsKey(file) ||
-                    _contentInfoCache[file].DateModified.IsOlder(fileInfo.LastWriteTime))
-                {
-                    var info = AssetRegistry.GetAssetInfo(file) ?? Asset.GetAssetInfo(file);
-                    Debug.Assert(info != null);
-                    _contentInfoCache[file] = new ContentInfo(file, info.Icon);
-                    _isDirty = true;
-                }
-
-                Debug.Assert(_contentInfoCache.ContainsKey(file));
-                return _contentInfoCache[file];
+                var info = Asset.TryGetAssetInfo(file);
+                Debug.Assert(info != null);
+                contentInfo = new ContentInfo(file, info.Icon);
+                _contentInfoCache[file] = contentInfo;
+                _isDirty = true;
             }
+
+            Debug.Assert(_contentInfoCache.ContainsKey(file));
+            return contentInfo;
         }
+    }
 
-        public static void Reset(string projectPath)
+    public static void Reset(string projectPath)
+    {
+        lock (_lock)
         {
-            lock (_lock)
+            if (!string.IsNullOrEmpty(_cacheFilePath) && _isDirty)
             {
-                if (!string.IsNullOrEmpty(_cacheFilePath) && _isDirty)
-                {
-                    SaveInfoCache();
-                    _cacheFilePath = string.Empty;
-                    _contentInfoCache.Clear();
-                    _isDirty = false;
-                }
-
-                if (!string.IsNullOrEmpty(projectPath))
-                {
-                    Debug.Assert(Directory.Exists(projectPath));
-                    _cacheFilePath = $@"{projectPath}.Primal\ContentInfoCache.bin";
-                    LoadInfoCache();
-                }
-            }
-        }
-
-        public static void Save() => Reset(string.Empty);
-
-        private static void SaveInfoCache()
-        {
-            try
-            {
-                using var writer = new BinaryWriter(File.Open(_cacheFilePath, FileMode.Create, FileAccess.Write));
-                writer.Write(_contentInfoCache.Keys.Count);
-                foreach (var key in _contentInfoCache.Keys)
-                {
-                    var info = _contentInfoCache[key];
-
-                    writer.Write(key);
-                    writer.Write(info.DateModified.ToBinary());
-                    writer.Write(info.Icon.Length);
-                    writer.Write(info.Icon);
-                }
-
+                SaveInfoCache();
+                _cacheFilePath = string.Empty;
+                _contentInfoCache.Clear();
                 _isDirty = false;
             }
-            catch (Exception ex)
-            {
 
-                Debug.WriteLine(ex.Message);
-                Logger.Log(MessageType.Warning, "Failed to save Content Browser cache file.");
+            if (!string.IsNullOrEmpty(projectPath))
+            {
+                Debug.Assert(Directory.Exists(projectPath));
+                _cacheFilePath = $@"{projectPath}.Primal\ContentInfoCache.bin";
+                LoadInfoCache();
             }
         }
+    }
 
-        private static void LoadInfoCache()
+    public static void Save() => Reset(string.Empty);
+
+    private static void SaveInfoCache()
+    {
+        try
         {
-            if (!File.Exists(_cacheFilePath)) return;
-
-            try
+            using var writer = new BinaryWriter(File.Open(_cacheFilePath, FileMode.Create, FileAccess.Write));
+            writer.Write(_contentInfoCache.Keys.Count);
+            foreach (var key in _contentInfoCache.Keys)
             {
-                using var reader = new BinaryReader(File.Open(_cacheFilePath, FileMode.Open, FileAccess.Read));
-                var numEntries = reader.ReadInt32();
-                _contentInfoCache.Clear();
+                var info = _contentInfoCache[key];
 
-                for (int i = 0; i < numEntries; ++i)
+                writer.Write(key);
+                writer.Write(info.DateModified.ToBinary());
+                writer.Write(info.Icon.Length);
+                writer.Write(info.Icon);
+            }
+
+            _isDirty = false;
+        }
+        catch (Exception ex)
+        {
+
+            Debug.WriteLine(ex.Message);
+            Logger.Log(MessageType.Warning, "Failed to save Content Browser cache file.");
+            File.Delete(_cacheFilePath); // Delete the cache file if saving failed to avoid loading corrupted data next time.
+        }
+    }
+
+    private static void LoadInfoCache()
+    {
+        if (!File.Exists(_cacheFilePath)) return;
+
+        try
+        {
+            using var reader = new BinaryReader(File.Open(_cacheFilePath, FileMode.Open, FileAccess.Read));
+            var numEntries = reader.ReadInt32();
+            _contentInfoCache.Clear();
+
+            for (int i = 0; i < numEntries; ++i)
+            {
+                var assetFile = reader.ReadString();
+                var date = DateTime.FromBinary(reader.ReadInt64());
+                var iconSize = reader.ReadInt32();
+                var icon = reader.ReadBytes(iconSize);
+
+                // Cache only the files that still exist.
+                if (File.Exists(assetFile))
                 {
-                    var assetFile = reader.ReadString();
-                    var date = DateTime.FromBinary(reader.ReadInt64());
-                    var iconSize = reader.ReadInt32();
-                    var icon = reader.ReadBytes(iconSize);
-
-                    // Cache only the files that still exist.
-                    if (File.Exists(assetFile))
-                    {
-                        _contentInfoCache[assetFile] = new ContentInfo(assetFile, icon, null, date);
-                    }
+                    _contentInfoCache[assetFile] = new ContentInfo(assetFile, icon, null, date);
                 }
             }
-            catch (Exception ex)
-            {
+        }
+        catch (Exception ex)
+        {
 
-                Debug.WriteLine(ex.Message);
-                Logger.Log(MessageType.Warning, "Failed to read Content Browser cache file.");
-                _contentInfoCache.Clear();
-            }
+            Debug.WriteLine(ex.Message);
+            Logger.Log(MessageType.Warning, "Failed to read Content Browser cache file.");
+            _contentInfoCache.Clear();
         }
     }
 }

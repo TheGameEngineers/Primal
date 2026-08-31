@@ -6,10 +6,8 @@ using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,15 +55,15 @@ enum PrimitiveTopology
 class MeshInfo : ViewModelBase
 {
     public string Name { get; init; }
-    private byte[] _icon;
+
     public byte[] Icon
     {
-        get => _icon;
+        get;
         set
         {
-            if (_icon != value)
+            if (field != value)
             {
-                _icon = value;
+                field = value;
                 OnPropertyChanged(nameof(Icon));
             }
         }
@@ -92,71 +90,66 @@ class Mesh : ViewModelBase
 {
     public static int PositionSize => sizeof(float) * 3;
 
-    private int _elementSize;
     public int ElementSize
     {
-        get => _elementSize;
+        get;
         set
         {
-            if (_elementSize != value)
+            if (field != value)
             {
-                _elementSize = value;
+                field = value;
                 OnPropertyChanged(nameof(ElementSize));
             }
         }
     }
 
-    private int _vertexCount;
     public int VertexCount
     {
-        get => _vertexCount;
+        get;
         set
         {
-            if (_vertexCount != value)
+            if (field != value)
             {
-                _vertexCount = value;
+                field = value;
                 OnPropertyChanged(nameof(VertexCount));
             }
         }
     }
 
-    private int _indexSize;
     public int IndexSize
     {
-        get => _indexSize;
+        get;
         set
         {
-            if (_indexSize != value)
+            if (field != value)
             {
-                _indexSize = value;
+                field = value;
                 OnPropertyChanged(nameof(IndexSize));
             }
         }
     }
 
-    private int _indexCount;
     public int IndexCount
     {
-        get => _indexCount;
+        get;
         set
         {
-            if (_indexCount != value)
+            if (field != value)
             {
-                _indexCount = value;
+                field = value;
                 OnPropertyChanged(nameof(IndexCount));
             }
         }
     }
 
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
@@ -173,29 +166,27 @@ class Mesh : ViewModelBase
 
 class MeshLOD : ViewModelBase
 {
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
     }
 
-    private float _lodThreshold;
     public float LodThreshold
     {
-        get => _lodThreshold;
+        get;
         set
         {
-            if (!_lodThreshold.IsTheSameAs(value))
+            if (!field.IsTheSameAs(value))
             {
-                _lodThreshold = value;
+                field = value;
                 OnPropertyChanged(nameof(LodThreshold));
             }
         }
@@ -206,15 +197,14 @@ class MeshLOD : ViewModelBase
 
 class LODGroup : ViewModelBase
 {
-    private string _name;
     public string Name
     {
-        get => _name;
+        get;
         set
         {
-            if (_name != value)
+            if (field != value)
             {
-                _name = value;
+                field = value;
                 OnPropertyChanged(nameof(Name));
             }
         }
@@ -225,99 +215,92 @@ class LODGroup : ViewModelBase
 
 class GeometryImportSettings : ViewModelBase, IAssetImportSettings
 {
-    private bool _calculateNormals;
     public bool CalculateNormals
     {
-        get => _calculateNormals;
+        get;
         set
         {
-            if (_calculateNormals != value)
+            if (field != value)
             {
-                _calculateNormals = value;
+                field = value;
                 OnPropertyChanged(nameof(CalculateNormals));
             }
         }
     }
 
-    private bool _calculateTangents;
     public bool CalculateTangents
     {
-        get => _calculateTangents;
+        get;
         set
         {
-            if (_calculateTangents != value)
+            if (field != value)
             {
-                _calculateTangents = value;
+                field = value;
                 OnPropertyChanged(nameof(CalculateTangents));
             }
         }
     }
 
-    private float _smoothingAngle;
     public float SmoothingAngle
     {
-        get => _smoothingAngle;
+        get;
         set
         {
-            if (!_smoothingAngle.IsTheSameAs(value))
+            if (!field.IsTheSameAs(value))
             {
-                _smoothingAngle = value;
+                field = value;
                 OnPropertyChanged(nameof(SmoothingAngle));
             }
         }
     }
 
-    private bool _reverseHandedness;
     public bool ReverseHandedness
     {
-        get => _reverseHandedness;
+        get;
         set
         {
-            if (_reverseHandedness != value)
+            if (field != value)
             {
-                _reverseHandedness = value;
+                field = value;
                 OnPropertyChanged(nameof(ReverseHandedness));
             }
         }
     }
 
-    private bool _importEmbeddedTextures;
     public bool ImportEmbeddedTextures
     {
-        get => _importEmbeddedTextures;
+        get;
         set
         {
-            if (_importEmbeddedTextures != value)
+            if (field != value)
             {
-                _importEmbeddedTextures = value;
+                field = value;
                 OnPropertyChanged(nameof(ImportEmbeddedTextures));
             }
         }
     }
 
-    private bool _importAnimations;
     public bool ImportAnimations
     {
-        get => _importAnimations;
+        get;
         set
         {
-            if (_importAnimations != value)
+            if (field != value)
             {
-                _importAnimations = value;
+                field = value;
                 OnPropertyChanged(nameof(ImportAnimations));
             }
         }
     }
 
-    private bool _coalesceMeshes;
     public bool CoalesceMeshes
     {
-        get => _coalesceMeshes;
+        get;
         set
         {
-            if (_coalesceMeshes != value)
+            if (field != value)
             {
-                _coalesceMeshes = value;
+                field = value;
                 OnPropertyChanged(nameof(CoalesceMeshes));
             }
         }
@@ -550,8 +533,7 @@ class Geometry : Asset
 
             using (var reader = new BinaryReader(new MemoryStream(data)))
             {
-                LODGroup lodGroup = new();
-                lodGroup.Name = reader.ReadString();
+                LODGroup lodGroup = new() { Name = reader.ReadString() };
                 var lodGroupCount = reader.ReadInt32();
 
                 for (int i = 0; i < lodGroupCount; ++i)
@@ -719,7 +701,7 @@ class Geometry : Asset
         return data;
     }
 
-    private void LODToBinary(MeshLOD lod, BinaryWriter writer, out byte[] hash)
+    private static void LODToBinary(MeshLOD lod, BinaryWriter writer, out byte[] hash)
     {
         writer.Write(lod.Name);
         writer.Write(lod.LodThreshold);
@@ -747,11 +729,13 @@ class Geometry : Asset
         hash = ContentHelper.ComputeHash(buffer, (int)meshDataBegin, (int)meshDataSize);
     }
 
-    private MeshLOD BinaryToLOD(BinaryReader reader)
+    private static MeshLOD BinaryToLOD(BinaryReader reader)
     {
-        var lod = new MeshLOD();
-        lod.Name = reader.ReadString();
-        lod.LodThreshold = reader.ReadSingle();
+        var lod = new MeshLOD
+        {
+            Name = reader.ReadString(),
+            LodThreshold = reader.ReadSingle()
+        };
         var meshCount = reader.ReadInt32();
 
         for (int i = 0; i < meshCount; ++i)

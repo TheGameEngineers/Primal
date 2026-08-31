@@ -205,74 +205,69 @@ class TextureImportSettings : ViewModelBase, IAssetImportSettings
 {
     public ObservableCollection<string> Sources { get; } = [];
 
-    private TextureDimension _dimension = TextureDimension.Texture2D;
     public TextureDimension Dimension
     {
-        get => _dimension;
+        get;
         set
         {
-            if (_dimension != value)
+            if (field != value)
             {
-                _dimension = value;
+                field = value;
                 OnPropertyChanged(nameof(Dimension));
             }
         }
-    }
+    } = TextureDimension.Texture2D;
 
-    private int _mipLevels;
     public int MipLevels
     {
-        get => _mipLevels;
+        get;
         set
         {
             value = Math.Clamp(value, 0, Texture.MaxMipLevels);
-            if (_mipLevels != value)
+            if (field != value)
             {
-                _mipLevels = value;
+                field = value;
                 OnPropertyChanged(nameof(MipLevels));
             }
         }
     }
 
-    private float _alphaThreshold;
     public float AlphaThreshold
     {
-        get => _alphaThreshold;
+        get;
         set
         {
             value = Math.Clamp(value, 0.0f, 1.0f);
-            if (!_alphaThreshold.IsTheSameAs(value))
+            if (!field.IsTheSameAs(value))
             {
-                _alphaThreshold = value;
+                field = value;
                 OnPropertyChanged(nameof(AlphaThreshold));
             }
         }
     }
 
-    private bool _preferBC7;
     public bool PreferBC7
     {
-        get => _preferBC7;
+        get;
         set
         {
-            if (_preferBC7 != value)
+            if (field != value)
             {
-                _preferBC7 = value;
+                field = value;
                 OnPropertyChanged(nameof(PreferBC7));
             }
         }
     }
 
-    private int _formatIndex;
     public int FormatIndex
     {
-        get => _formatIndex;
+        get;
         set
         {
             value = Math.Clamp(value, 0, Enum.GetValues<BC_FORMAT>().Length);
-            if (_formatIndex != value)
+            if (field != value)
             {
-                _formatIndex = value;
+                field = value;
                 OnPropertyChanged(nameof(FormatIndex));
                 OnPropertyChanged(nameof(OutputFormat));
             }
@@ -281,57 +276,53 @@ class TextureImportSettings : ViewModelBase, IAssetImportSettings
 
     public DXGI_FORMAT OutputFormat => Compress ? (DXGI_FORMAT)Enum.GetValues<BC_FORMAT>()[FormatIndex] : DXGI_FORMAT.DXGI_FORMAT_UNKNOWN;
 
-    private bool _compress;
     public bool Compress
     {
-        get => _compress;
+        get;
         set
         {
-            if (_compress != value)
+            if (field != value)
             {
-                _compress = value;
+                field = value;
                 OnPropertyChanged(nameof(Compress));
             }
         }
     }
 
-    private int _cubeMapSize;
     public int CubeMapSize
     {
-        get => _cubeMapSize;
+        get;
         set
         {
-            if (_cubeMapSize != value)
+            if (field != value)
             {
-                _cubeMapSize = value;
+                field = value;
                 OnPropertyChanged(nameof(CubeMapSize));
             }
         }
     }
 
-    private bool _mirrorCubeMap;
     public bool MirrorCubeMap
     {
-        get => _mirrorCubeMap;
+        get;
         set
         {
-            if (_mirrorCubeMap != value)
+            if (field != value)
             {
-                _mirrorCubeMap = value;
+                field = value;
                 OnPropertyChanged(nameof(MirrorCubeMap));
             }
         }
     }
 
-    private bool _prefilterCubeMap;
     public bool PrefilterCubeMap
     {
-        get => _prefilterCubeMap;
+        get;
         set
         {
-            if (_prefilterCubeMap != value)
+            if (field != value)
             {
-                _prefilterCubeMap = value;
+                field = value;
                 OnPropertyChanged(nameof(PrefilterCubeMap));
             }
         }
@@ -339,7 +330,7 @@ class TextureImportSettings : ViewModelBase, IAssetImportSettings
 
     public void ToBinary(BinaryWriter writer)
     {
-        writer.Write(string.Join(";", Sources.ToArray()));
+        writer.Write(string.Join(";", [.. Sources]));
         writer.Write((int)Dimension);
         writer.Write(MipLevels);
         writer.Write(AlphaThreshold);
@@ -394,6 +385,8 @@ class Texture : Asset
     public static int MaxArraySize => 2048;
     public static int Max3DSize => 2048;
     public static AssetInfo Default => DefaultAssets.DefaultTexture;
+    public static AssetInfo DefaultSpecularIBL => DefaultAssets.DefaultSpecularIBL;
+    public static AssetInfo DefaultDiffuseIBL => DefaultAssets.DefaultDiffuseIBL;
 
     private bool _isSaving;
 
@@ -402,73 +395,68 @@ class Texture : Asset
     // array ( mip ( subresource (slices) ) )
     // see https://learn.microsoft.com/en-us/windows/win32/direct3d12/subresources
     // for the order of slices within the array
-    private SliceArray3D _slices;
     public SliceArray3D Slices
     {
-        get => _slices;
+        get;
         private set
         {
-            if (_slices != value)
+            if (field != value)
             {
-                _slices = value;
+                field = value;
                 OnPropertyChanged(nameof(Slices));
             }
         }
     }
 
-    private int _width;
     public int Width
     {
-        get => _width;
+        get;
         set
         {
-            if (_width != value)
+            if (field != value)
             {
-                _width = value;
+                field = value;
                 OnPropertyChanged(nameof(Width));
             }
         }
     }
 
-    private int _height;
     public int Height
     {
-        get => _height;
+        get;
         set
         {
-            if (_height != value)
+            if (field != value)
             {
-                _height = value;
+                field = value;
                 OnPropertyChanged(nameof(Height));
             }
         }
     }
 
-    private int _arraySize;
     public int ArraySize
     {
-        get => _arraySize;
+        get;
         set
         {
-            if (_arraySize != value)
+            if (field != value)
             {
                 // If this is a cube map then array size should be a multiple of 6
                 Debug.Assert(!(IsCubeMap && (value % 6) != 0));
-                _arraySize = value;
+                field = value;
                 OnPropertyChanged(nameof(ArraySize));
             }
         }
     }
 
-    private TextureFlags _flags;
     public TextureFlags Flags
     {
-        get => _flags;
+        get;
         set
         {
-            if (_flags != value)
+            if (field != value)
             {
-                _flags = value;
+                field = value;
                 OnPropertyChanged(nameof(IsHDR));
                 OnPropertyChanged(nameof(HasAlpha));
                 OnPropertyChanged(nameof(IsPremultipliedAlpha));
@@ -488,30 +476,28 @@ class Texture : Asset
     public bool IsVolumeMap => Flags.HasFlag(TextureFlags.IsVolumeMap);
     public bool IsSRGB => Flags.HasFlag(TextureFlags.IsSRGB);
 
-    private int _mipLevels;
     public int MipLevels
     {
-        get => _mipLevels;
+        get;
         set
         {
             // NOTE: value is not clamped here, because we want to show the actual mip count of the loaded texture.
-            if (_mipLevels != value)
+            if (field != value)
             {
-                _mipLevels = value;
+                field = value;
                 OnPropertyChanged(nameof(MipLevels));
             }
         }
     }
 
-    private DXGI_FORMAT _format;
     public DXGI_FORMAT Format
     {
-        get => _format;
+        get;
         set
         {
-            if (_format != value)
+            if (field != value)
             {
-                _format = value;
+                field = value;
                 OnPropertyChanged(nameof(Format));
                 OnPropertyChanged(nameof(FormatName));
             }
@@ -520,33 +506,36 @@ class Texture : Asset
 
     public string FormatName => ImportSettings.Compress && !IsSRGB ? ((BC_FORMAT)Format).GetDescription() : Format.GetDescription();
 
-    private Texture _iblPair;
     public Texture IBLPair
     {
-        get => _iblPair;
+        get;
         private set
         {
-            if (_iblPair != value)
+            if (field != value)
             {
-                _iblPair = value;
+                field = value;
                 OnPropertyChanged(nameof(IBLPair));
             }
         }
     }
 
-    private bool _isPrefilteredIBL;
     public bool IsPrefilteredIBL
     {
-        get => _isPrefilteredIBL;
+        get;
         private set
         {
-            if (_isPrefilteredIBL != value)
+            if (field != value)
             {
-                _isPrefilteredIBL = value;
+                field = value;
                 OnPropertyChanged(nameof(IsPrefilteredIBL));
+                OnPropertyChanged(nameof(IsDiffuseIBL));
+                OnPropertyChanged(nameof(IsSpecularIBL));
             }
         }
     }
+
+    public bool IsDiffuseIBL => IsPrefilteredIBL && ImportSettings.Sources.Count == 0;
+    public bool IsSpecularIBL => IsPrefilteredIBL && !IsDiffuseIBL;
 
     private static bool HasValidDimensions(int width, int height, int arrayOrDepth, bool is3D, string file)
     {
@@ -560,8 +549,7 @@ class Texture : Asset
 
         if (width % 4 != 0 || height % 4 != 0)
         {
-            Logger.Log(MessageType.Error, $"Image dimensions not a multiple of 4! (file: {file})");
-            result = false;
+            Logger.Log(MessageType.Warning, $"Image dimensions not a multiple of 4! (file: {file})");
         }
 
         if (is3D && (width > Max3DSize || height > Max3DSize || arrayOrDepth > Max3DSize))
@@ -580,7 +568,7 @@ class Texture : Asset
             Logger.Log(MessageType.Warning, $"Non-square image (width and height not equal)! (file: {file})");
         }
 
-        if (!MathUtil.IsPow2(width) || !MathUtil.IsPow2(height))
+        if (!int.IsPow2(width) || !int.IsPow2(height))
         {
             Logger.Log(MessageType.Warning, $"Image dimensions not power of 2! (file: {file})");
         }
@@ -852,17 +840,15 @@ class Texture : Asset
     }
 
     public override TextureMetadata GetMetadata()
-    {
-        return new()
+        => new()
         {
             Width = Width,
             Height = Height,
             DepthOrArraySize = ArraySize,
-            Format = Format,
             MipLevels = MipLevels,
+            Format = Format,
             Dimension = ImportSettings.Dimension,
         };
-    }
 
     public Texture() : base(AssetType.Texture) { }
 

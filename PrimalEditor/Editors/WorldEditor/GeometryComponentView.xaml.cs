@@ -18,7 +18,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for GeometryComponentView.xaml
 /// </summary>
-public partial class GeometryComponentView : UserControl
+partial class GeometryComponentView : UserControl
 {
     public GeometryComponentView()
     {
@@ -27,13 +27,15 @@ public partial class GeometryComponentView : UserControl
 
     private static void ResetGeometry(List<(Components.Geometry Geometry, Guid Guid, List<AppliedMaterial> Materials)> selection)
     {
-        var entities = selection.Select(x=>x.Geometry.Owner).ToList();
-
+        var entities = selection.Select(x => x.Geometry.Owner).ToList();
+        var scene = entities[0].ParentScene;
+        var enableList = scene.DisableAndUpdate(entities);
         selection.ForEach(x =>
         {
             x.Geometry.SetGeometry(x.Guid);
+            x.Geometry.SetMaterials(x.Materials);
         });
-
+        scene.EnableAndUpdate(enableList);
         MSEntity.CurrentSelection?.GetMSComponent<MSGeometry>().Refresh();
     }
 
@@ -43,7 +45,7 @@ public partial class GeometryComponentView : UserControl
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-            var file = files.Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh).FirstOrDefault();
+            var file = files?.Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh).FirstOrDefault();
             if (!string.IsNullOrEmpty(file?.Trim()) && DataContext is MSGeometry vm)
             {
                 var assetInfo = Asset.TryGetAssetInfo(file);
@@ -51,7 +53,7 @@ public partial class GeometryComponentView : UserControl
                 if (assetInfo != null)
                 {
                     var undoSelection = vm.SelectedComponents.Select(geometry => (geometry, geometry.GeometryGuid, geometry.MaterialsList)).ToList();
-                    
+
                     await Task.Run(() => vm.SetGeometry(assetInfo.Guid));
 
                     var redoSelection = vm.SelectedComponents.Select(geometry => (geometry, assetInfo.Guid, geometry.MaterialsList)).ToList();

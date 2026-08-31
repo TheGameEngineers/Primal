@@ -40,9 +40,10 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 } // anonymous namespace
 
-bool engine_initialize()
+bool
+engine_initialize()
 {
-    if (!primal::content::load_game()) return false;
+    if (!content::load_game()) return false;
 
     platform::window_init_info info
     {
@@ -55,15 +56,17 @@ bool engine_initialize()
     return true;
 }
 
-void engine_update()
+void
+engine_update()
 {
-    primal::script::update(10.f);
+    script::update(10.f);
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
-void engine_shutdown()
+void
+engine_shutdown()
 {
     platform::remove_window(game_window.window.get_id());
-    primal::content::unload_game();
+    content::unload_game();
 }
 #endif // !defined(SHIPPING)

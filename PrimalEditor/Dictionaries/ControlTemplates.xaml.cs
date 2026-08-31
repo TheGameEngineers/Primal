@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -8,7 +9,7 @@ using System.Windows.Media;
 
 namespace PrimalEditor.Dictionaries;
 
-public partial class ControlTemplates : ResourceDictionary
+partial class ControlTemplates : ResourceDictionary
 {
     private static void MoveUpFocus(UIElement element)
     {
@@ -64,7 +65,7 @@ public partial class ControlTemplates : ResourceDictionary
         var textBox = sender as TextBox;
         if (!textBox.IsVisible) return;
         var exp = textBox.GetBindingExpression(TextBox.TextProperty);
-        if(exp != null)
+        if (exp != null)
         {
             UpdateTextBoxSource(textBox, exp);
         }
@@ -122,5 +123,34 @@ public partial class ControlTemplates : ResourceDictionary
     {
         var window = (Window)((FrameworkElement)sender).TemplatedParent;
         window.WindowState = WindowState.Minimized;
+    }
+
+    private void OnHorizontalSlider_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var slider = sender as Slider;
+        if (slider.TickPlacement != System.Windows.Controls.Primitives.TickPlacement.None)
+        {
+            slider.Value = Math.Clamp(slider.Value + Math.Sign(e.Delta) * slider.TickFrequency, slider.Minimum, slider.Maximum);
+        }
+    }
+
+    private void OnScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ScrollViewer sv) return;
+
+        var lines = SystemParameters.WheelScrollLines;
+        // Honor the Windows “scroll one screen at a time” setting
+        if (lines == -1)
+        {
+            // Let the default handler do a page scroll
+            return;
+        }
+
+        // Scale by Delta (120 = one “notch”). The *10 factor is a common
+        // empirical value that feels close to native apps; tweak if you like.
+        var offset = e.Delta * 10.0 * lines / 120.0;
+
+        sv.ScrollToVerticalOffset(sv.VerticalOffset - offset);
+        e.Handled = true;   // stop the default (non-accelerated) handling
     }
 }

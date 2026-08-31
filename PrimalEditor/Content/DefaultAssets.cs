@@ -16,6 +16,8 @@ static class DefaultAssets
     public static AssetInfo DefaultGeometry { get; private set; }
     public static AssetInfo DefaultMaterial { get; private set; }
     public static AssetInfo DefaultTexture { get; private set; }
+    public static AssetInfo DefaultSpecularIBL { get; private set; }
+    public static AssetInfo DefaultDiffuseIBL { get; private set; }
 
     public static List<AssetInfo> DefaultAssetsList => [
 
@@ -23,6 +25,8 @@ static class DefaultAssets
         DefaultGeometry,
         DefaultMaterial,
         DefaultTexture,
+        DefaultSpecularIBL,
+        DefaultDiffuseIBL,
      ];
 
     /// <summary>
@@ -30,7 +34,7 @@ static class DefaultAssets
     /// </summary>
     public static void GenerateDefaultAssets()
     {
-        var defaultAssetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @".\Resources\DefaultAssets\");
+        var defaultAssetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\DefaultAssets\");
         if (!Directory.Exists(defaultAssetsPath))
         {
             Directory.CreateDirectory(defaultAssetsPath);
@@ -58,12 +62,15 @@ static class DefaultAssets
         }
 
         var textureFileName = $@"{defaultAssetsPath}DefaultTexture.asset";
+        var specularIblFileName = $@"{defaultAssetsPath}DefaultSpecularIBL.asset";
+        var diffuseIblFileName = $@"{defaultAssetsPath}DefaultDiffuseIBL.asset";
 
         BrdfIntegrationLut = Asset.GetAssetInfo(brdfLutFileName);
         DefaultGeometry = Asset.GetAssetInfo(cubeFileName);
         DefaultMaterial = Asset.GetAssetInfo(mtlFileName);
         DefaultTexture = Asset.GetAssetInfo(textureFileName);
-
+        DefaultSpecularIBL = Asset.GetAssetInfo(specularIblFileName);
+        DefaultDiffuseIBL = Asset.GetAssetInfo(diffuseIblFileName);
     }
 
     private static void ComputeBrdfIntegrationLut(string file)

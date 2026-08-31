@@ -8,8 +8,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:PrimalEditor.Utilities"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             mc:Ignorable="d"  d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         
         <Style TargetType="{x:Type ToggleButton}">
@@ -17,6 +16,7 @@
             <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Width" Value="18"/>
+            <Setter Property="Margin" Value="1,0"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <EventSetter Event="Click" Handler="OnMessageFilter_Button_Click"/>
@@ -29,14 +29,13 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="true">
-                                <Setter Property="BorderBrush" TargetName="outerBorder"
-                                        Value="{Binding Background, ElementName=innerBorder}"/>
+                                <Setter TargetName="outerBorder" Property="BorderBrush" Value="{Binding Background, ElementName=innerBorder}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="False">
-                                <Setter Property="Opacity" TargetName="innerBorder" Value="0.5"/>
+                                <Setter TargetName="innerBorder" Property="Opacity" Value="0.5"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="false">
-                                <Setter Property="Opacity" TargetName="innerBorder" Value="0.2"/>
+                                <Setter TargetName="innerBorder" Property="Opacity" Value="0.2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -45,20 +44,15 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                       x:Name="scrollViewer" Background="{StaticResource Editor.Window.GrayBrush2}"
                       Margin="0,32,0,0">
             <ItemsControl ItemsSource="{Binding Source={x:Static local:Logger.FilteredMessages}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <DockPanel ToolTip="{Binding MetaData}">
                             <DockPanel.Style>
-                                <Style TargetType="DockPanel">
+                                <Style TargetType="{x:Type DockPanel}">
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
@@ -73,7 +67,7 @@
                             </DockPanel.Style>
                             <TextBlock Text="{Binding Time, StringFormat=hh:mm:ss}" Margin="5,0">
                                 <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="{x:Type TextBlock}">
                                         <Setter Property="Foreground" Value="LightGreen"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Warning}">
@@ -98,11 +92,11 @@
             </Border.Effect>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="4,0" VerticalAlignment="Center">
                 <Button Content="Clear" Margin="1,0" Click="OnClear_Button_Click" Focusable="False"/>
-                <ToggleButton IsChecked="True" Content="info" Margin="1,0" ToolTip="Toggle information messages"
+                <ToggleButton IsChecked="True" Content="info" ToolTip="Toggle information messages"
                               x:Name="toggleInfo" Background="{StaticResource Editor.GreenBrush}"/>
-                <ToggleButton IsChecked="True" Content="warn" Margin="1,0" ToolTip="Toggle warning messages"
+                <ToggleButton IsChecked="True" Content="warn" ToolTip="Toggle warning messages"
                               x:Name="toggleWarnings" Background="{StaticResource Editor.OrangeBrush}"/>
-                <ToggleButton IsChecked="True" Content="error" Margin="1,0" ToolTip="Toggle error messages"
+                <ToggleButton IsChecked="True" Content="error" ToolTip="Toggle error messages"
                               x:Name="toggleErrors" Background="{StaticResource Editor.RedBrush}"/>
             </StackPanel>
         </Border>

@@ -9,312 +9,310 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace PrimalEditor.Content
+namespace PrimalEditor.Content;
+
+abstract class AssetProxy : ViewModelBase
 {
-    abstract class AssetProxy : ViewModelBase
+    public FileInfo FileInfo { get; }
+
+    public string DestinationFolder
     {
-        public FileInfo FileInfo { get; }
-
-        private string _destinationFolder;
-        public string DestinationFolder
+        get;
+        set
         {
-            get => _destinationFolder;
-            set
+            if (!Path.EndsInDirectorySeparator(value))
+                value += Path.DirectorySeparatorChar;
+
+            if (field != value)
             {
-                if (!Path.EndsInDirectorySeparator(value))
-                    value += Path.DirectorySeparatorChar;
-
-                if (_destinationFolder != value)
-                {
-                    _destinationFolder = value;
-                    OnPropertyChanged(nameof(DestinationFolder));
-                }
-            }
-        }
-
-        public abstract IAssetImportSettings ImportSettings { get; }
-
-        public abstract void CopySettings(IAssetImportSettings settings);
-
-        public AssetProxy(string fileName, string destinationFolder)
-        {
-            Debug.Assert(File.Exists(fileName));
-            FileInfo = new FileInfo(fileName);
-            DestinationFolder = destinationFolder;
-        }
-    }
-
-    class GeometryProxy(string fileName, string destinationFolder) : AssetProxy(fileName, destinationFolder)
-    {
-        public override GeometryImportSettings ImportSettings { get; } = new();
-
-        public override void CopySettings(IAssetImportSettings settings)
-        {
-            Debug.Assert(settings is GeometryImportSettings);
-            if (settings is GeometryImportSettings geometryImportSettings)
-            {
-                IAssetImportSettings.CopyImportSettings(geometryImportSettings, ImportSettings);
+                field = value;
+                OnPropertyChanged(nameof(DestinationFolder));
             }
         }
     }
 
-    class TextureProxy : AssetProxy
+    public abstract IAssetImportSettings ImportSettings { get; }
+
+    public abstract void CopySettings(IAssetImportSettings settings);
+
+    public AssetProxy(string fileName, string destinationFolder)
     {
-        public override TextureImportSettings ImportSettings { get; } = new();
-
-        private readonly ObservableCollection<TextureProxy> _imageSources = [];
-        public ReadOnlyObservableCollection<TextureProxy> ImageSources { get; }
-
-        public override void CopySettings(IAssetImportSettings settings)
-        {
-            Debug.Assert(settings is TextureImportSettings);
-            if (settings is TextureImportSettings textureImportSettings)
-            {
-                IAssetImportSettings.CopyImportSettings(textureImportSettings, ImportSettings);
-
-                // NOTE: there's always one item in ImageSources which is the texture proxy itself.
-                foreach (var source in ImageSources.Skip(1))
-                {
-                    source.CopySettings(settings);
-                }
-            }
-        }
-
-        public bool AddProxy(TextureProxy proxy)
-        {
-            if (!_imageSources.Any(x => x.FileInfo.FullName == proxy.FileInfo.FullName) && proxy.ImageSources.Count == 1)
-            {
-                _imageSources.Add(proxy);
-                return true;
-            }
-
-            return false;
-        }
-
-        public void RemoveProxy(TextureProxy proxy)
-        {
-            if (proxy != this)
-            {
-                _imageSources.Remove(proxy);
-            }
-        }
-
-        public void MoveUp(List<TextureProxy> proxies)
-        {
-            proxies.Remove(this);
-            if (proxies.Count == 0) return;
-
-            var toIndex = Math.Max(proxies.Select(_imageSources.IndexOf).Min() - 1, 1);
-            foreach (var proxy in proxies)
-            {
-                var index = _imageSources.IndexOf(proxy);
-                if (index != toIndex)
-                {
-                    _imageSources.Move(index, toIndex);
-                }
-
-                ++toIndex;
-            }
-        }
-
-        public void MoveDown(List<TextureProxy> proxies)
-        {
-            proxies.Remove(this);
-            if (proxies.Count == 0) return;
-
-            var toIndex = Math.Min(proxies.Select(_imageSources.IndexOf).Max() + 1, _imageSources.Count - 1);
-            foreach (var proxy in proxies)
-            {
-                var index = _imageSources.IndexOf(proxy);
-                if (index != toIndex)
-                {
-                    _imageSources.Move(index, toIndex);
-                }
-            }
-        }
-
-        public TextureProxy(string fileName, string destinationFolder)
-            : base(fileName, destinationFolder)
-        {
-            _imageSources.Add(this);
-            ImageSources = new(_imageSources);
-        }
-
+        Debug.Assert(File.Exists(fileName));
+        FileInfo = new FileInfo(fileName);
+        DestinationFolder = destinationFolder;
     }
+}
 
-    class AudioProxy(string fileName, string destinationFolder) : AssetProxy(fileName, destinationFolder)
+class GeometryProxy(string fileName, string destinationFolder) : AssetProxy(fileName, destinationFolder)
+{
+    public override GeometryImportSettings ImportSettings { get; } = new();
+
+    public override void CopySettings(IAssetImportSettings settings)
     {
-        public override IAssetImportSettings ImportSettings => throw new NotImplementedException();
-
-        public override void CopySettings(IAssetImportSettings settings)
+        Debug.Assert(settings is GeometryImportSettings);
+        if (settings is GeometryImportSettings geometryImportSettings)
         {
-            throw new NotImplementedException();
+            IAssetImportSettings.CopyImportSettings(geometryImportSettings, ImportSettings);
+        }
+    }
+}
+
+class TextureProxy : AssetProxy
+{
+    public override TextureImportSettings ImportSettings { get; } = new();
+
+    private readonly ObservableCollection<TextureProxy> _imageSources = [];
+    public ReadOnlyObservableCollection<TextureProxy> ImageSources { get; }
+
+    public override void CopySettings(IAssetImportSettings settings)
+    {
+        Debug.Assert(settings is TextureImportSettings);
+        if (settings is TextureImportSettings textureImportSettings)
+        {
+            IAssetImportSettings.CopyImportSettings(textureImportSettings, ImportSettings);
+
+            // NOTE: there's always one item in ImageSources which is the texture proxy itself.
+            foreach (var source in ImageSources.Skip(1))
+            {
+                source.CopySettings(settings);
+            }
         }
     }
 
-    interface IImportSettingsConfigurator<T> where T : AssetProxy
+    public bool AddProxy(TextureProxy proxy)
     {
-        void AddFiles(IEnumerable<string> files, string destinationFolder);
-        void RemoveFile(T proxy);
-        void Import();
+        if (!_imageSources.Any(x => x.FileInfo.FullName == proxy.FileInfo.FullName) && proxy.ImageSources.Count == 1)
+        {
+            _imageSources.Add(proxy);
+            return true;
+        }
+
+        return false;
     }
 
-    class GeometryImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<GeometryProxy>
+    public void RemoveProxy(TextureProxy proxy)
     {
-        private readonly ObservableCollection<GeometryProxy> _geometryProxies = [];
-        public ReadOnlyObservableCollection<GeometryProxy> GeometryProxies { get; }
-
-        public void AddFiles(IEnumerable<string> files, string destinationFolder)
+        if (proxy != this)
         {
-            files.Except(_geometryProxies.Select(proxy => proxy.FileInfo.FullName))
-                .ToList().ForEach(file => _geometryProxies.Add(new(file, destinationFolder)));
-        }
-        public void RemoveFile(GeometryProxy proxy) => _geometryProxies.Remove(proxy);
-
-        public void Import()
-        {
-            if (!_geometryProxies.Any()) return;
-
-            _ = ContentHelper.ImportFilesAsync(_geometryProxies);
-            _geometryProxies.Clear();
-        }
-
-        public GeometryImportSettingsConfigurator()
-        {
-            GeometryProxies = new(_geometryProxies);
+            _imageSources.Remove(proxy);
         }
     }
 
-    class TextureImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<TextureProxy>
+    public void MoveUp(List<TextureProxy> proxies)
     {
-        private readonly ObservableCollection<TextureProxy> _textureProxies = [];
-        public ReadOnlyObservableCollection<TextureProxy> TextureProxies { get; }
+        proxies.Remove(this);
+        if (proxies.Count == 0) return;
 
-        public void AddFiles(IEnumerable<string> files, string destinationFolder)
+        var toIndex = Math.Max(proxies.Select(_imageSources.IndexOf).Min() - 1, 1);
+        foreach (var proxy in proxies)
         {
-            files.Except(_textureProxies.Select(proxy => proxy.FileInfo.FullName))
-                .ToList().ForEach(file => _textureProxies.Add(new(file, destinationFolder)));
-        }
-        public void RemoveFile(TextureProxy proxy) => _textureProxies.Remove(proxy);
-
-        public void MoveToTarget(TextureProxy proxy, TextureProxy target)
-        {
-            if(proxy != target && proxy.ImageSources.Count==1 && target.AddProxy(proxy))
+            var index = _imageSources.IndexOf(proxy);
+            if (index != toIndex)
             {
-                _textureProxies.Remove(proxy);
+                _imageSources.Move(index, toIndex);
+            }
+
+            ++toIndex;
+        }
+    }
+
+    public void MoveDown(List<TextureProxy> proxies)
+    {
+        proxies.Remove(this);
+        if (proxies.Count == 0) return;
+
+        var toIndex = Math.Min(proxies.Select(_imageSources.IndexOf).Max() + 1, _imageSources.Count - 1);
+        foreach (var proxy in proxies)
+        {
+            var index = _imageSources.IndexOf(proxy);
+            if (index != toIndex)
+            {
+                _imageSources.Move(index, toIndex);
+            }
+        }
+    }
+
+    public TextureProxy(string fileName, string destinationFolder)
+        : base(fileName, destinationFolder)
+    {
+        _imageSources.Add(this);
+        ImageSources = new(_imageSources);
+    }
+
+}
+
+class AudioProxy(string fileName, string destinationFolder) : AssetProxy(fileName, destinationFolder)
+{
+    public override IAssetImportSettings ImportSettings => throw new NotImplementedException();
+
+    public override void CopySettings(IAssetImportSettings settings)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+interface IImportSettingsConfigurator<T> where T : AssetProxy
+{
+    void AddFiles(IEnumerable<string> files, string destinationFolder);
+    void RemoveFile(T proxy);
+    void Import();
+}
+
+class GeometryImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<GeometryProxy>
+{
+    private readonly ObservableCollection<GeometryProxy> _geometryProxies = [];
+    public ReadOnlyObservableCollection<GeometryProxy> GeometryProxies { get; }
+
+    public void AddFiles(IEnumerable<string> files, string destinationFolder)
+    {
+        files.Except(_geometryProxies.Select(proxy => proxy.FileInfo.FullName))
+            .ToList().ForEach(file => _geometryProxies.Add(new(file, destinationFolder)));
+    }
+    public void RemoveFile(GeometryProxy proxy) => _geometryProxies.Remove(proxy);
+
+    public void Import()
+    {
+        if (!_geometryProxies.Any()) return;
+
+        _ = ContentHelper.ImportFilesAsync(_geometryProxies);
+        _geometryProxies.Clear();
+    }
+
+    public GeometryImportSettingsConfigurator()
+    {
+        GeometryProxies = new(_geometryProxies);
+    }
+}
+
+class TextureImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<TextureProxy>
+{
+    private readonly ObservableCollection<TextureProxy> _textureProxies = [];
+    public ReadOnlyObservableCollection<TextureProxy> TextureProxies { get; }
+
+    public void AddFiles(IEnumerable<string> files, string destinationFolder)
+    {
+        files.Except(_textureProxies.Select(proxy => proxy.FileInfo.FullName))
+            .ToList().ForEach(file => _textureProxies.Add(new(file, destinationFolder)));
+    }
+    public void RemoveFile(TextureProxy proxy) => _textureProxies.Remove(proxy);
+
+    public void MoveToTarget(TextureProxy proxy, TextureProxy target)
+    {
+        if (proxy != target && proxy.ImageSources.Count == 1 && target.AddProxy(proxy))
+        {
+            _textureProxies.Remove(proxy);
+        }
+    }
+
+    public void MoveFromTarget(TextureProxy proxy, TextureProxy target)
+    {
+        if (proxy != target)
+        {
+            Debug.Assert(proxy.ImageSources.Count == 1);
+            target.RemoveProxy(proxy);
+            if (!_textureProxies.Any(x => x.FileInfo.FullName == proxy.FileInfo.FullName))
+            {
+                _textureProxies.Add(proxy);
+            }
+        }
+    }
+
+    public void Import()
+    {
+        if (!_textureProxies.Any()) return;
+
+        foreach (var proxy in _textureProxies)
+        {
+            proxy.ImportSettings.Sources.Clear();
+            foreach (var source in proxy.ImageSources)
+            {
+                proxy.ImportSettings.Sources.Add(source.FileInfo.FullName);
             }
         }
 
-        public void MoveFromTarget(TextureProxy proxy, TextureProxy target)
-        { 
-            if(proxy != target)
-            {
-                Debug.Assert(proxy.ImageSources.Count == 1);
-                target.RemoveProxy(proxy);
-                if(!_textureProxies.Any(x=>x.FileInfo.FullName ==  proxy.FileInfo.FullName))
-                {
-                    _textureProxies.Add(proxy);
-                }
-            }
-        }
-
-        public void Import()
-        {
-            if (!_textureProxies.Any()) return;
-
-            foreach (var proxy in _textureProxies)
-            {
-                proxy.ImportSettings.Sources.Clear();
-                foreach (var source in proxy.ImageSources)
-                {
-                    proxy.ImportSettings.Sources.Add(source.FileInfo.FullName);
-                }
-            }
-
-            _ = ContentHelper.ImportFilesAsync(_textureProxies);
-            _textureProxies.Clear();
-        }
-
-        public TextureImportSettingsConfigurator()
-        {
-            TextureProxies = new(_textureProxies);
-        }
+        _ = ContentHelper.ImportFilesAsync(_textureProxies);
+        _textureProxies.Clear();
     }
 
-    class AudioImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<AudioProxy>
+    public TextureImportSettingsConfigurator()
     {
-        private readonly ObservableCollection<AudioProxy> _audioProxies = [];
-        public ReadOnlyObservableCollection<AudioProxy> AudioProxies { get; }
+        TextureProxies = new(_textureProxies);
+    }
+}
 
-        public void AddFiles(IEnumerable<string> files, string destinationFolder)
-        {
-            files.Except(_audioProxies.Select(proxy => proxy.FileInfo.FullName))
-                .ToList().ForEach(file => _audioProxies.Add(new(file, destinationFolder)));
-        }
-        public void RemoveFile(AudioProxy proxy) => _audioProxies.Remove(proxy);
+class AudioImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurator<AudioProxy>
+{
+    private readonly ObservableCollection<AudioProxy> _audioProxies = [];
+    public ReadOnlyObservableCollection<AudioProxy> AudioProxies { get; }
 
-        public void Import()
-        {
-            if (!_audioProxies.Any()) return;
+    public void AddFiles(IEnumerable<string> files, string destinationFolder)
+    {
+        files.Except(_audioProxies.Select(proxy => proxy.FileInfo.FullName))
+            .ToList().ForEach(file => _audioProxies.Add(new(file, destinationFolder)));
+    }
+    public void RemoveFile(AudioProxy proxy) => _audioProxies.Remove(proxy);
 
-            _ = ContentHelper.ImportFilesAsync(_audioProxies);
-            _audioProxies.Clear();
-        }
+    public void Import()
+    {
+        if (!_audioProxies.Any()) return;
 
-        public AudioImportSettingsConfigurator()
-        {
-            AudioProxies = new(_audioProxies);
-        }
+        _ = ContentHelper.ImportFilesAsync(_audioProxies);
+        _audioProxies.Clear();
     }
 
-    class ConfigureImportSettings : ViewModelBase
+    public AudioImportSettingsConfigurator()
     {
-        public string LastDestinationFolder { get; private set; }
+        AudioProxies = new(_audioProxies);
+    }
+}
 
-        public GeometryImportSettingsConfigurator GeometryImportSettingsConfigurator { get; } = new();
-        public TextureImportSettingsConfigurator TextureImportSettingsConfigurator { get; } = new();
-        public AudioImportSettingsConfigurator AudioImportSettingsConfigurator { get; } = new();
+class ConfigureImportSettings : ViewModelBase
+{
+    public string LastDestinationFolder { get; private set; }
 
-        public int FileCount =>
-            GeometryImportSettingsConfigurator.GeometryProxies.Count +
-            TextureImportSettingsConfigurator.TextureProxies.Count +
-            AudioImportSettingsConfigurator.AudioProxies.Count;
+    public GeometryImportSettingsConfigurator GeometryImportSettingsConfigurator { get; } = new();
+    public TextureImportSettingsConfigurator TextureImportSettingsConfigurator { get; } = new();
+    public AudioImportSettingsConfigurator AudioImportSettingsConfigurator { get; } = new();
 
-        public void Import()
-        {
-            GeometryImportSettingsConfigurator.Import();
-            TextureImportSettingsConfigurator.Import();
-            AudioImportSettingsConfigurator.Import();
-        }
+    public int FileCount =>
+        GeometryImportSettingsConfigurator.GeometryProxies.Count +
+        TextureImportSettingsConfigurator.TextureProxies.Count +
+        AudioImportSettingsConfigurator.AudioProxies.Count;
 
-        public void AddFiles(string[] files, string destinationFolder)
-        {
-            Debug.Assert(files != null);
-            Debug.Assert(!string.IsNullOrEmpty(destinationFolder) && Directory.Exists(destinationFolder));
-            if (!destinationFolder.EndsWith(Path.DirectorySeparatorChar)) destinationFolder += Path.DirectorySeparatorChar;
-            Debug.Assert(Application.Current.Dispatcher.Invoke(() => destinationFolder.Contains(Project.Current.ContentPath)));
-            LastDestinationFolder = destinationFolder;
+    public void Import()
+    {
+        GeometryImportSettingsConfigurator.Import();
+        TextureImportSettingsConfigurator.Import();
+        AudioImportSettingsConfigurator.Import();
+    }
 
-            var meshFiles = files.Where(file => ContentHelper.MeshFileExtensions.Contains(Path.GetExtension(file).ToLower()));
-            var imageFiles = files.Where(file => ContentHelper.ImageFileExtensions.Contains(Path.GetExtension(file).ToLower()));
-            var audioFiles = files.Where(file => ContentHelper.AudioFileExtensions.Contains(Path.GetExtension(file).ToLower()));
+    public void AddFiles(string[] files, string destinationFolder)
+    {
+        Debug.Assert(files != null);
+        Debug.Assert(!string.IsNullOrEmpty(destinationFolder) && Directory.Exists(destinationFolder));
+        if (!destinationFolder.EndsWith(Path.DirectorySeparatorChar)) destinationFolder += Path.DirectorySeparatorChar;
+        Debug.Assert(Application.Current.Dispatcher.Invoke(() => destinationFolder.Contains(Project.Current.ContentPath)));
+        LastDestinationFolder = destinationFolder;
 
-            GeometryImportSettingsConfigurator.AddFiles(meshFiles, destinationFolder);
-            TextureImportSettingsConfigurator.AddFiles(imageFiles, destinationFolder);
-            AudioImportSettingsConfigurator.AddFiles(audioFiles, destinationFolder);
-        }
+        var meshFiles = files.Where(file => ContentHelper.MeshFileExtensions.Contains(Path.GetExtension(file).ToLower()));
+        var imageFiles = files.Where(file => ContentHelper.ImageFileExtensions.Contains(Path.GetExtension(file).ToLower()));
+        var audioFiles = files.Where(file => ContentHelper.AudioFileExtensions.Contains(Path.GetExtension(file).ToLower()));
 
-        public ConfigureImportSettings(string[] files, string destinationFolder)
-        {
-            AddFiles(files, destinationFolder);
-        }
+        GeometryImportSettingsConfigurator.AddFiles(meshFiles, destinationFolder);
+        TextureImportSettingsConfigurator.AddFiles(imageFiles, destinationFolder);
+        AudioImportSettingsConfigurator.AddFiles(audioFiles, destinationFolder);
+    }
 
-        public ConfigureImportSettings(string destinationFolder)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(destinationFolder) && Directory.Exists(destinationFolder));
-            if (!destinationFolder.EndsWith(Path.DirectorySeparatorChar)) destinationFolder += Path.DirectorySeparatorChar;
-            Debug.Assert(Application.Current.Dispatcher.Invoke(() => destinationFolder.Contains(Project.Current.ContentPath)));
-            LastDestinationFolder = destinationFolder;
-        }
+    public ConfigureImportSettings(string[] files, string destinationFolder)
+    {
+        AddFiles(files, destinationFolder);
+    }
+
+    public ConfigureImportSettings(string destinationFolder)
+    {
+        Debug.Assert(!string.IsNullOrEmpty(destinationFolder) && Directory.Exists(destinationFolder));
+        if (!destinationFolder.EndsWith(Path.DirectorySeparatorChar)) destinationFolder += Path.DirectorySeparatorChar;
+        Debug.Assert(Application.Current.Dispatcher.Invoke(() => destinationFolder.Contains(Project.Current.ContentPath)));
+        LastDestinationFolder = destinationFolder;
     }
 }

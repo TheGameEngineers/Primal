@@ -4,22 +4,21 @@ using PrimalEditor.Content;
 using System;
 using System.Threading.Tasks;
 
-namespace PrimalEditor.Editors
-{
-    enum AssetEditorState
-    {
-        Done=0,
-        Importing,
-        Processing,
-        Loading,
-        Saving,
-    }
+namespace PrimalEditor.Editors;
 
-    interface IAssetEditor
-    {
-        AssetEditorState State { get; }
-        Asset Asset { get; }
-        bool CheckAssetGuid(Guid guid);
-        Task SetAsset(AssetInfo info);
-    }
+enum AssetEditorState
+{
+    Done = 0,
+    Importing,
+    Processing,
+    Loading,
+    Saving,
+}
+
+interface IAssetEditor
+{
+    AssetEditorState State { get; }
+    Asset Asset { get; }
+    bool CheckAssetGuid(Guid guid);
+    Task SetAsset(AssetInfo info);
 }

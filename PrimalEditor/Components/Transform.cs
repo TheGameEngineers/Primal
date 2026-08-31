@@ -77,68 +77,51 @@ class Transform(GameEntity owner) : Component(owner)
 }
 
 sealed class MSTransform : MSComponent<Transform>
-{    
-    private float? _posX;
+{
     public float? PosX
     {
-        get => _posX;
-        set => SetPropertyValue(ref _posX, value, nameof(PosX));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(PosX));
     }
-
-    private float? _posY;
     public float? PosY
     {
-        get => _posY;
-        set => SetPropertyValue(ref _posY, value, nameof(PosY));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(PosY));
     }
-
-    private float? _posZ;
     public float? PosZ
     {
-        get => _posZ;
-        set => SetPropertyValue(ref _posZ, value, nameof(PosZ));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(PosZ));
     }
-
-    private float? _rotX;
     public float? RotX
     {
-        get => _rotX;
-        set => SetPropertyValue(ref _rotX, value, nameof(RotX));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(RotX));
     }
-
-    private float? _rotY;
     public float? RotY
     {
-        get => _rotY;
-        set => SetPropertyValue(ref _rotY, value, nameof(RotY));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(RotY));
     }
-
-    private float? _rotZ;
     public float? RotZ
     {
-        get => _rotZ;
-        set => SetPropertyValue(ref _rotZ, value, nameof(RotZ));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(RotZ));
     }
-
-    private float? _scaleX;
     public float? ScaleX
     {
-        get => _scaleX;
-        set => SetPropertyValue(ref _scaleX, value, nameof(ScaleX));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(ScaleX));
     }
-
-    private float? _scaleY;
     public float? ScaleY
     {
-        get => _scaleY;
-        set => SetPropertyValue(ref _scaleY, value, nameof(ScaleY));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(ScaleY));
     }
-
-    private float? _scaleZ;
     public float? ScaleZ
     {
-        get => _scaleZ;
-        set => SetPropertyValue(ref _scaleZ, value, nameof(ScaleZ));
+        get;
+        set => SetPropertyValue(ref field, value, nameof(ScaleZ));
     }
 
     private static bool _isLocalRotation = true;
@@ -174,10 +157,10 @@ sealed class MSTransform : MSComponent<Transform>
 
     public float LocalPosX
     {
-        get=>_localPos.X;
+        get => _localPos.X;
         set
         {
-            if(!_localPos.X.IsTheSameAs(value))
+            if (!_localPos.X.IsTheSameAs(value))
             {
                 _localPos.X = value;
                 OnPropertyChanged(nameof(LocalPosX));
@@ -192,7 +175,7 @@ sealed class MSTransform : MSComponent<Transform>
         {
             if (!_localPos.Y.IsTheSameAs(value))
             {
-                _localPos.Y= value;
+                _localPos.Y = value;
                 OnPropertyChanged(nameof(LocalPosY));
             }
         }
@@ -266,9 +249,9 @@ sealed class MSTransform : MSComponent<Transform>
             OnPropertyChanged(propertyName);
         }
     }
-    
+
     private void ResetLocalFrame()
-    { 
+    {
         _previousLocalPos = Vector3.Zero;
         LocalPosX = LocalPosY = LocalPosZ = 0;
 
@@ -279,7 +262,7 @@ sealed class MSTransform : MSComponent<Transform>
     protected override bool UpdateComponents(string propertyName)
     {
         var count = SelectedComponents.Count;
-        var componentIds = SelectedComponents.Select(c=>c.Owner.EntityId).ToArray();
+        var componentIds = SelectedComponents.Select(c => c.Owner.EntityId).ToArray();
         Debug.Assert(count == componentIds.Length);
         float[] x = new float[count], y = new float[count], z = new float[count];
         var index = 0;
@@ -291,7 +274,7 @@ sealed class MSTransform : MSComponent<Transform>
             case nameof(PosZ):
                 SelectedComponents.ForEach(c =>
                 {
-                    var pos = new Vector3(PosX?? c.Position.X, PosY ?? c.Position.Y, PosZ ?? c.Position.Z);
+                    var pos = new Vector3(PosX ?? c.Position.X, PosY ?? c.Position.Y, PosZ ?? c.Position.Z);
                     x[index] = pos.X; y[index] = pos.Y; z[index] = pos.Z; ++index;
                     c.Position = pos;
                 });
@@ -304,7 +287,7 @@ sealed class MSTransform : MSComponent<Transform>
             case nameof(RotZ):
                 SelectedComponents.ForEach(c =>
                 {
-                    var rot= new Vector3(RotX ?? c.Rotation.X, RotY ?? c.Rotation.Y, RotZ ?? c.Rotation.Z);
+                    var rot = new Vector3(RotX ?? c.Rotation.X, RotY ?? c.Rotation.Y, RotZ ?? c.Rotation.Z);
                     x[index] = rot.X; y[index] = rot.Y; z[index] = rot.Z; ++index;
                     c.Rotation = rot;
                 });
@@ -317,7 +300,7 @@ sealed class MSTransform : MSComponent<Transform>
             case nameof(ScaleZ):
                 SelectedComponents.ForEach(c =>
                 {
-                    var scale= new Vector3(ScaleX ?? c.Scale.X, ScaleY ?? c.Scale.Y, ScaleZ ?? c.Scale.Z);
+                    var scale = new Vector3(ScaleX ?? c.Scale.X, ScaleY ?? c.Scale.Y, ScaleZ ?? c.Scale.Z);
                     x[index] = scale.X; y[index] = scale.Y; z[index] = scale.Z; ++index;
                     c.Scale = scale;
                 });
