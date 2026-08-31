@@ -16,7 +16,13 @@ namespace PrimalEditor;
 /// </summary>
 partial class MainWindow : Window
 {
+    private static readonly Version _editorVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
     public static string PrimalPath { get; private set; }
+
+    private static bool VersionsAreEqual(int[] engineVersion, Version editorVersion) =>
+        engineVersion[0] == editorVersion.Major &&
+        engineVersion[1] == editorVersion.Minor &&
+        engineVersion[2] == editorVersion.Build;
 
     private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
     {
@@ -26,6 +32,8 @@ partial class MainWindow : Window
         var initResult = EngineAPI.InitializeEngine();
         if (initResult == EngineAPIStructs.EngineInitError.Succeeded)
         {
+            EngineAPI.GetEngineVersion(out var major, out var minor, out var revision);
+            Debug.Assert(VersionsAreEqual([major, minor, revision], _editorVersion));
             OpenProjectBrowserDialog();
         }
         else
@@ -107,6 +115,7 @@ partial class MainWindow : Window
             var project = projectBrowser.DataContext as Project;
             Debug.Assert(project != null);
             DataContext = project;
+            Title = $"Primal Editor v{_editorVersion.ToString(3)} [{project.Name}]";
         }
     }
 

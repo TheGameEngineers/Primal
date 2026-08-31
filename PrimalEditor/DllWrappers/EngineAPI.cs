@@ -26,7 +26,7 @@ namespace PrimalEditor.EngineAPIStructs
         ShaderCompilation,
         [Description("Graphics module initialization failed")]
         Graphics,
-    }
+    }    
 
     [StructLayout(LayoutKind.Sequential)]
     class TransformComponent
@@ -155,7 +155,11 @@ namespace PrimalEditor.DllWrappers
         private const string _engineDll = "EngineDll.dll";
 
         [LibraryImport(_engineDll)]
+        public static partial void GetEngineVersion(out int major, out int minor, out int revision);
+
+        [LibraryImport(_engineDll)]
         public static partial EngineInitError InitializeEngine();
+
         [LibraryImport(_engineDll)]
         public static partial void ShutdownEngine();
 

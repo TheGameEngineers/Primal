@@ -182,6 +182,14 @@ void remove_camera(graphics::camera& camera)
 extern utl::ticket_mutex mutex;
 math::v4 to_quat(math::v3 euler_angles, bool is_degrees);
 
+EDITOR_INTERFACE void
+GetEngineVersion(int* major, int* minor, int* revision)
+{
+    *major = primal::version.major;
+    *minor = primal::version.minor;
+    *revision = primal::version.revision;
+}
+
 EDITOR_INTERFACE engine_init_error::error_code
 InitializeEngine()
 {
