@@ -13,7 +13,4 @@
     <ClInclude Include="TestWindow.h" />
     <ClInclude Include="TestRenderer.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>

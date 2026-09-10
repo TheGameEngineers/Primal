@@ -82,7 +82,7 @@
                        Margin="5,0,0,5" Typography.Capitals="SmallCaps" FontSize="14"/>
             <TextBlock Text="Name" Width="78" Margin="5,0,0,0"/>
             <TextBox Text="{Binding Name, UpdateSourceTrigger=Explicit}" HorizontalAlignment="Stretch" Margin="0,5,5,5"
-                     GotKeyboardFocus="OnName_TextBox_GotKeyboardFocus"
+                     GotKeyboardFocus="OnName_TextBox_GotKeyboardFocus" d:Text="Material Name"
                      LostKeyboardFocus="OnName_TextBox_LostKeyboardFocus"/>
         </DockPanel>
 
@@ -112,7 +112,10 @@
             </StackPanel>
         </StackPanel>
 
-        <Expander Grid.Row="2" Margin="0,3" Background="{StaticResource panelBackground}">
+        <TextBlock Visibility="Collapsed" x:Name="tagFormatter"
+                   Text="{Binding Tag, StringFormat='SurfaceConstants{0}', RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"/>
+        <Expander Grid.Row="2" Margin="0,3" Background="{StaticResource panelBackground}"
+                  primal:ExpanderStateHelper.StateKey="{Binding Text, ElementName=tagFormatter}">
             <Expander.Header>
                 <TextBlock Text="Surface Constants" Foreground="Lavender" Opacity="0.7"/>
             </Expander.Header>

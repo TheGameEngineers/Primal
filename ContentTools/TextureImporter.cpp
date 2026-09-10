@@ -98,7 +98,9 @@ struct d3d11_device
 };
 
 std::mutex                  device_creation_mutex;
-utl::vector<d3d11_device>   d3d11_devices;
+// NOTE: d3d11_device contains std::mutex which can't be copied and that's needed when
+//       using a std::vector. Therefore we use a std::deque instead.
+utl::deque<d3d11_device>    d3d11_devices;
 
 HMODULE dxgi_module{ nullptr };
 HMODULE d3d11_module{ nullptr };

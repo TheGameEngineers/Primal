@@ -13,42 +13,42 @@
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}" x:Key="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
-    <UniformGrid Rows="7" VerticalAlignment="Top">
-        <DockPanel VerticalAlignment="Center">
+    <StackPanel VerticalAlignment="Top">
+        <DockPanel VerticalAlignment="Center" Margin="0,5">
             <TextBlock Text="Normals" Width="150"/>
             <ComboBox x:Name="normalsComboBox" SelectedIndex="{Binding CalculateNormals}">
                 <ComboBoxItem Content="Import"/>
                 <ComboBoxItem Content="Calculate"/>
             </ComboBox>
         </DockPanel>
-        <DockPanel Margin="0,2" VerticalAlignment="Center">
+        <DockPanel Margin="0,5" VerticalAlignment="Center" >
             <TextBlock Text="Tangents" Width="150"/>
             <ComboBox SelectedIndex="{Binding CalculateTangents}">
                 <ComboBoxItem Content="Import"/>
                 <ComboBoxItem Content="Mikk TSpace"/>
             </ComboBox>
         </DockPanel>
-        <DockPanel VerticalAlignment="Center">
+        <DockPanel VerticalAlignment="Center" Margin="0,5">
             <TextBlock Text="Smoothing Angle" Width="150"/>
             <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                     x:Name="angleSlider" Value="{Binding SmoothingAngle}" Style="{StaticResource HorizontalSliderStyle}"
                     d:Value="65"/>
         </DockPanel>
-        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+        <DockPanel Margin="0,5" LastChildFill="False" VerticalAlignment="Center">
             <TextBlock Text="Import Embedded Textures" Width="150"/>
             <CheckBox IsChecked="{Binding ImportEmbeddedTextures}" Margin="-1,0,0,0" d:IsChecked="True"/>
         </DockPanel>
-        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+        <DockPanel Margin="0,5" LastChildFill="False" VerticalAlignment="Center">
             <TextBlock Text="Import Animations" Width="150"/>
             <CheckBox IsChecked="{Binding ImportAnimations}" Margin="-1,0,0,0" d:IsChecked="{x:Null}"/>
         </DockPanel>
-        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+        <DockPanel Margin="0,5" LastChildFill="False" VerticalAlignment="Center">
             <TextBlock Text="Reverse Handedness" Width="150"/>
             <CheckBox IsChecked="{Binding ReverseHandedness}" Margin="-1,0,0,0" d:IsChecked="{x:Null}"/>
         </DockPanel>
-        <DockPanel Margin="0,2" LastChildFill="False" VerticalAlignment="Center">
+        <DockPanel Margin="0,5" LastChildFill="False" VerticalAlignment="Center">
             <TextBlock Text="Coalesce Meshes" Width="150"/>
             <CheckBox IsChecked="{Binding CoalesceMeshes}" Margin="-1,0,0,0" d:IsChecked="False"/>
         </DockPanel>
-    </UniformGrid>
+    </StackPanel>
 </UserControl>

@@ -38,23 +38,31 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition MinHeight="28"/>
-            <RowDefinition MinHeight="28"/>
-            <RowDefinition MinHeight="28"/>
-            <RowDefinition MinHeight="28"/>
-            <RowDefinition MinHeight="28"/>
+            <RowDefinition MinHeight="32"/>
+            <RowDefinition MinHeight="32"/>
+            <RowDefinition MinHeight="32"/>
+            <RowDefinition MinHeight="32"/>
+            <RowDefinition MinHeight="32"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Dimension"/>
         <WrapPanel VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" Margin="0,5" Orientation="Vertical">
+            <WrapPanel.Resources>
+                <Style TargetType="{x:Type RadioButton}" BasedOn="{StaticResource {x:Type RadioButton}}">
+                    <Setter Property="Margin" Value="0,0,20,0"/>
+                    <Setter Property="GroupName" Value="Dimension"/>
+                    <Setter Property="Height" Value="28"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                </Style>
+            </WrapPanel.Resources>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=0}"
-                         Margin="0,1,20,2" Content="1D" GroupName="Dimension"/>
+                         Content="1D"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=1}"
-                         Margin="0,1,20,2" Content="2D" GroupName="Dimension" d:IsChecked="True"/>
+                         Content="2D" d:IsChecked="True"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=2}"
-                         Margin="0,1,20,2" Content="3D" GroupName="Dimension" d:IsEnabled="False"/>
+                         Content="3D" d:IsEnabled="False"/>
             <RadioButton IsChecked="{Binding Dimension, Converter={StaticResource textureDimensionToBooleanConverter}, ConverterParameter=3}"
-                         Margin="0,1,20,2" Content="Cubemap" GroupName="Dimension"/>
+                         Content="Cubemap"/>
             <StackPanel d:Visibility="Visible">
                 <StackPanel.Style>
                     <Style TargetType="{x:Type StackPanel}">
@@ -66,7 +74,7 @@
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Height="28">
                     <StackPanel.Style>
                         <Style TargetType="{x:Type StackPanel}">
                             <Style.Triggers>
@@ -76,14 +84,14 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    <TextBlock Text="Cubemap Size" Width="100"/>
-                    <TextBox Text="{Binding CubeMapSize}" Width="48" Padding="0" d:Text="1024"/>
+                    <TextBlock Text="Cubemap Size" Width="100" />
+                    <TextBox Text="{Binding CubeMapSize}" Width="96" d:Text="1024"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Height="28">
                     <TextBlock Text="Mirror Cubemap" Width="100"/>
                     <CheckBox IsChecked="{Binding MirrorCubeMap}"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Height="28">
                     <TextBlock Text="Prefilter" Width="100"/>
                     <CheckBox IsChecked="{Binding PrefilterCubeMap}"/>
                 </StackPanel>

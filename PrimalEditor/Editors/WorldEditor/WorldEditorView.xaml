@@ -55,27 +55,29 @@
             <MenuItem Header="Create" IsEnabled="False"/>
             <MenuItem Header="Window"/>
         </Menu>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5">
-            <Button Content="Undo" Command="{Binding UndoCommand}" Margin="10,0"/>
-            <Button Content="Redo" Command="{Binding RedoCommand}"/>
-            <Button Content="New Script" Click="OnNewScript_Button_Click" Margin="10,0"
+        <Border Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}">
+            <StackPanel Orientation="Horizontal" Margin="0,5">
+                <Button Content="Undo" Command="{Binding UndoCommand}" Margin="8,0,10,0"/>
+                <Button Content="Redo" Command="{Binding RedoCommand}"/>
+                <Button Content="New Script" Click="OnNewScript_Button_Click" Margin="10,0"
                     IsEnabled="{Binding Path=IsEnabled, ElementName=buildButton}"/>
-            <Button x:Name="buildButton" Content="Build"
+                <Button x:Name="buildButton" Content="Build"
                     Command="{Binding BuildCommand}" CommandParameter="{StaticResource True}"/>
-            <ComboBox x:Name="runConfig" VerticalAlignment="Center" Margin="10,0"
+                <ComboBox x:Name="runConfig" VerticalAlignment="Center" Margin="10,0"
                       Width="72" SelectedIndex="{Binding BuildConfig}">
-                <ComboBoxItem Content="Debug"/>
-                <ComboBoxItem Content="Release"/>
-            </ComboBox>
-            <Button Content="Primitive mesh" Click="OnCreatePrimitiveMesh_Button_Click" Margin="10,0"/>
-            <TextBlock Text="Light Set:" VerticalAlignment="Center" Margin="10,0,5,0"/>
-            <ComboBox ItemsSource="{Binding Source={x:Static components:LightSet.LightSets}}" MinWidth="96" MaxWidth="200"
+                    <ComboBoxItem Content="Debug"/>
+                    <ComboBoxItem Content="Release"/>
+                </ComboBox>
+                <Button Content="Primitive mesh" Click="OnCreatePrimitiveMesh_Button_Click" Margin="10,0"/>
+                <TextBlock Text="Light Set:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                <ComboBox ItemsSource="{Binding Source={x:Static components:LightSet.LightSets}}" MinWidth="96" MaxWidth="200"
                       x:Name="lightSetComboBox" SelectionChanged="OnLightSet_ComboBox_SelectionChanged" VerticalAlignment="Center"/>
-        </StackPanel>
+            </StackPanel>
+        </Border>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="10*"/>
-                <ColumnDefinition Width="1*" MinWidth="300"/>
+                <ColumnDefinition Width="1*" MinWidth="300" MaxWidth="600"/>
             </Grid.ColumnDefinitions>
             
             <Grid Grid.Column="0">

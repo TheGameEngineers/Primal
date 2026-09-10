@@ -50,13 +50,14 @@ partial class GeometryComponentView : UserControl
             {
                 var assetInfo = Asset.TryGetAssetInfo(file);
 
-                if (assetInfo != null)
+                if (assetInfo != null && vm.GeometryGuid != assetInfo.Guid)
                 {
-                    var undoSelection = vm.SelectedComponents.Select(geometry => (geometry, geometry.GeometryGuid, geometry.MaterialsList)).ToList();
+                    var selection = vm.SelectedComponents.Where(geometry => geometry.GeometryGuid != assetInfo.Guid).ToList();
+                    var undoSelection = selection.Select(geometry => (geometry, geometry.GeometryGuid, geometry.MaterialsList)).ToList();
 
                     await Task.Run(() => vm.SetGeometry(assetInfo.Guid));
 
-                    var redoSelection = vm.SelectedComponents.Select(geometry => (geometry, assetInfo.Guid, geometry.MaterialsList)).ToList();
+                    var redoSelection = selection.Select(geometry => (geometry, assetInfo.Guid, geometry.MaterialsList)).ToList();
 
                     Project.UndoRedo.Add(new UndoRedoAction(
                         () => ResetGeometry(undoSelection),

@@ -21,7 +21,7 @@ struct primitive_init_info
     primitive_mesh_type type;
     u32                 segments[3]{ 1, 1, 1 };
     math::v3            size{ 1, 1, 1 };
-    u32                 lod{ 0 };
+    u32                 lods{ 0 };
 };
 
 }

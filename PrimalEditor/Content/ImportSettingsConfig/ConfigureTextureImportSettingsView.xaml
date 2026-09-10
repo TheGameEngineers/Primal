@@ -201,7 +201,7 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="{Binding FileInfo.Name, StringFormat='Import settings for {0}'}" TextTrimming="CharacterEllipsis"
                            d:Text="Import settings for image.png" FontSize="16" Margin="10"/>
-                <local:TextureImportSettingsView Grid.Row="1" DataContext="{Binding ImportSettings}" Margin="10,0,10,28"/>
+                <local:TextureImportSettingsView Grid.Row="1" DataContext="{Binding ImportSettings}" Margin="10,0,10,28" MaxHeight="700"/>
                 <Border Grid.Row="1" CornerRadius="5" BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="1" Background="#50000000"
                         Margin="5,-5,5,23" x:Name="lockBorder" ToolTipService.InitialShowDelay="100"
                         ToolTip="Import settings are locked when multiple sources are selected.&#13;Current settings can be applied to the selection.">

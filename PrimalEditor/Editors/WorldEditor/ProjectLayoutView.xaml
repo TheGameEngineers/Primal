@@ -17,7 +17,7 @@
         <primal:NegateBoolConverter x:Key="negateBoolConverter"/>
 
         <DataTemplate x:Key="sceneMenuHeaderTemplate">
-            <StackPanel Margin="0,3" Background="Transparent">
+            <StackPanel Margin="0,5,0,5" Background="Transparent">
                 <StackPanel.Style>
                     <Style TargetType="{x:Type StackPanel}">
                         <Setter Property="Opacity" Value="0.6"/>
@@ -29,7 +29,7 @@
                     </Style>
                 </StackPanel.Style>
                 <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}"/>
-                <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}" Margin="3,2"/>
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}" Margin="0,2"/>
                 <Ellipse Width="3" Height="3" Fill="{StaticResource Editor.FontBrush}"/>
             </StackPanel>
         </DataTemplate>
@@ -71,8 +71,8 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
             </Expander>
-            <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="{StaticResource Editor.Window.GrayBrush5}">
-                <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Padding="0">
+            <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="Transparent">
+                <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Width="24" Padding="0">
                     <MenuItem Header="Empty Game Entity" Click="OnAddGameEntity_MenuItem_Click" Tag="0" IsEnabled="{Binding IsActive}"/>
                     <Separator/>
                     <MenuItem Header="Cube" Click="OnAddGameEntity_MenuItem_Click" Tag="1" IsEnabled="{Binding IsActive}"/>
@@ -132,8 +132,8 @@
                                     </Grid>
                                 </Border>
                                 <!-- NOTE: Scene management is work in progress. -->
-                                <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="{StaticResource Editor.Window.GrayBrush5}">
-                                    <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Padding="0">
+                                <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="Transparent">
+                                    <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Padding="0" Width="24">
                                         <MenuItem Header="Set Active Scene" IsEnabled="{Binding IsActive, Converter={StaticResource negateBoolConverter}}"/>
                                         <MenuItem Header="Rename Scene" Click="OnRenameScene_MenuItem_Click" Tag="{Binding ElementName=renameTextBox}"/>
                                         <MenuItem Header="Delete Scene" CommandParameter="{Binding}"

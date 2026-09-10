@@ -9,16 +9,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PrimalEditor.Content"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        xmlns:utl="clr-namespace:PrimalEditor.Utilities.Controls"
         xmlns:ed="clr-namespace:PrimalEditor.Editors"
-        mc:Ignorable="d" ResizeMode="NoResize"
-        Foreground="{StaticResource Editor.FontBrush}"
-        WindowStartupLocation="CenterScreen"
-        UseLayoutRounding="True"
+        xmlns:utl="clr-namespace:PrimalEditor.Utilities.Controls"
+        mc:Ignorable="d" ResizeMode="NoResize" Foreground="{StaticResource Editor.FontBrush}"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True"
         Title="Primitive Mesh" Height="600" Width="800"
         Style="{StaticResource PrimalDialogStyle}">
     <Window.DataContext>
-        <ed:GeometryEditor/>
+        <ed:GeometryEditor AutoLOD="False"/>
     </Window.DataContext>
     <Window.Resources>
         <ObjectDataProvider x:Key="dataFromEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
@@ -29,9 +27,24 @@
         <Style TargetType="{x:Type Label}">
             <Setter Property="Margin" Value="5,5,0,0"/>
             <Setter Property="FontSize" Value="9"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+        </Style>
+        <Style x:Key="{x:Type Slider}" TargetType="{x:Type Slider}" BasedOn="{StaticResource HorizontalSliderStyle}"/>
+        <Style x:Key="panelBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+            <Setter Property="Margin" Value="10,5"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Opacity="0.6" BlurRadius="15" ShadowDepth="2"/>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
-    
+
     <DockPanel Background="{StaticResource Editor.Window.GrayBrush2}">
         <Border Background="{StaticResource Editor.Window.GrayBrush3}" Height="32" DockPanel.Dock="Top"
                 VerticalAlignment="Top" Margin="0,0,0,1">
@@ -39,77 +52,66 @@
                 <DropShadowEffect Opacity="0.3" BlurRadius="10" ShadowDepth="0"/>
             </Border.Effect>
             <StackPanel Orientation="Horizontal" Margin="5,0">
-                <ComboBox SelectedIndex="2" Width="100" VerticalAlignment="Center"
-                          ItemsSource="{Binding Source={StaticResource dataFromEnum}}"
-                          x:Name="primTypeComboBox"
+                <ComboBox SelectedIndex="3" Width="100" VerticalAlignment="Center"
+                          ItemsSource="{Binding Source={StaticResource dataFromEnum}}" x:Name="primTypeComboBox"
                           SelectionChanged="OnPrimitiveType_ComboBox_SelectionChanged"/>
                 <CheckBox x:Name="textureCheckBox" Content="Show textured" VerticalAlignment="Center" Margin="5,0"
-                          IsChecked="True" Foreground="{StaticResource Editor.FontBrush}"
-                          Click="OnTexture_CheckBox_Click"/>
+                          IsChecked="True" Foreground="{StaticResource Editor.FontBrush}" Click="OnTexture_CheckBox_Click"/>
             </StackPanel>
         </Border>
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition MinWidth="100" MaxWidth="200"/>
+                <ColumnDefinition Width="250"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            
+
             <!-- PLANE SETTINGS-->
             <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
                 <StackPanel.Style>
                     <Style TargetType="{x:Type StackPanel}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}"
-                                         Value="{x:Static local:PrimitiveMeshType.Plane}">
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}" Value="{x:Static local:PrimitiveMeshType.Plane}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
-                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                <Grid Margin="0,3,0,0">
+                    <Border Style="{StaticResource panelBorderStyle}">
                         <StackPanel Margin="5,15,5,5">
                             <DockPanel Margin="5">
                                 <TextBlock Text="Width" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Path=Value, ElementName=xSliderPlane}" Width="30" DockPanel.Dock="Right"/>
                                 <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
                                         TickPlacement="BottomRight" x:Name="xSliderPlane" ValueChanged="OnSlider_ValueChanged"/>
                             </DockPanel>
                             <DockPanel Margin="5">
                                 <TextBlock Text="Length" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Path=Value, ElementName=zSliderPlane}" Width="30" DockPanel.Dock="Right"/>
                                 <Slider Minimum="1" Maximum="10" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
                                         TickPlacement="BottomRight" x:Name="zSliderPlane" ValueChanged="OnSlider_ValueChanged"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Segments" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Padding="5,0" 
-                           Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Segments"/>
                 </Grid>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" 
-                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                <Grid>
+                    <Border Style="{StaticResource panelBorderStyle}">
                         <StackPanel Margin="5,15,5,5">
-                            <DockPanel Margin="5,5,5,0">
+                            <DockPanel Margin="5">
                                 <TextBlock Text="Width" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <utl:ScalarBox x:Name="widthScalarBoxPlane" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                                <utl:ScalarBox x:Name="widthScalarBoxPlane" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
-                            <DockPanel Margin="5,5,5,0">
+                            <DockPanel Margin="5">
                                 <TextBlock Text="Length" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <utl:ScalarBox x:Name="lengthScalarBoxPlane" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                                <utl:ScalarBox x:Name="lengthScalarBoxPlane" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Size" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Padding="5,0"
-                           Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Size"/>
                 </Grid>
-                <Button Content="Save" Width="96" Margin="5,0" Click="OnSave_Button_Click"/>
             </StackPanel>
+            
             <!-- CUBE SETTINGS-->
             <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
                 <StackPanel.Style>
@@ -122,9 +124,8 @@
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
-                            Margin="5">
+                <Grid Margin="0,3,0,0">
+                    <Border Style="{StaticResource panelBorderStyle}">
                         <StackPanel Margin="5,15,5,5">
                             <DockPanel Margin="5">
                                 <TextBlock Text="X" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
@@ -143,116 +144,149 @@
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Segments" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
-                           HorizontalAlignment="Left"  Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Segments"/>
                 </Grid>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
-                            Margin="5">
+                <Grid >
+                    <Border Style="{StaticResource panelBorderStyle}">
                         <StackPanel Margin="5,15,5,5">
                             <DockPanel Margin="5">
                                 <TextBlock Text="X" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="1" x:Name="xTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                                <utl:ScalarBox Value="1" Minimum="0" x:Name="xScalarBoxCube" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
-                            <DockPanel Margin="5,0">
+                            <DockPanel Margin="5">
                                 <TextBlock Text="Y" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="1" x:Name="yTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                                <utl:ScalarBox Value="1" Minimum="0" x:Name="yScalarBoxCube" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
                             <DockPanel Margin="5">
                                 <TextBlock Text="Z" Width="20" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="1" x:Name="zTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
+                                <utl:ScalarBox Value="1" Minimum="0" x:Name="zScalarBoxCube" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Size" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
-                           HorizontalAlignment="Left"  Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Size"/>
                 </Grid>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
-                            Margin="5">
-                        <TextBox Text="1" Margin="30,20,10,10" x:Name="lodTextBoxCube" TextChanged="OnTextBox_TextChanged"/>
-                    </Border>
-                    <Label Content="LOD" Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top"
-                           HorizontalAlignment="Left"  Margin="20,-3,0,0" Padding="5,0" Foreground="{StaticResource Editor.FontBrush}"/>
-                </Grid>
-                <Button Content="Save" Click="OnSave_Button_Click" Width="80" Margin="5,0" VerticalAlignment="Bottom"/>
             </StackPanel>
+            
             <!-- UVSPHERE SETTINGS-->
             <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
                 <StackPanel.Style>
                     <Style TargetType="{x:Type StackPanel}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}"
-                                         Value="{x:Static local:PrimitiveMeshType.UvSphere}">
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}" Value="{x:Static local:PrimitiveMeshType.UvSphere}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
-                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                <Grid Margin="0,3,0,0">
+                    <Border Style="{StaticResource panelBorderStyle}">
                         <StackPanel Margin="5,15,5,5">
                             <DockPanel Margin="5">
                                 <TextBlock Text="Lon." Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Path=Value, ElementName=xSliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
                                 <Slider Minimum="3" Maximum="64" Value="24" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
                                         TickPlacement="BottomRight" x:Name="xSliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
                             </DockPanel>
                             <DockPanel Margin="5">
                                 <TextBlock Text="Lat." Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Path=Value, ElementName=ySliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
                                 <Slider Minimum="2" Maximum="64" Value="12" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
                                         TickPlacement="BottomRight" x:Name="ySliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Segments" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Padding="5,0" 
-                           Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Segments"/>
                 </Grid>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}" 
-                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
+                <Grid >
+                    <Border Style="{StaticResource panelBorderStyle}">
                         <StackPanel Margin="5,15,5,5">
-                            <DockPanel Margin="5,5,5,0">
+                            <DockPanel Margin="5">
                                 <TextBlock Text="X" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <utl:ScalarBox x:Name="xScalarBoxUvSphere" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                                <utl:ScalarBox x:Name="xScalarBoxUvSphere" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
-                            <DockPanel Margin="5,5,5,0">
+                            <DockPanel Margin="5">
                                 <TextBlock Text="Y" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <utl:ScalarBox x:Name="yScalarBoxUvSphere" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                                <utl:ScalarBox x:Name="yScalarBoxUvSphere" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
-                            <DockPanel Margin="5,5,5,0">
+                            <DockPanel Margin="5">
                                 <TextBlock Text="Z" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <utl:ScalarBox x:Name="zScalarBoxUvSphere" Value="1" ValueChanged="OnScalarBox_ValueChanged"/>
+                                <utl:ScalarBox x:Name="zScalarBoxUvSphere" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Label Content="Size" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Padding="5,0"
-                           Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Size"/>
                 </Grid>
-                <Grid Margin="0,5">
-                    <Border CornerRadius="3" BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
-                            Background="{StaticResource Editor.Window.GrayBrush4}" Margin="5">
-                            <DockPanel Margin="5,15,5,5">
-                                <TextBlock Text="Angle" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Path=Value, ElementName=angleSliderUvSphere}" Width="30" DockPanel.Dock="Right"/>
-                                <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
-                                        x:Name="angleSliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
-                            </DockPanel>
+                <Grid>
+                    <Border Style="{StaticResource panelBorderStyle}">
+                        <DockPanel Margin="10,25,10,10">
+                            <TextBlock Text="Angle" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                            <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                    x:Name="angleSliderUvSphere" ValueChanged="OnSlider_ValueChanged"/>
+                        </DockPanel>
                     </Border>
-                    <Label Content="Smoothing angle" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Padding="5,0" 
-                           Foreground="{StaticResource Editor.FontBrush}"/>
+                    <Label Content="Smoothing Angle"/>
                 </Grid>
-                <Button Content="Save" Width="96" Margin="5,0" Click="OnSave_Button_Click"/>
             </StackPanel>
+            
             <!-- ICOSPHERE SETTINGS-->
+            <StackPanel Background="{StaticResource Editor.Window.GrayBrush3}">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}" Value="{x:Static local:PrimitiveMeshType.IcoSphere}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Grid Margin="0,3,0,0">
+                    <Border Style="{StaticResource panelBorderStyle}" Padding="10,22,10,10">
+                        <Slider Minimum="0" Maximum="6" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                TickPlacement="BottomRight" x:Name="xSliderIcoSphere" ValueChanged="OnSlider_ValueChanged" />
+                    </Border>
+                    <Label Content="Subdivisions" />
+                </Grid>
+                <Grid >
+                    <Border Style="{StaticResource panelBorderStyle}">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock Text="X" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="xScalarBoxIcoSphere" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Y" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="yScalarBoxIcoSphere" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="Z" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <utl:ScalarBox x:Name="zScalarBoxIcoSphere" Value="1" Minimum="0" ValueChanging="OnScalarBox_ValueChanging"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Size"/>
+                </Grid>
+                <Grid>
+                    <Border Style="{StaticResource panelBorderStyle}">
+                        <DockPanel Margin="10,25,10,10">
+                            <TextBlock Text="Angle" Width="40" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                            <Slider Minimum="0" Maximum="180" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                    x:Name="angleSliderIcoSphere" ValueChanged="OnSlider_ValueChanged"/>
+                        </DockPanel>
+                    </Border>
+                    <Label Content="Smoothing Angle"/>
+                </Grid>
+                <Grid>
+                    <Border Style="{StaticResource panelBorderStyle}" Padding="10,22,10,10">
+                        <Slider Minimum="0" Maximum="6" HorizontalAlignment="Stretch" TickFrequency="1" IsSnapToTickEnabled="True"
+                                TickPlacement="BottomRight" x:Name="lodSliderIcoSphere" ValueChanged="OnSlider_ValueChanged"/>
+                    </Border>
+                    <Label Content="LOD"/>
+                </Grid>
+            </StackPanel>
+            
             <!-- CYLINDER SETTINGS-->
             <!-- CAPSULE SETTINGS-->
+            <Button Content="Save" Width="96" Margin="0,25" Click="OnSave_Button_Click" VerticalAlignment="Bottom"/>
             <ed:GeometryView DataContext="{Binding MeshRenderer}" Grid.Column="1"/>
             <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False">
                 <StackPanel Orientation="Horizontal">
@@ -266,6 +300,6 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
-        
+
     </DockPanel>
 </Window>

@@ -8,10 +8,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ed="clr-namespace:PrimalEditor.Editors"
-             mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance Type=ed:GeometryEditor}"
+             xmlns:primal="clr-namespace:PrimalEditor"
+             xmlns:utl="clr-namespace:PrimalEditor.Utilities"
+             xmlns:content="clr-namespace:PrimalEditor.Content"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=ed:GeometryEditor}"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
+        <content:ImageToRectConverter x:Key="imageToRectConverter"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
     <UserControl.DataContext>
@@ -27,9 +30,9 @@
                 <TextBlock Text="LOD: " Margin="0,0,5,0"/>
                 <Slider Value="{Binding LODIndex}" Minimum="0" Maximum="{Binding MaxLODIndex}"
                         TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight"
-                        Width="128" VerticalAlignment="Center" x:Name="lodSlider">
+                        Width="128" VerticalAlignment="Center" Margin="0" x:Name="lodSlider">
                     <Slider.Style>
-                        <Style TargetType="{x:Type Slider}">
+                        <Style TargetType="{x:Type Slider}" BasedOn="{StaticResource HorizontalSliderStyle}">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding MaxLODIndex}" Value="0">
                                     <Setter Property="IsEnabled" Value="False"/>
@@ -41,35 +44,77 @@
                         </Style>
                     </Slider.Style>
                 </Slider>
-                <TextBox Width="32" Text="{Binding Path=Value, ElementName=lodSlider}"
-                         IsEnabled="{Binding Path=IsEnabled, ElementName=lodSlider}"/>
-                <TextBlock Text="Auto LOD" Margin="15,0,5,0"/>
+
+                <TextBlock Text="Auto LOD" Margin="10,0,5,0"/>
                 <CheckBox IsChecked="{Binding AutoLOD}" VerticalAlignment="Center"/>
+
+                <StackPanel Orientation="Horizontal" Margin="10,0,5,0">
+                    <TextBlock Text="Env. Map:" Margin="0,0,5,0"/>
+                    <Grid>
+                        <ComboBox ItemsSource="{Binding Source={x:Static content:AssetRegistry.Textures}}" Margin="2,0,0,0" Focusable="False" Padding="0"
+                                  FocusVisualStyle="{x:Null}" SelectionChanged="OnAmbientLight_ComboBox_SelectionChanged" Width="48" Cursor="Hand"
+                                  IsReadOnly="True" IsEditable="True">
+                            <ComboBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" Width="380"/>
+                                </ItemsPanelTemplate>
+                            </ComboBox.ItemsPanel>
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type content:AssetInfo}">
+                                    <Border MaxHeight="{StaticResource AssetIconWidth}" ToolTip="{Binding FileName}">
+                                        <Border.CacheMode>
+                                            <BitmapCache EnableClearType="True" RenderAtScale="1"/>
+                                        </Border.CacheMode>
+                                        <Image Source="{Binding Icon}" Width="{StaticResource AssetIconWidth}" Height="{StaticResource AssetIconWidth}"
+                                               VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <Image.Clip>
+                                                <RectangleGeometry Rect="{Binding Child, RelativeSource={RelativeSource AncestorType={x:Type Border}}, Converter={StaticResource imageToRectConverter}}"
+                                                                   RadiusX="5" RadiusY="5"/>
+                                            </Image.Clip>
+                                        </Image>
+                                    </Border>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Border MaxHeight="{StaticResource AssetIconWidth}" ToolTip="{Binding AmbientLight.EnvMap.FileName}"
+                                IsHitTestVisible="False" VerticalAlignment="Stretch">
+                            <Image Source="{Binding AmbientLight.EnvMap.Icon}" HorizontalAlignment="Left">
+                                <Image.Clip>
+                                    <RectangleGeometry Rect="{Binding Child, RelativeSource={RelativeSource AncestorType={x:Type Border}}, Converter={StaticResource imageToRectConverter}}"
+                                           RadiusX="3" RadiusY="3"/>
+                                </Image.Clip>
+                            </Image>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
             </StackPanel>
         </Border>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition MinWidth="250" MaxWidth="400"/>
-                <ColumnDefinition/>
+                <ColumnDefinition MinWidth="250"/>
+                <ColumnDefinition MinWidth="250"/>
             </Grid.ColumnDefinitions>
 
-            <ed:GeometryDetailsView Tag="{Binding ElementName=geometryView}"/>
-            <GridSplitter HorizontalAlignment="Right" Width="5"
-                          Background="{StaticResource Editor.Window.GrayBrush1}"
-                          VerticalAlignment="Stretch"/>
+            <ed:GeometryDetailsView Tag="{Binding ElementName=geometryView}" Margin="0,0,5,0"/>
+            <GridSplitter HorizontalAlignment="Right" Width="5" VerticalAlignment="Stretch" Background="{StaticResource Editor.Window.GrayBrush1}"/>
 
             <ed:GeometryView DataContext="{Binding MeshRenderer}" Grid.Column="1" x:Name="geometryView"/>
-            <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False">
+            <StackPanel Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{Binding MeshRenderer.CameraPosition.X, StringFormat=G5}" Foreground="{StaticResource Editor.RedBrush}"/>
-                    <TextBlock Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" Margin="10,0" Foreground="{StaticResource Editor.GreenBrush}"/>
+                    <TextBlock Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" Foreground="{StaticResource Editor.GreenBrush}" Margin="10,0" />
                     <TextBlock Text="{Binding MeshRenderer.CameraPosition.Z, StringFormat=G5}" Foreground="{StaticResource Editor.BlueBrush}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding MeshRenderer.Meshes[0].Positions.Count}" Foreground="{StaticResource Editor.OrangeBrush}"/>
-                    <TextBlock Text="{Binding MeshRenderer.Meshes[0].Indices.Count}" Margin="10,0" Foreground="{StaticResource Editor.OrangeBrush}"/>
+                    <TextBlock Text="{Binding MeshRenderer.VertexCount, StringFormat=V: {0}}" Foreground="{StaticResource Editor.OrangeBrush}"/>
+                    <TextBlock Text="{Binding MeshRenderer.IndexCount, StringFormat=I: {0}}" Foreground="{StaticResource Editor.OrangeBrush}" Margin="10,0"/>
                 </StackPanel>
             </StackPanel>
+
+            <GridSplitter Width="5" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="{StaticResource Editor.Window.GrayBrush1}"/>
+            <utl:RenderSurfaceView x:Name="sv" Grid.Column="2" KeyDown="OnRenderSurfaceView_KeyDown"/>
         </Grid>
     </DockPanel>
 </UserControl>

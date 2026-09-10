@@ -16,6 +16,8 @@
         <local:DataSizeToStringConverter x:Key="dataSizeToStringConverter"/>
         <local:ImageToRectConverter x:Key="imageToRectConverter"/>
 
+        <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource ScrollBarStyle}"/>
+
         <Style x:Key="SmallIconStyle" TargetType="{x:Type Image}">
             <Setter Property="Source" Value="{Binding IconSmall}"/>
             <Style.Triggers>
@@ -269,7 +271,7 @@
         <Style TargetType="{x:Type ToggleButton}" x:Key="ListViewToggleButtonStyle" BasedOn="{StaticResource PrimalButtonStyle}">
             <Setter Property="Content">
                 <Setter.Value>
-                    <Image Width="32" Opacity="0.8" Source="pack://application:,,,/Resources/ContentBrowser/ListView.png"/>
+                    <Image Opacity="0.8" Source="pack://application:,,,/Resources/ContentBrowser/ListView.png"/>
                 </Setter.Value>
             </Setter>
             <Setter Property="ToolTip" Value="Toggle list view"/>
@@ -278,7 +280,7 @@
                 <Trigger Property="IsChecked" Value="True">
                     <Setter Property="Content">
                         <Setter.Value>
-                            <Image Width="32" Opacity="0.8" Source="pack://application:,,,/Resources/ContentBrowser/TileView.png"/>
+                            <Image Opacity="0.8" Source="pack://application:,,,/Resources/ContentBrowser/TileView.png"/>
                         </Setter.Value>
                     </Setter>
                     <Setter Property="ToolTip" Value="Toggle tile view"/>
@@ -303,8 +305,8 @@
         </Grid.RowDefinitions>
 
         <controls:ListViewEx ItemsSource="{Binding FolderContent}" Grid.Row="1" x:Name="folderListView"
-                  ContextMenu="{StaticResource contextMenu}" IsTextSearchEnabled="True"
-                  TextSearch.TextPath="FileName">
+                             ContextMenu="{StaticResource contextMenu}" IsTextSearchEnabled="True"
+                             TextSearch.TextPath="FileName">
             <controls:ListViewEx.Style>
                 <Style TargetType="{x:Type controls:ListViewEx}">
                     <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
@@ -421,7 +423,7 @@
                 <DockPanel Margin="5" DockPanel.Dock="Top">
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="5,0">
 
-                        <Button Padding="2" Margin="0,0,5,0" Focusable="False" Click="OnOpenImportSettingsConfigurator_Button_Click">
+                        <Button Padding="1" Margin="0,0,5,0" Focusable="False" Click="OnOpenImportSettingsConfigurator_Button_Click" Width="24">
                             <Button.Style>
                                 <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PrimalButtonStyle}">
                                     <Style.Triggers>
@@ -432,10 +434,10 @@
                                 </Style>
                             </Button.Style>
                             <Button.Content>
-                                <Image Width="32" Source="pack://application:,,,/Resources/ContentBrowser/OpenImportCfg.png"/>
+                                <Image Source="pack://application:,,,/Resources/ContentBrowser/OpenImportCfg.png"/>
                             </Button.Content>
                         </Button>
-                        <ToggleButton Padding="2" Focusable="False" x:Name="listViewToggle" 
+                        <ToggleButton Padding="1" Focusable="False" x:Name="listViewToggle" Width="24"
                                       Style="{StaticResource ListViewToggleButtonStyle}" d:IsChecked="True"/>
                     </StackPanel>
                     <TextBox VerticalAlignment="Stretch"/>

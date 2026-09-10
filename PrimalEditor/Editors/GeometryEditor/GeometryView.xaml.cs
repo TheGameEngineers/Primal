@@ -17,7 +17,7 @@ namespace PrimalEditor.Editors;
 partial class GeometryView : UserControl
 {
     private static readonly Lock _lock = new();
-    private Point _clickedPosition;
+    private Point _clickedPosition = default;
     private bool _capturedLeft;
     private bool _capturedRight;
 

@@ -7,12 +7,18 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:theme="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2"
                     xmlns:opt="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    xmlns:primal="clr-namespace:PrimalEditor"
                     xmlns:local="clr-namespace:PrimalEditor.Dictionaries"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:ctrl ="clr-namespace:PrimalEditor.Utilities.Controls"
                     xmlns:utl ="clr-namespace:PrimalEditor.Utilities">
 
     <sys:Double x:Key="AssetIconWidth">90</sys:Double>
+
+    <LinearGradientBrush x:Key="Editor.BeveledBorderBrush" StartPoint="0,-0.2" EndPoint="0,3.3">
+        <GradientStop Color="White" Offset="1"/>
+        <GradientStop Color="Black" Offset="0"/>
+    </LinearGradientBrush>
 
     <StackPanel x:Key="MultivalueTextBlock" Opacity="0.7">
         <StackPanel.RenderTransform>
@@ -44,7 +50,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type TextBoxBase}">
                     <ScrollViewer x:Name="PART_ContentHost" Focusable="false" SnapsToDevicePixels="True" 
-                               HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                  HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="false">
                             <Setter Property="TextElement.Foreground" Value="{StaticResource Editor.Disabled.FontBrush}"/>
@@ -69,11 +75,44 @@
     <Style TargetType="{x:Type TextBox}" x:Key="TextBoxStyle">
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.BeveledBorderBrush}"/>
         <Setter Property="SelectionBrush" Value="White"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="Padding" Value="0,2"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="Padding" Value="2,0,0,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBoxBase}">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True" CornerRadius="12">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" 
+                                      VerticalScrollBarVisibility="Hidden" Margin="5,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter TargetName="border" Property="Opacity" Value="0.56"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Editor.MouseOver.BorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="true">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Editor.Selected.BackgroundBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true" />
+                    <Condition Property="IsSelectionActive" Value="false" />
+                </MultiTrigger.Conditions>
+                <Setter Property="SelectionBrush" Value="{StaticResource Editor.Window.GrayBrush4}" />
+            </MultiTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type TextBox}" x:Key="{x:Type TextBox}" BasedOn="{StaticResource TextBoxStyle}">
@@ -122,6 +161,7 @@
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="MinHeight" Value="24"/>
         <Setter Property="Padding" Value="5,2,5,4"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
@@ -398,7 +438,7 @@
                     <Storyboard>
                         <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
                                         From="{StaticResource Editor.Window.GrayColor6}"
-                                        To="{StaticResource Editor.GreenColor}" Duration="0:0:0" />
+                                        To="{StaticResource Editor.GreenColor}" Duration="0:0:0.2" />
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
@@ -407,7 +447,7 @@
                     <Storyboard>
                         <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
                                         From="{StaticResource Editor.GreenColor}"
-                                        To="{StaticResource Editor.Window.GrayColor6}" Duration="0:0:0" />
+                                        To="{StaticResource Editor.Window.GrayColor6}" Duration="0:0:0.2" />
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
@@ -416,7 +456,7 @@
                     <Storyboard>
                         <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
                                         From="{StaticResource Editor.GreenColor}"
-                                        To="{StaticResource Editor.Window.GrayColor6}" Duration="0:0:0" />
+                                        To="{StaticResource Editor.Window.GrayColor6}" Duration="0:0:0.2" />
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
@@ -697,6 +737,7 @@
         <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
         <Setter Property="Template" Value="{StaticResource ComboBoxTemplate}"/>
         <Setter Property="ItemContainerStyle" Value="{StaticResource ListBoxItemStyle}"/>
+        <Setter Property="MinHeight" Value="24"/>
         <Style.Triggers>
             <Trigger Property="IsEditable" Value="True">
                 <Setter Property="IsTabStop" Value="false"/>
@@ -709,7 +750,7 @@
     <Style TargetType="{x:Type CheckBox}">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.BeveledBorderBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -828,7 +869,7 @@
     </ControlTemplate>
 
     <ControlTemplate x:Key="SliderHorizontal" TargetType="{x:Type Slider}">
-        <Border x:Name="border" SnapsToDevicePixels="True" CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+        <Border x:Name="border" SnapsToDevicePixels="True" CornerRadius="12" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                 BorderThickness="{TemplateBinding BorderThickness}" Margin="{TemplateBinding Margin}" Padding="{TemplateBinding Padding}">
             <Grid Margin="30,0,3,0">
                 <TickBar x:Name="BottomTick" Height="4" Placement="Top"  Visibility="Collapsed" Margin="0,0,0,1" VerticalAlignment="Bottom" Fill="{StaticResource Editor.OrangeBrush}"/>
@@ -841,7 +882,7 @@
                 </Border>
                 <TextBox x:Name="textBox" Text="{Binding Path=Value, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource BorderlessTextBox}"
                          Width="30" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{StaticResource Editor.FontBrush}"
-                         Margin="-30" HorizontalContentAlignment="Center"/>
+                         Margin="-30,-2,0,0" HorizontalContentAlignment="Center"/>
                 <Track x:Name="PART_Track">
                     <Track.DecreaseRepeatButton>
                         <RepeatButton Foreground="{TemplateBinding Foreground}" Command="{x:Static Slider.DecreaseLarge}" Style="{StaticResource RepeatButtonLeft}"/>
@@ -880,11 +921,11 @@
     <Style TargetType="{x:Type Slider}" x:Key="HorizontalSliderStyle">
         <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.BeveledBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Foreground" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
-        <Setter Property="Margin" Value="0,2,0,3"/>
-        <Setter Property="Padding" Value="5,2"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Padding" Value="0,3,5,2"/>
         <Setter Property="Template" Value="{StaticResource SliderHorizontal}"/>
         <EventSetter Event="MouseWheel" Handler="OnHorizontalSlider_MouseWheel"/>
         <Style.Triggers>
@@ -1109,11 +1150,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ctrl:NumberBox}">
-                    <TextBox x:Name="PART_textBox" BorderThickness="0" Padding="0"
-                             Foreground="{TemplateBinding Foreground}" Background="{TemplateBinding Background}" CaretBrush="{TemplateBinding Foreground}"
-                             HorizontalContentAlignment="Center">
+                    <TextBox x:Name="PART_textBox" Foreground="{TemplateBinding Foreground}" Background="{TemplateBinding Background}"
+                             CaretBrush="{TemplateBinding Foreground}" HorizontalContentAlignment="Center">
                         <TextBox.Style>
-                            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource BorderlessTextBox}">
                                 <Setter Property="Text" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit, StringFormat=G5}"/>
                                 <Style.Triggers>
                                     <MultiTrigger>
@@ -1147,8 +1187,8 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
-        <Setter Property="Margin" Value="0,2,0,3"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.BeveledBorderBrush}"/>
+        <Setter Property="Height" Value="24"/>
         <Setter Property="Padding" Value="5,2"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ToolTipService.InitialShowDelay" Value="3000"/>
@@ -1159,13 +1199,13 @@
                 <ControlTemplate TargetType="{x:Type ctrl:ScalarBox}">
                     <Border x:Name="border" SnapsToDevicePixels="true" Margin="{TemplateBinding Margin}"
                             Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
-                            BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="10"
+                            BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="12"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <TextBox x:Name="PART_textBox" BorderThickness="0" Padding="0" Foreground="{TemplateBinding Foreground}" 
-                                 MinWidth="50" Background="{TemplateBinding Background}" CaretBrush="{TemplateBinding Foreground}"
+                        <TextBox x:Name="PART_textBox" Foreground="{TemplateBinding Foreground}" MinWidth="50"
+                                 Background="{TemplateBinding Background}" CaretBrush="{TemplateBinding Foreground}"
                                  HorizontalContentAlignment="Center">
                             <TextBox.Style>
-                                <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource BorderlessTextBox}">
                                     <Setter Property="Text" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit, StringFormat=G5}"/>
                                     <Style.Triggers>
                                         <MultiTrigger>
@@ -1207,9 +1247,9 @@
     <Style TargetType="{x:Type ctrl:VectorBox}" x:Key="{x:Type ctrl:VectorBox}">
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush5}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Editor.BeveledBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Margin" Value="0,2,0,3"/>
+        <Setter Property="Height" Value="24"/>
         <Setter Property="Padding" Value="5,2"/>
         <Setter Property="IsTabStop" Value="False"/>
 
@@ -1247,7 +1287,7 @@
                         </Style>
                     </ControlTemplate.Resources>
                     <Border x:Name="border" Margin="{TemplateBinding Margin}" Padding="{TemplateBinding Padding}"
-                            Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="10"
+                            Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="12"
                             BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="true" >
                         <Grid x:Name="grid">
                             <Grid.ColumnDefinitions>
@@ -1386,7 +1426,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ctrl:ComponentView}">
                     <Expander IsExpanded="True" x:Name="expander" BorderThickness="0" Margin="0,0,0,1"
-                              Background="{StaticResource Editor.Window.GrayBrush3}">
+                              Background="{StaticResource Editor.Window.GrayBrush3}"
+                              primal:ExpanderStateHelper.StateKey="{TemplateBinding Header}">
                         <Expander.Style>
                             <Style TargetType="{x:Type Expander}">
                                 <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>

@@ -92,4 +92,10 @@ partial class SaveDialog : Window
     {
         contentBrowserView.Dispose();
     }
+
+    private void OnFileName_TextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+            OnSave_Button_Click(sender, null);
+    }
 }

@@ -78,6 +78,6 @@
     <ClCompile Include="Components\Geometry.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <Natvis Include="engine.natvis" />
   </ItemGroup>
 </Project>

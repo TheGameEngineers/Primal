@@ -125,7 +125,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Text="Name" Grid.Column="0" Margin="5,5,0,5"/>
-                <TextBox Text="{Binding Name, UpdateSourceTrigger=Explicit}" Margin="0,5"                         
+                <TextBox Text="{Binding Name, UpdateSourceTrigger=Explicit}" Margin="0,5" d:Text="GOAT Player"
                          IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBoolToBoolConverter}}" Grid.Column="1"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,5">

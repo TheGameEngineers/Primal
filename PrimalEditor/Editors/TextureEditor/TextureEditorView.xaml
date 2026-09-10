@@ -9,7 +9,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ed="clr-namespace:PrimalEditor.Editors"
              xmlns:content="clr-namespace:PrimalEditor.Content"
-             d:DesignHeight="800" d:DesignWidth="800" mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="1200" mc:Ignorable="d"
              FocusVisualStyle="{x:Null}" Focusable="True">
     <UserControl.CommandBindings>
         <CommandBinding Command="{x:Static ed:TextureViewCommands.CenterCommand}" Executed="OnCenterTexture"/>
@@ -98,7 +98,7 @@
                             <Setter Property="Visibility" Value="Visible"/>
                             <Setter Property="Content" Value="Specular"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Texture.IBLPair.ImportSettings.Sources.Count}" Value="0">
+                                <DataTrigger Binding="{Binding Texture.IBLPair.IsDiffuseIBL}" Value="True">
                                     <Setter Property="Content" Value="Diffuse"/>
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding Texture.IsPrefilteredIBL}" Value="False">
@@ -115,7 +115,7 @@
                         Maximum="{Binding MaxArrayIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding ArrayIndex}"
                         Margin="0,0,10,0" d:Visibility="Visible">
                     <Slider.Style>
-                        <Style TargetType="{x:Type Slider}">
+                        <Style TargetType="{x:Type Slider}" BasedOn="{StaticResource HorizontalSliderStyle}">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Texture.IsVolumeMap}" Value="False">
@@ -135,7 +135,7 @@
                         Maximum="{Binding MaxDepthIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding DepthIndex}"
                         Margin="0,0,10,0" d:Visibility="Visible">
                     <Slider.Style>
-                        <Style TargetType="{x:Type Slider}">
+                        <Style TargetType="{x:Type Slider}" BasedOn="{StaticResource HorizontalSliderStyle}">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Texture.IsVolumeMap}" Value="True">
@@ -152,9 +152,9 @@
                 <TextBlock Margin="5,0" Text="Mip:" Visibility="{Binding Path=Visibility, ElementName=mipSlider}"/>
                 <Slider x:Name="mipSlider" Width="200" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
                         Maximum="{Binding MaxMipIndex}" Minimum="0" TickPlacement="BottomRight" Value="{Binding MipIndex}"
-                        IsMoveToPointEnabled="True" d:Visibility="Visible">
+                        Margin="0" IsMoveToPointEnabled="True" d:Visibility="Visible">
                     <Slider.Style>
-                        <Style TargetType="{x:Type Slider}">
+                        <Style TargetType="{x:Type Slider}" BasedOn="{StaticResource HorizontalSliderStyle}">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding MaxMipIndex}" Value="0">
                                     <Setter Property="IsEnabled" Value="False"/>

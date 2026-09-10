@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using PrimalEditor.Components;
 using PrimalEditor.Content;
+using PrimalEditor.GameProject;
+using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -72,11 +75,11 @@ class MeshRendererVertexData : ViewModelBase
         }
     } = Brushes.White;
 
-    public string Name { get; set; }
     public Point3DCollection Positions { get; } = [];
     public Vector3DCollection Normals { get; } = [];
     public PointCollection UVs { get; } = [];
     public Int32Collection Indices { get; } = [];
+    public MeshInfo MeshInfo { get; init; }
 }
 
 // NOTE: the purpose of this class is to enable viewing 3D geometry in WPF while
@@ -86,113 +89,132 @@ class MeshRenderer : ViewModelBase
 {
     public ObservableCollection<MeshRendererVertexData> Meshes { get; } = [];
 
-    private Vector3D _cameraDirection = new(0, 0, -10);
     public Vector3D CameraDirection
     {
-        get => _cameraDirection;
+        get;
         set
         {
-            if (_cameraDirection != value)
+            if (field != value)
             {
-                _cameraDirection = value;
+                field = value;
                 OnPropertyChanged(nameof(CameraDirection));
             }
         }
-    }
+    } = new(0, 0, -10);
 
-    private Point3D _cameraPosition = new(0, 0, 10);
     public Point3D CameraPosition
     {
-        get => _cameraPosition;
+        get;
         set
         {
-            if (_cameraPosition != value)
+            if (field != value)
             {
-                _cameraPosition = value;
+                field = value;
                 CameraDirection = new Vector3D(-value.X, -value.Y, -value.Z);
                 OnPropertyChanged(nameof(OffsetCameraPosition));
                 OnPropertyChanged(nameof(CameraPosition));
             }
         }
-    }
+    } = new(0, 0, 10);
 
-    private Point3D _cameraTarget = new(0, 0, 0);
     public Point3D CameraTarget
     {
-        get => _cameraTarget;
+        get;
         set
         {
-            if (_cameraTarget != value)
+            if (field != value)
             {
-                _cameraTarget = value;
+                field = value;
                 OnPropertyChanged(nameof(OffsetCameraPosition));
                 OnPropertyChanged(nameof(CameraTarget));
             }
         }
-    }
+    } = new(0, 0, 0);
 
     public Point3D OffsetCameraPosition =>
         new(CameraPosition.X + CameraTarget.X, CameraPosition.Y + CameraTarget.Y, CameraPosition.Z + CameraTarget.Z);
 
-    private Color _keyLight = (Color)ColorConverter.ConvertFromString("#ffaeaeae");
     public Color KeyLight
     {
-        get => _keyLight;
+        get;
         set
         {
-            if (_keyLight != value)
+            if (field != value)
             {
-                _keyLight = value;
+                field = value;
                 OnPropertyChanged(nameof(KeyLight));
             }
         }
-    }
+    } = (Color)ColorConverter.ConvertFromString("#ffaeaeae");
 
-    private Color _skyLight = (Color)ColorConverter.ConvertFromString("#ff111b30");
     public Color SkyLight
     {
-        get => _skyLight;
+        get;
         set
         {
-            if (_skyLight != value)
+            if (field != value)
             {
-                _skyLight = value;
+                field = value;
                 OnPropertyChanged(nameof(SkyLight));
             }
         }
-    }
+    } = (Color)ColorConverter.ConvertFromString("#ff111b30");
 
-    private Color _groundLight = (Color)ColorConverter.ConvertFromString("#ff3f2f1e");
     public Color GroundLight
     {
-        get => _groundLight;
+        get;
         set
         {
-            if (_groundLight != value)
+            if (field != value)
             {
-                _groundLight = value;
+                field = value;
                 OnPropertyChanged(nameof(GroundLight));
             }
         }
-    }
+    } = (Color)ColorConverter.ConvertFromString("#ff3f2f1e");
 
-    private Color _ambientLight = (Color)ColorConverter.ConvertFromString("#ff3b3b3b");
     public Color AmbientLight
     {
-        get => _ambientLight;
+        get;
         set
         {
-            if (_ambientLight != value)
+            if (field != value)
             {
-                _ambientLight = value;
+                field = value;
                 OnPropertyChanged(nameof(AmbientLight));
+            }
+        }
+    } = (Color)ColorConverter.ConvertFromString("#ff3b3b3b");
+
+    public int IndexCount
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(IndexCount));
             }
         }
     }
 
-    public MeshRenderer(MeshLOD lod, MeshRenderer old)
+    public int VertexCount
     {
-        Debug.Assert(lod?.Meshes.Any() == true);
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(VertexCount));
+            }
+        }
+    }
+
+    public MeshRenderer(MeshLOD lod, LodInfo lodInfo, MeshRenderer old)
+    {
+        Debug.Assert(lod?.Meshes.Count > 0);
         // In order to set up camera position and target properly, we need to figure out how big
         // this object is that we're rendering. Hence, we need to know its bounding box.
         double minX, minY, minZ; minX = minY = minZ = double.MaxValue;
@@ -201,9 +223,15 @@ class MeshRenderer : ViewModelBase
         // This is to unpack the packed normals:
         var intervals = 2.0f / ((1 << 16) - 1);
 
-        foreach (var mesh in lod.Meshes)
+        lodInfo ??= new() { Meshes = [.. lod.Meshes.Select(m => new MeshInfo() { Name = m.Name })] };
+        var lodData = lod.Meshes.Zip(lodInfo.Meshes, (Mesh, Info) => (Mesh, Info));
+        IndexCount = lodData.Sum(item => item.Mesh.IndexCount);
+        VertexCount = lodData.Sum(item => item.Mesh.VertexCount);
+
+        foreach (var item in lodData)
         {
-            var vertexData = new MeshRendererVertexData() { Name = mesh.Name };
+            var mesh = item.Mesh;
+            var vertexData = new MeshRendererVertexData() { MeshInfo = item.Info };
             // Unpack all vertices
             using (var reader = new BinaryReader(new MemoryStream(mesh.Positions)))
                 for (int i = 0; i < mesh.VertexCount; ++i)
@@ -293,7 +321,7 @@ class MeshRenderer : ViewModelBase
             var height = maxY - minY;
             var depth = maxZ - minZ;
             var radius = new Vector3D(height, width, depth).Length * 1.2;
-            if (avgNormal.Length > 0.8)
+            if (avgNormal.Length > 0.1)
             {
                 avgNormal.Normalize();
                 avgNormal *= radius;
@@ -311,6 +339,13 @@ class MeshRenderer : ViewModelBase
 
 class GeometryEditor : ViewModelBase, IAssetEditor
 {
+    private readonly GameEntity _entity;
+    public Components.AmbientLight AmbientLight { get; }
+
+    public event EventHandler<IdType> GeometryChanged;
+
+    public ulong LightSetKey { get; private set; }
+
     public AssetEditorState State
     {
         get;
@@ -340,6 +375,20 @@ class GeometryEditor : ViewModelBase, IAssetEditor
             }
         }
     }
+
+    public GeometryMetadata GeometryMetadata
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(GeometryMetadata));
+            }
+        }
+    }
+
 
     public MeshRenderer MeshRenderer
     {
@@ -392,7 +441,7 @@ class GeometryEditor : ViewModelBase, IAssetEditor
             {
                 field = value;
                 OnPropertyChanged(nameof(LODIndex));
-                MeshRenderer = new MeshRenderer(lods[value], MeshRenderer);
+                MeshRenderer = new MeshRenderer(lods[value], GeometryMetadata.LODs[LODIndex], MeshRenderer);
             }
         }
     }
@@ -413,6 +462,44 @@ class GeometryEditor : ViewModelBase, IAssetEditor
         }
     }
 
+    private void SetGeometryComponent(AssetInfo info)
+    {
+        GeometryChanged?.Invoke(this, ID.INVALID_ID);
+        if (_entity.GetComponent<Components.Geometry>() is Components.Geometry geometry)
+        {
+            geometry.SetGeometry(info.Guid);
+        }
+        else
+        {
+            geometry = new Components.Geometry(_entity, info);
+            _entity.AddComponent(geometry);
+        }
+
+        List<AppliedMaterial> materials = [];
+        if (MSEntity.CurrentSelection?.SelectedEntities.FirstOrDefault() is GameEntity entity &&
+            entity.GetComponent<Components.Geometry>() is Components.Geometry selectedGeometry &&
+            selectedGeometry.GeometryGuid == info.Guid)
+        {
+            materials = [.. selectedGeometry.MaterialsList.Select(mtl => mtl.Clone())];
+        }
+        else if (Project.Current.ActiveScene.GameEntities
+            .Select(e => e.GetComponent<Components.Geometry>())
+            .FirstOrDefault(g => g?.GeometryGuid == info.Guid) is Components.Geometry someGeometry)
+        {
+            materials = [.. someGeometry.MaterialsList.Select(mtl => mtl.Clone())];
+        }
+
+        if (materials.Count > 0)
+        {
+            geometry.SetMaterials(materials);
+        }
+
+        var componentId = _entity.GetComponent<Components.Geometry>().GetComponentId();
+        LightSetKey = LightSet.AddLightSet(info.Guid.ToString(), false);
+        AmbientLight.LightSetKey = info.Guid.ToString();
+        GeometryChanged?.Invoke(this, componentId);
+    }
+
     public bool CheckAssetGuid(Guid guid) => _assetGuid == guid;
 
     public void SetAsset(Asset asset)
@@ -422,6 +509,9 @@ class GeometryEditor : ViewModelBase, IAssetEditor
         {
             _assetGuid = asset.Guid;
             Geometry = geometry;
+            GeometryMetadata = Project.Current.ActiveScene.GameEntities
+                .Select(e => e.GetComponent<Components.Geometry>())
+                .FirstOrDefault(g => g?.GeometryGuid == _assetGuid)?.Metadata ?? geometry.GetMetadata();
             var numLods = geometry.GetLODGroup().LODs.Count;
             if (LODIndex >= numLods)
             {
@@ -429,7 +519,7 @@ class GeometryEditor : ViewModelBase, IAssetEditor
             }
             else
             {
-                MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[LODIndex], MeshRenderer);
+                MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[LODIndex], GeometryMetadata.LODs[LODIndex], MeshRenderer);
             }
         }
     }
@@ -447,11 +537,26 @@ class GeometryEditor : ViewModelBase, IAssetEditor
             });
 
             SetAsset(geometry);
+            SetGeometryComponent(info);
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
             Debug.WriteLine($"Failed to set geometry for use in geometry editor. File: {info.FullPath}");
         }
+    }
+
+    public void Unload()
+    {
+        GeometryChanged?.Invoke(this, ID.INVALID_ID);
+        _entity.IsActive = false;
+        AmbientLight.IsActive = false;
+    }
+
+    public GeometryEditor()
+    {
+        _entity = new(Project.Current.ActiveScene) { IsActive = true, IsEnabled = true };
+        LightSet.AddLightSet(nameof(GeometryEditor), false);
+        AmbientLight = new(Project.Current.ActiveScene, nameof(GeometryEditor)) { IsActive = true, IsEnabled = true };
     }
 }

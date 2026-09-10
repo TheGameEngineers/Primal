@@ -39,6 +39,7 @@
     <Resource Include="Resources\MaterialEditor\DefaultMaterialShaders.hlsl" />
     <Resource Include="Resources\PrimitiveMeshView\Checkermap.png" />
     <Resource Include="Resources\PrimitiveMeshView\CubeCheckermap.png" />
+    <Resource Include="Resources\PrimitiveMeshView\IcoSphere.png" />
     <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
     <Resource Include="Resources\RenderSurface\CameraSettings.png" />
     <Resource Include="Resources\TextureEditor\ChannelSelectShader.cso" />

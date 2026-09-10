@@ -324,13 +324,13 @@ public:
     // Returns a pointer to the first item. Returns null when vector is empty.
     [[nodiscard]] constexpr T* begin()
     {
-        return std::addressof(_data[0]);
+        return _data;
     }
 
     // Returns a constant pointer to the first item. Returns null when vector is empty.
     [[nodiscard]] constexpr const T* begin() const
     {
-        return std::addressof(_data[0]);
+        return _data;
     }
 
     // Returns a pointer to the last item. Returns null when vector is empty.
