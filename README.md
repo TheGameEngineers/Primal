@@ -8,8 +8,11 @@
 <br/><br/>
 <br/>
 
-[![Discord chat](https://img.shields.io/discord/740606294846865549?logo=discord)](https://discord.gg/75ZmXwz)
+![Github top languages](https://img.shields.io/github/languages/top/TheGameEngineers/Primal)
+[![GitHub issues](https://img.shields.io/github/issues/TheGameEngineers/Primal?style=flat-square)](https://github.com/TheGameEngineers/Primal/issues)
+[![GitHub stars](https://img.shields.io/github/stars/TheGameEngineers/Primal?style=flat-square)](https://github.com/TheGameEngineers/Primal/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Discord chat](https://img.shields.io/discord/740606294846865549?logo=discord)](https://discord.gg/75ZmXwz)
 [![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCU0ZLgIv87jlqS6G58DKPyg)](https://www.youtube.com/gameengineseries?sub_confirmation=1)
 [![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/primalnippleman)](https://img.shields.io/twitter/follow/primalnippleman.svg?style=social)
 

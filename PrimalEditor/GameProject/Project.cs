@@ -23,7 +23,12 @@ class Project : ViewModelBase
 {
     public static event EventHandler SceneUpdated;
 
+    public static string EngineApi => @"Include\EngineAPI";
+    public static string EngineLib => "engine.lib";
+    public static string PrimalEnv => "PRIMAL_ENGINE";
+    public static string EditorPath { get; } = AppDomain.CurrentDomain.BaseDirectory;
     public static string Extension => ".primal";
+
     [DataMember]
     public string Name { get; private set; } = "New Project";
     /// <summary>
@@ -34,7 +39,7 @@ class Project : ViewModelBase
     /// Gets the full path of the current Primal project file, including its file name and extension.
     /// </summary>
     public string FullPath => $@"{Path}{Name}{Extension}";
-    public string Solution => $@"{Path}{Name}.sln";
+    public string Solution => $@"{Path}{Name}.slnx";
     public string ContentPath => $@"{Path}Content\";
     public string TempFolder => $@"{Path}.Primal\Temp\";
 
@@ -277,9 +282,8 @@ class Project : ViewModelBase
         }
     }
 
-    private List<(GameEntity Entity, string ScriptName)> RemoveScriptComponents()
-    {
-        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+    private List<(GameEntity Entity, string ScriptName)> RemoveScriptComponents() =>
+        Application.Current.Dispatcher.Invoke(() =>
         {
             if (!ActiveScene.IsActive) return [];
 
@@ -299,16 +303,13 @@ class Project : ViewModelBase
             return scriptNames;
         });
 
-        return [];
-    }
-
     private void AddScriptComponents(List<(GameEntity Entity, string ScriptName)> scriptNames)
     {
-        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+        Application.Current.Dispatcher.Invoke(() =>
         {
             foreach (var (entity, scriptName) in scriptNames)
             {
-                if (!ID.IsValid(entity.EntityId)) continue;
+                if (!ID.IsValid(entity.EntityId) || !AvailableScripts.Contains(scriptName)) continue;
                 Debug.Assert(entity.GetComponent<Script>() == null && !string.IsNullOrEmpty(scriptName));
                 var script = ComponentFactory.GetCreationFunction(ComponentType.Script)(entity, scriptName);
                 entity.AddComponent(script);

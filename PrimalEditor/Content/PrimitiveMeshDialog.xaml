@@ -52,7 +52,7 @@
                 <DropShadowEffect Opacity="0.3" BlurRadius="10" ShadowDepth="0"/>
             </Border.Effect>
             <StackPanel Orientation="Horizontal" Margin="5,0">
-                <ComboBox SelectedIndex="3" Width="100" VerticalAlignment="Center"
+                <ComboBox SelectedIndex="0" Width="100" VerticalAlignment="Center"
                           ItemsSource="{Binding Source={StaticResource dataFromEnum}}" x:Name="primTypeComboBox"
                           SelectionChanged="OnPrimitiveType_ComboBox_SelectionChanged"/>
                 <CheckBox x:Name="textureCheckBox" Content="Show textured" VerticalAlignment="Center" Margin="5,0"

@@ -145,7 +145,9 @@ static class AssetRegistry
                     var hashSize = reader.ReadInt32();
                     info.Hash = (hashSize > 0) ? reader.ReadBytes(hashSize) : null;
 
-                    if (File.Exists(info.FullPath))
+                    var fileInfo = new FileInfo(info.FullPath);
+
+                    if (File.Exists(info.FullPath) && fileInfo.CreationTime.IsOlder(info.ImportDate))
                     {
                         _assetsFileDictionary[info.FullPath] = info;
                         _assetsGuidDictionary[info.Guid] = info;

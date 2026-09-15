@@ -8,20 +8,19 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Configurations>DebugEditor;ReleaseEditor</Configurations>
     <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Resources\Icons\Primal.ico</ApplicationIcon>
     <Version>0.0.1</Version>
+    <OutputPath>..\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>..\$(Platform)\intermediate\$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
-    <OutputPath>..\x64\DebugEditor\</OutputPath>
-    <PlatformTarget>x64</PlatformTarget>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <OutputPath>..\x64\ReleaseEditor\</OutputPath>
     <Optimize>True</Optimize>
   </PropertyGroup>
 
@@ -49,7 +48,20 @@
   <ItemGroup>
     <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\DefaultAssets\**" Link=".\Resources\DefaultAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Engine\EngineAPI\**" Link=".\Include\EngineAPI\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Engine\Common\**" Link=".\Include\Common\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Engine\Utilities\**" Link=".\Include\Utilities\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\Icons\Primal.ico" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
+      <EngineConfig>Debug</EngineConfig>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
+      <EngineConfig>Release</EngineConfig>
+    </PropertyGroup>
+    <Exec Command="&quot;$(MSBuildBinPath)\msbuild.exe&quot; -noAutoRsp -nologo -verbosity:minimal -p:SolutionDir=$(SolutionDir) -p:Configuration=$(EngineConfig) -p:Platform=$(Platform) -p:OutDir=$(OutDir)Lib\ &quot;$(SolutionDir)Engine\Engine.vcxproj&quot;" />
+  </Target>
+  
 </Project>

@@ -51,9 +51,9 @@ partial class WorldEditorView : UserControl
         {
             var ids = scene.IsActive ? scene.GetGeometryComponentIds() : [];
             sv1.RenderSurfaceControl.SetComponentIds(ids);
-            sv2.RenderSurfaceControl.SetComponentIds(ids);
-            sv3.RenderSurfaceControl.SetComponentIds(ids);
-            sv4.RenderSurfaceControl.SetComponentIds(ids);
+            //sv2.RenderSurfaceControl.SetComponentIds(ids);
+            //sv3.RenderSurfaceControl.SetComponentIds(ids);
+            //sv4.RenderSurfaceControl.SetComponentIds(ids);
         }
     }
 
@@ -124,9 +124,9 @@ partial class WorldEditorView : UserControl
             avgPos /= MSEntity.CurrentSelection.SelectedEntities.Count;
 
             sv1.RenderSurfaceControl.FocusPosition(avgPos);
-            sv2.RenderSurfaceControl.FocusPosition(avgPos);
-            sv3.RenderSurfaceControl.FocusPosition(avgPos);
-            sv4.RenderSurfaceControl.FocusPosition(avgPos);
+            //sv2.RenderSurfaceControl.FocusPosition(avgPos);
+            //sv3.RenderSurfaceControl.FocusPosition(avgPos);
+            //sv4.RenderSurfaceControl.FocusPosition(avgPos);
         }
     }
 
@@ -144,8 +144,8 @@ partial class WorldEditorView : UserControl
         Debug.Assert(key != LightSet.InvalidKey);
         vm.ActiveScene.LightSetKey = lightSetKey;
         sv1.RenderSurfaceControl.UseLightSet(key);
-        sv2.RenderSurfaceControl.UseLightSet(key);
-        sv3.RenderSurfaceControl.UseLightSet(key);
-        sv4.RenderSurfaceControl.UseLightSet(key);
+        //sv2.RenderSurfaceControl.UseLightSet(key);
+        //sv3.RenderSurfaceControl.UseLightSet(key);
+        //sv4.RenderSurfaceControl.UseLightSet(key);
     }
 }
