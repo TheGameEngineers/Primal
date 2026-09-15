@@ -35,7 +35,7 @@
 
                 <TextBlock Text="Penumbra" Grid.Column="0" Grid.Row="1"/>
                 <ctrl:ScalarBox Value="{Binding Penumbra, TargetNullValue=''}" Grid.Column="2" Grid.Row="1"
-                                Minimum="{Binding Umbra, TargetNullValue=0}" MaxHeight="180"
+                                Minimum="{Binding Umbra, TargetNullValue=0}" Maximum="180"
                                 PreviewMouseLeftButtonUp="On_ScalarBox_PreviewMouse_LBU"/>
             </Grid>
         </local:PointLightView.SpecificLight>

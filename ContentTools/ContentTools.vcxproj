@@ -36,6 +36,8 @@
     <ProjectGuid>{ad87587b-3b3b-4c1f-9439-95da956f5bf3}</ProjectGuid>
     <RootNamespace>ContentTools</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+	<VcpkgEnableManifest>true</VcpkgEnableManifest>
+	<VcpkgInstalledDir>$(SolutionDir)packages\$(ProjectName)\vcpkg_install</VcpkgInstalledDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'" Label="Configuration">
@@ -43,7 +45,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-	<LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -51,7 +53,7 @@
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-	<LinkIncremental>false</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
@@ -59,10 +61,7 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <PropertyGroup Label="Vcpkg">
-    <VcpkgEnableManifest>true</VcpkgEnableManifest>
-  </PropertyGroup>
+  </ImportGroup>  
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
@@ -71,7 +70,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)Engine\Common;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(ProjectDir)$(PlatformTarget)\Compiled</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)Engine\Common;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(IntDir)Compiled</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -94,7 +93,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)Engine\Common;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(ProjectDir)$(PlatformTarget)\Compiled</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine;$(SolutionDir)Engine\Common;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(IntDir)Compiled</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -115,15 +114,15 @@
       <FXCPath>$(WindowsSDK_ExecutablePath_x64.Split(';')[0])</FXCPath>
       <FXCPath Condition="'$(FXCPath)' != '' and !HasTrailingSlash('$(FXCPath)')">$(FXCPath)\</FXCPath>
     </PropertyGroup>
-    <Exec Command="CompileShaders" WorkingDirectory="$(ProjectDir)" EnvironmentVariables="WindowsSDKExecutablePathX64=$(FXCPath);CompileShadersOutput=$(ProjectDir)$(PlatformTarget)\Compiled" LogStandardErrorAsError="true" />
+    <Exec Command="CompileShaders" WorkingDirectory="$(ProjectDir)" EnvironmentVariables="WindowsSDKExecutablePathX64=$(FXCPath);CompileShadersOutput=$(IntDir)Compiled" LogStandardErrorAsError="true" />
     <PropertyGroup>
       <FXCPath />
     </PropertyGroup>
   </Target>
   <Target Name="DeleteShaders" AfterTargets="Clean">
     <ItemGroup>
-      <ShaderHeaders Include="$(ProjectDir)$(PlatformTarget)\Compiled\*.inc" />
-      <ShaderSymbols Include="$(ProjectDir)$(PlatformTarget)\Compiled\*.pdb" />
+      <ShaderHeaders Include="$(IntDir)Compiled\*.inc" />
+      <ShaderSymbols Include="$(IntDir)Compiled\*.pdb" />
     </ItemGroup>
     <Delete Files="@(ShaderHeaders)" />
     <Delete Files="@(ShaderSymbols)" />

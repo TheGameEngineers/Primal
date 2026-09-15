@@ -391,7 +391,7 @@ class AmbientLight(Scene scene, string lightSetKey) : Light(scene, LightType.Amb
     {
         Debug.Assert(_envMapGuid != Guid.Empty);
         var assetInfo = AssetRegistry.GetAssetInfo(_envMapGuid);
-        if (assetInfo != null)
+        if (assetInfo == null)
         {
             assetInfo = Texture.DefaultSpecularIBL;
             Logger.Log(MessageType.Warning, $"Environment map texture asset with GUID {_envMapGuid} not found in the asset registry. Using default environment map.");

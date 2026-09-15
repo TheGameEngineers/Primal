@@ -39,28 +39,28 @@
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" Opacity="0.3" ShadowDepth="0"/>
             </Border.Effect>
-            <StackPanel Margin="5,2" Orientation="Horizontal">
-                <Button Margin="0,0,2,0" VerticalAlignment="Stretch" Command="{Binding SetAllChannelsCommand}" Content="All"/>
-                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+            <StackPanel Margin="5,0" Orientation="Horizontal">
+                <Button Margin="0,0,2,0" Command="{Binding SetAllChannelsCommand}" Content="All"/>
+                <ToggleButton Margin="0,0,2,0" Padding="5,2" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
                               CommandParameter="0" IsChecked="{Binding IsRedChannelSelected, Mode=OneWay}">
-                    <Rectangle Width="8" Fill="{StaticResource Editor.RedBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                    <Rectangle Width="8" Fill="{StaticResource Editor.RedBrush}" IsHitTestVisible="False"/>
                 </ToggleButton>
-                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                <ToggleButton Margin="0,0,2,0" Padding="5,2" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
                               CommandParameter="1"  IsChecked="{Binding IsGreenChannelSelected, Mode=OneWay}">
-                    <Rectangle Width="8" Fill="{StaticResource Editor.GreenBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                    <Rectangle Width="8" Fill="{StaticResource Editor.GreenBrush}" IsHitTestVisible="False"/>
                 </ToggleButton>
-                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                <ToggleButton Margin="0,0,2,0" Padding="5,2" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
                               CommandParameter="2" IsChecked="{Binding IsBlueChannelSelected, Mode=OneWay}">
-                    <Rectangle Width="8" Fill="{StaticResource Editor.BlueBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                    <Rectangle Width="8" Fill="{StaticResource Editor.BlueBrush}" IsHitTestVisible="False"/>
                 </ToggleButton>
-                <ToggleButton Margin="0,0,2,0" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
+                <ToggleButton Margin="0,0,2,0" Padding="5,2" VerticalContentAlignment="Stretch" Command="{Binding SetChannelCommand}"
                               CommandParameter="3" IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}" d:Visibility="Visible"
                               Visibility="{Binding Texture.HasAlpha, Converter={StaticResource booleanToVisibilityConverter}}">
-                    <Rectangle Width="8" Fill="{StaticResource Editor.FontBrush}" IsHitTestVisible="False" Margin="0,3,0,0"/>
+                    <Rectangle Width="8" Fill="{StaticResource Editor.FontBrush}" IsHitTestVisible="False"/>
                 </ToggleButton>
 
                 <ToggleButton Content="View as Normal Map" Padding="5" Margin="5,0" Command="{Binding RegenerateBitmapsCommand}"
-                              CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}" VerticalAlignment="Stretch"
+                              CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}"
                               d:Visibility="Visible" IsChecked="{Binding Texture.IsNormalMap, Mode=OneWay}">
                     <ToggleButton.Style>
                         <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}">

@@ -174,19 +174,22 @@ class NewProject : ViewModelBase
         Debug.Assert(File.Exists(Path.Combine(template.TemplatePath, "MSVCSolution")));
         Debug.Assert(File.Exists(Path.Combine(template.TemplatePath, "MSVCProject")));
 
-        var engineAPIPath = @"$(PRIMAL_ENGINE)Engine\EngineAPI\";
-        //TODO: check if engineAPIPath exists.
+        // NOTE: PRIMAL_ENGINE is a process scoped environment variable that is set
+        //       when the main window is loaded (see MainWindow.xaml.cs)
+        var engineAPIPath = @$"$(PRIMAL_ENGINE)Include\Common;$(PRIMAL_ENGINE){Project.EngineApi}";
 
-        var _0 = ProjectName;
-        var _1 = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
-        var _2 = engineAPIPath;
-        var _3 = "$(PRIMAL_ENGINE)";
+        var _0 = ProjectName;                                       // Project name
+        var _1 = "{" + Guid.NewGuid().ToString().ToUpper() + "}";   // Project GUID
+        var _2 = engineAPIPath;                                     // Engine include path
+        var _3 = "$(PRIMAL_ENGINE)";                                // Engine library path
+        var _4 = "v145";                                            // Platform toolset
+        var _5 = "stdcpp20";                                        // language standard
 
         var solution = File.ReadAllText(Path.Combine(template.TemplatePath, "MSVCSolution"));
         solution = string.Format(solution, _0, _1, "{" + Guid.NewGuid().ToString().ToUpper() + "}");
-        File.WriteAllText(Path.GetFullPath(Path.Combine(projectPath, $"{_0}.sln")), solution);
+        File.WriteAllText(Path.GetFullPath(Path.Combine(projectPath, $"{_0}.slnx")), solution);
         var project = File.ReadAllText(Path.Combine(template.TemplatePath, "MSVCProject"));
-        project = string.Format(project, _0, _1, _2, _3);
+        project = string.Format(project, _0, _1, _2, _3, _4, _5);
         File.WriteAllText(Path.GetFullPath(Path.Combine(projectPath, $@"GameCode\{_0}.vcxproj")), project);
     }
 

@@ -9,7 +9,7 @@
 #include <DirectXMath.h>
 #endif
 
-#include "../Utilities/MathTypes.h"
+#include "MathTypes.h"
 
 namespace primal::math {
 
