@@ -31,7 +31,7 @@ partial class ProjectLayoutView : UserControl
     private void OnGameEntities_ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var listBox = sender as ListBox;
-        if(listBox.DataContext is not Scene vm) return;
+        if (listBox.DataContext is not Scene vm) return;
 
         var newSelection = listBox.SelectedItems.Cast<GameEntity>().ToList();
         var newSelectedIndices = newSelection.Select(vm.GameEntities.IndexOf).ToList();
@@ -66,6 +66,7 @@ partial class ProjectLayoutView : UserControl
         if (newSelection.Count != 0)
         {
             var lights = newSelection.Where(x => x is Light).Cast<Light>().ToList();
+            var cameras = newSelection.Where(x => x is Camera).Cast<Camera>().ToList();
 
             if (lights.Count == newSelection.Count)
             {
@@ -88,6 +89,21 @@ partial class ProjectLayoutView : UserControl
                 else
                 {
                     msEntities = new MSLight(newSelection);
+                }
+            }
+            else if (cameras.Count == newSelection.Count)
+            {
+                if (cameras.All(x => x.Type == CameraType.Perspective))
+                {
+                    msEntities = new MSPerspectiveCamera(newSelection);
+                }
+                else if (cameras.All(x => x.Type == CameraType.Orthographic))
+                {
+                    msEntities = new MSOrthographicCamera(newSelection);
+                }
+                else
+                {
+                    msEntities = new MSCamera(newSelection);
                 }
             }
             else
@@ -123,8 +139,8 @@ partial class ProjectLayoutView : UserControl
                     }
                 }
 
-            // TODO: If the scene hasn't an ambient light and there are textures in dropped files, then we can try to create one.
-            // TODO: add asset flags to AssetInfo, so that we can have more info about textures without reading them.
+                // TODO: If the scene hasn't an ambient light and there are textures in dropped files, then we can try to create one.
+                // TODO: add asset flags to AssetInfo, so that we can have more info about textures without reading them.
             });
 
             if (entities.Count > 0)
@@ -203,24 +219,25 @@ partial class ProjectLayoutView : UserControl
 
         GameEntity entity = tag switch
         {
-            "0" or "1" => new GameEntity(scene) { Name = "Empty Game Entity" },
-            "2" => new DirectionalLight(scene, scene.LightSetKey) { Name = "Directional Light" },
-            "3" => new PointLight(scene, scene.LightSetKey) { Name = "Point Light" },
-            "4" => new Spotlight(scene, scene.LightSetKey) { Name = "Spotlight" },
-            "5" => new AmbientLight(scene, scene.LightSetKey) { Name = "Ambient Light" },
-            "6" => null,
-            "7" => null,
+            "0" or "1" => new GameEntity(scene),
+            "2" => new DirectionalLight(scene, scene.LightSetKey),
+            "3" => new PointLight(scene, scene.LightSetKey),
+            "4" => new Spotlight(scene, scene.LightSetKey),
+            "5" => new AmbientLight(scene, scene.LightSetKey),
+            "6" => new PerspectiveCamera(scene),
+            "7" => new OrthographicCamera(scene),
             _ => null
         };
 
         if (entity == null) return;
+
+        entity.Name = menuItem.Header.ToString();
 
         if (tag == "1")
         {
             entity.IsActive = true;
             var c = new Components.Geometry(entity, DefaultAssets.DefaultGeometry);
             entity.AddComponent(c);
-            entity.Name = "Cube";
         }
 
         scene.AddGameEntities([entity]);

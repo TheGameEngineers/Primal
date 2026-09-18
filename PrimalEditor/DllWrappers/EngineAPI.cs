@@ -327,10 +327,57 @@ namespace PrimalEditor.DllWrappers
         }
 
         [LibraryImport(_engineDll)]
-        public static partial void SetCameraRange(int surfaceId, float nearZ, float farZ);
+        public static partial IdType GetSurfaceCameraId(int surfaceId);
+
+        // data = {
+        //  u32         type;
+        //  f32         fov or orthographic_size;
+        //  f32         near_z;
+        //  f32         far_z;
+        //
+        [LibraryImport(_engineDll)]
+        private static partial IdType CreateCamera(IdType entityId, [In] byte[] data, int dataSize);
+
+        public static IdType CreateCamera(Camera camera)
+        {
+            Debug.Assert(ID.IsValid(camera?.EntityId ?? ID.INVALID_ID));
+            using var writer = new BinaryWriter(new MemoryStream());
+
+            writer.Write((int)camera.Type);
+            
+            if(camera is PerspectiveCamera perspectiveCamera)
+            {
+                writer.Write(perspectiveCamera.FieldOfView);
+            }
+            else if(camera is OrthographicCamera orthographicCamera)
+            {
+                writer.Write(orthographicCamera.OrthographicSize);
+            }
+            else
+            {
+                return ID.INVALID_ID;
+            }
+
+            writer.Write(camera.NearZ);
+            writer.Write(camera.FarZ);
+
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream).ToArray();
+
+            return CreateCamera(camera.EntityId, data, data.Length);
+        }
 
         [LibraryImport(_engineDll)]
-        public static partial void SetCameraFoV(int surfaceId, float fov);
+        public static partial void RemoveCamera(IdType cameraId);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetCameraFieldOfView([In] IdType[] Ids, [In] float[] fovs, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetCameraOrthographicSize([In] IdType[] Ids, [In] float[] sizes, int count);
+
+        [LibraryImport(_engineDll)]
+        public static partial void SetCameraRange([In] IdType[] Ids, [In] float[] nearZs, [In] float[] farZs, int count);
 
         [LibraryImport(_engineDll, StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
         public static partial ulong CreateLightSet(string lightSetKey);

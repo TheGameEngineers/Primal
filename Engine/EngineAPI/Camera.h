@@ -13,7 +13,7 @@ public:
     enum type : u32
     {
         perspective,
-        orthographic
+        orthographic,
     };
 
     constexpr explicit camera(camera_id id) : _id{ id } {}
@@ -24,8 +24,7 @@ public:
     void up(math::v3 up) const;
     void field_of_view(f32 fov) const;
     void aspect_ratio(f32 aspect_ratio) const;
-    void view_width(f32 width) const;
-    void view_height(f32 height) const;
+    void orthographic_size(f32 size) const;
     void range(f32 near_z, f32 far_z) const;
 
     math::m4x4 view() const;
@@ -38,8 +37,7 @@ public:
     f32 far_z() const;
     f32 field_of_view() const;
     f32 aspect_ratio() const;
-    f32 view_width() const;
-    f32 view_height() const;
+    f32 orthographic_size() const;
     type projection_type() const;
     id::id_type entity_id() const;
 

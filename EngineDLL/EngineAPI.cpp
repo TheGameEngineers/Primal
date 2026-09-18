@@ -213,7 +213,7 @@ InitializeEngine()
 
 EDITOR_INTERFACE void
 ShutdownEngine()
-{    
+{
     graphics::remove_light_set(0);
     graphics::shutdown();
 }
@@ -476,23 +476,95 @@ UpdateEditorCamera(u32 surface_id, f32 pos_x, f32 pos_y, f32 pos_z, f32 rot_x, f
     transform::update(&cache, 1);
 }
 
-EDITOR_INTERFACE void
-SetCameraRange(u32 surface_id, f32 near_z, f32 far_z)
+EDITOR_INTERFACE id::id_type
+GetSurfaceCameraId(u32 surface_id)
 {
     std::lock_guard lock{ mutex };
-    assert(near_z > 0 && far_z >= near_z);
     assert(surface_id < surfaces.size());
-    surfaces[surface_id].camera.range(near_z, far_z);
+    return surfaces[surface_id].camera.get_id();
+}
+
+// data = {
+//  u32         type;
+//  f32         fov or orthographic_size;
+//  f32         near_z;
+//  f32         far_z;
+//
+EDITOR_INTERFACE id::id_type
+CreateCamera(id::id_type entity_id, const u8 *const data, [[maybe_unused]] u32 data_size)
+{
+    std::lock_guard lock{ mutex };
+    assert(id::is_valid(entity_id) && data && data_size);
+    math::v3 up{ game_entity::entity{ game_entity::entity_id{entity_id} }.up() };
+    utl::blob_stream_reader blob{ data };
+    graphics::camera_init_info info{
+        .entity_id = entity_id,
+        .type = (graphics::camera::type)blob.read<u32>(),
+        .up = up,
+        .field_of_view = blob.read<f32>() * (1.f / 180.f),
+        .aspect_ratio = 16.f/10.f,
+        .near_z = blob.read<f32>(),
+        .far_z = blob.read<f32>()
+    };
+
+    assert(info.type == graphics::camera::perspective || info.type == graphics::camera::orthographic);
+    assert(info.field_of_view > 0.f && info.field_of_view <= 1.f);
+    assert(info.orthographic_size > 0 && info.aspect_ratio > 0);
+    assert(info.near_z > 0 && info.near_z <= info.far_z);
+
+    return graphics::create_camera(info).get_id();
 }
 
 EDITOR_INTERFACE void
-SetCameraFoV(u32 surface_id, f32 fov)
+RemoveCamera(id::id_type camera_id)
 {
     std::lock_guard lock{ mutex };
-    assert(fov > 0);
-    assert(surface_id < surfaces.size());
-    fov *= (1.f / 180.f);
-    surfaces[surface_id].camera.field_of_view(fov);
+    assert(id::is_valid(camera_id));
+    graphics::remove_camera(graphics::camera_id{ camera_id });
+}
+
+EDITOR_INTERFACE void
+SetCameraFieldOfView(id::id_type* ids, f32* fovs, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && fovs && count);
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        const f32 fov{ fovs[i] * (1.f / 180.f) };
+        assert(fov > 0);
+        const graphics::camera camera{ graphics::camera_id{ids[i]} };
+        camera.field_of_view(fov);
+    }
+}
+
+EDITOR_INTERFACE void
+SetCameraOrthographicSize(id::id_type* ids, f32* sizes, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && sizes && count);
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]) && sizes[i] > 0);
+        const graphics::camera camera{ graphics::camera_id{ids[i]} };
+        camera.orthographic_size(sizes[i]);
+    }
+}
+
+EDITOR_INTERFACE void
+SetCameraRange(id::id_type* ids, f32* near_zs, f32* far_zs, u32 count)
+{
+    std::lock_guard lock{ mutex };
+    assert(ids && near_zs && far_zs && count);
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        assert(id::is_valid(ids[i]));
+        const f32 near_z{ near_zs[i] };
+        const f32 far_z{ far_zs[i] };
+        assert(near_z > 0 && near_z <= far_z);
+        const graphics::camera camera{ graphics::camera_id{ids[i]} };
+        camera.range(near_z, far_z);
+    }
 }
 
 EDITOR_INTERFACE u64
@@ -533,16 +605,16 @@ CreateLight(id::id_type entity_id, u64 light_set_key, const u8 *const data, [[ma
     graphics::light_init_info info{};
     info.light_set_key = light_set_key;
     info.entity_id = entity_id;
-    info.type = (graphics::light::type)blob.read<id::id_type>();
+    info.type = (graphics::light::type)blob.read<u32>();
     info.intensity = blob.read<f32>();
     info.color = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
     info.is_enabled = blob.read<u32>() != 0;
 
     if (info.type == graphics::light::ambient)
     {
-        info.ambient_params.diffuse_texture_id = blob.read<id::id_type>();
-        info.ambient_params.specular_texture_id = blob.read<id::id_type>();
-        info.ambient_params.brdf_lut_texture_id = blob.read<id::id_type>();
+        info.ambient_params.diffuse_texture_id = blob.read<u32>();
+        info.ambient_params.specular_texture_id = blob.read<u32>();
+        info.ambient_params.brdf_lut_texture_id = blob.read<u32>();
     }
     else if (info.type == graphics::light::point)
     {

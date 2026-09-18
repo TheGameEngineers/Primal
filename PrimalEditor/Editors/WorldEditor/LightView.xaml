@@ -26,6 +26,7 @@
             <RowDefinition Height="32"/>
             <RowDefinition Height="32"/>
             <RowDefinition Height="32"/>
+            <RowDefinition Height="32"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -34,8 +35,22 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Text="Light Set" Width="73" Grid.Column="0" Grid.Row="0"/>
-        <ComboBox x:Name="lightSetComboBox" SelectedItem="{Binding LightSetKey, Mode=OneWay}" Grid.Column="2" Grid.Row="0" 
+        <TextBlock Text="Light Type"/>
+        <TextBlock Grid.Row="0" Grid.Column="2" Foreground="Moccasin" Opacity="0.6">
+            <TextBlock.Style>
+                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+                    <Setter Property="Text" Value="{Binding LightType}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LightType}" Value="{x:Null}">
+                            <Setter Property="Text" Value="Mixed Types"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <TextBlock Text="Light Set" Width="73" Grid.Column="0" Grid.Row="1"/>
+        <ComboBox x:Name="lightSetComboBox" SelectedItem="{Binding LightSetKey, Mode=OneWay}" Grid.Column="2" Grid.Row="1" 
                   VerticalAlignment="Center" HorizontalContentAlignment="Stretch" Margin="0,4"
                   DropDownClosed="OnLightSetKey_ComboBox_DropDownClosed" PreviewMouseWheel="OnLightSetKey_ComboBox_PreviewMouseWheel">
             <ComboBox.Resources>
@@ -57,20 +72,20 @@
             </ComboBox.ItemsSource>
         </ComboBox>
 
-        <TextBlock Text="Color" Grid.Column="0" Grid.Row="1"/>
-        <Button Grid.Column="1" Grid.Row="1" x:Name="lightColorButton"/>
-        <ctrl:VectorBox Grid.Column="2" Grid.Row="1" Minimum="0" Maximum="1"
+        <TextBlock Text="Color" Grid.Column="0" Grid.Row="2"/>
+        <Button Grid.Column="1" Grid.Row="2" x:Name="lightColorButton"/>
+        <ctrl:VectorBox Grid.Column="2" Grid.Row="2" Minimum="0" Maximum="1"
                         X="{Binding ColorR, TargetNullValue=''}"
                         Y="{Binding ColorG, TargetNullValue=''}"
                         Z="{Binding ColorB, TargetNullValue=''}"
                         ValueChanging="OnColor_VectorBox_ValueChanging"
                         PreviewMouseLeftButtonUp="On_NumberBox_PreviewMouse_LBU"/>
 
-        <TextBlock Text="Intensity" Grid.Column="0" Grid.Row="2"/>
-        <ctrl:ScalarBox Value="{Binding Intensity, TargetNullValue=''}" Grid.Column="2" Grid.Row="2" Minimum="0"
+        <TextBlock Text="Intensity" Grid.Column="0" Grid.Row="3"/>
+        <ctrl:ScalarBox Value="{Binding Intensity, TargetNullValue=''}" Grid.Column="2" Grid.Row="3" Minimum="0"
                         PreviewMouseLeftButtonUp="On_NumberBox_PreviewMouse_LBU"/>
 
-        <ContentPresenter Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="3"
+        <ContentPresenter Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="4"
                           Content="{Binding SpecificLight, RelativeSource={RelativeSource AncestorType={x:Type local:LightView}}}"/>
     </Grid>
 </UserControl>
