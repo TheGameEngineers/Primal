@@ -17,6 +17,8 @@ namespace PrimalEditor.GameProject;
 [KnownType(typeof(PointLight))]
 [KnownType(typeof(Spotlight))]
 [KnownType(typeof(AmbientLight))]
+[KnownType(typeof(PerspectiveCamera))]
+[KnownType(typeof(OrthographicCamera))]
 class Scene : ViewModelBase
 {
     public ICommand RenameCommand { get; private set; }

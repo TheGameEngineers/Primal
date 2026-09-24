@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.Serialization;
 
 namespace PrimalEditor.Components;
@@ -79,6 +78,12 @@ abstract class Camera(Scene scene, CameraType type) : GameEntity(scene)
             }
         }
     } = 100f;
+
+    [OnDeserializing]
+    private void OnDeserializing(StreamingContext context)
+    {
+        CameraId = ID.INVALID_ID;
+    }
 }
 
 [DataContract]
