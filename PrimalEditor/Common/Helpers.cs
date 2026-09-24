@@ -289,6 +289,9 @@ static class ContentHelper
         return false;
     }
 
+    public static bool IsMissingOrOutdated(string filePath, DateTime importDate)
+        => !File.Exists(filePath) || File.GetLastWriteTime(filePath).IsOlder(importDate);
+
     public static bool IsDirectory(this FileInfo info) => info.Attributes.HasFlag(FileAttributes.Directory);
 
     public static bool IsOlder(this DateTime date, DateTime other) => date < other;

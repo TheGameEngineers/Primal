@@ -2,7 +2,6 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 
@@ -17,7 +16,6 @@ abstract class Component : ViewModelBase
     public GameEntity Owner { get; init; }
 
     public abstract IMSComponent GetMultiselectionComponent(MSEntity msEntity);
-    public abstract void WriteToBinary(BinaryWriter bw);
 
     public virtual void Load() { }
     public virtual void Unload() { }

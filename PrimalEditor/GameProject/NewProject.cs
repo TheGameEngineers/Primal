@@ -142,7 +142,8 @@ class NewProject : ViewModelBase
 
         try
         {
-            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
+
             foreach (var folder in template.Folders)
             {
                 Directory.CreateDirectory(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(path), folder)));

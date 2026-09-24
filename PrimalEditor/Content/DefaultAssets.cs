@@ -35,10 +35,8 @@ static class DefaultAssets
     public static void GenerateDefaultAssets()
     {
         var defaultAssetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\DefaultAssets\");
-        if (!Directory.Exists(defaultAssetsPath))
-        {
-            Directory.CreateDirectory(defaultAssetsPath);
-        }
+
+        Directory.CreateDirectory(defaultAssetsPath);
 
         var brdfLutFileName = $@"{defaultAssetsPath}BrdfIntegrationLut.asset";
 

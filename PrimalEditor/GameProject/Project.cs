@@ -231,34 +231,14 @@ class Project : ViewModelBase
         Logger.Log(MessageType.Info, $"Project saved to {project.FullPath}");
     }
 
-    private void SaveToBinary()
-    {
-        var configName = VisualStudio.GetConfigurationName(StandAloneBuildConfig);
-        var bin = $@"{Path}x64\{configName}\game.bin";
-
-        using (var bw = new BinaryWriter(File.Open(bin, FileMode.Create, FileAccess.Write)))
-        {
-            bw.Write(ActiveScene.GameEntities.Count);
-            foreach (var entity in ActiveScene.GameEntities)
-            {
-                bw.Write(0); // entity type (reserved for later)
-                bw.Write(entity.Components.Count);
-                foreach (var component in entity.Components)
-                {
-                    bw.Write((int)component.ToEnumType());
-                    component.WriteToBinary(bw);
-                }
-            }
-        }
-    }
-
     private async Task RunGame(bool debug)
     {
         await Task.Run(() => VisualStudio.BuildSolution(this, StandAloneBuildConfig, debug));
         if (VisualStudio.BuildSucceeded)
         {
-            SaveToBinary();
-            await Task.Run(() => VisualStudio.Run(this, StandAloneBuildConfig, debug));
+            Save(this);
+            Chef.SaveForDryRun();
+            await Task.Run(() => { }); // () => VisualStudio.Run(this, StandAloneBuildConfig, debug));
         }
     }
 

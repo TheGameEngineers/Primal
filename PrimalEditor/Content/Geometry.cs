@@ -478,7 +478,7 @@ class Geometry : Asset
 
         lock (_lock)
         {
-            if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
+            Directory.CreateDirectory(tempPath);
         }
 
         var tempFile = $"{tempPath}{ContentHelper.GetRandomString()}.fbx";

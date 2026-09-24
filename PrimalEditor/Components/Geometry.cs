@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Windows.Input;
@@ -225,8 +224,6 @@ class Geometry : Component
     }
 
     public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSGeometry(msEntity);
-
-    public override void WriteToBinary(BinaryWriter bw) => throw new NotImplementedException();
 
     [OnSerializing]
     private void OnSerializing(StreamingContext context)

@@ -4,7 +4,6 @@ using PrimalEditor.Components;
 using PrimalEditor.DllWrappers;
 using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
-using PrimalEditor.Utilities.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +18,7 @@ namespace PrimalEditor.Editors;
 /// <summary>
 /// Interaction logic for CameraView.xaml
 /// </summary>
-public partial class CameraView : UserControl
+partial class CameraView : UserControl
 {
     private string _propertyName = string.Empty;
     private bool _disableUndoRedo;
