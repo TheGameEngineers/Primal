@@ -28,8 +28,20 @@ static class Chef
 {
     private static class Indexer
     {
+        private class MaterialInfo
+        {
+            public int MaterialGuidIndex { get; init; }
+            public MaterialType MaterialType { get; init; }
+            public int ShaderFlags { get; init; }
+            public List<int> ShaderCountPerGroup { get; init; }
+            public List<string> ShaderFiles { get; init; }
+        }
+
         private static readonly List<Guid> _usedAssets = [];
         private static readonly Dictionary<Guid, int> _assetGuidToIndex = [];
+        private static readonly Dictionary<Guid, MaterialInfo> _savedMaterials = [];
+
+        public static List<Guid> GetUsedAssets() => [.. _usedAssets];
 
         public static int AddGuid(Guid guid)
         {
@@ -66,6 +78,7 @@ static class Chef
                     var asset = loadAsset(info);
                     var data = asset.PackForEngine();
                     using var fs = File.Open(filePath, FileMode.Create, FileAccess.Write);
+                    fs.Write(BitConverter.GetBytes((int)info.Type));
                     fs.Write(data, 0, data.Length);
                 }
 
@@ -106,27 +119,167 @@ static class Chef
             return (diffuseIndex, specularIndex, brdfLutIndex);
         }
 
+        private static bool TryGetMaterialInfo(AssetInfo info, string contentPath, string mtlPath, out MaterialInfo mtlInfo)
+        {
+            ArgumentNullException.ThrowIfNull(info);
+
+            if (_savedMaterials.TryGetValue(info.Guid, out mtlInfo)) return true;
+
+            var shouldSave = ContentHelper.IsMissingOrOutdated(mtlPath, info.ImportDate);
+
+            if (shouldSave) return false;
+
+            // Material asset file exists and is up-to-date. Check if shader files are missing.
+            using var reader = new BinaryReader(File.Open(mtlPath, FileMode.Open, FileAccess.Read));
+            var assetType = (AssetType)reader.ReadInt32();
+            var mtlType = (MaterialType)reader.ReadInt32();
+            var shaderFlags = reader.ReadInt32();
+            var shaderCount = reader.ReadInt32();
+
+            var shaderFiles = new List<string>();
+            var countsPerGroup = new List<int>();
+
+            for (var i = 0; i < shaderCount; ++i)
+            {
+                countsPerGroup.Add(reader.ReadInt32());
+            }
+
+            for (var i = 0; i < shaderCount; ++i)
+            {
+                var nameLength = reader.ReadInt32();
+                var nameBytes = reader.ReadBytes(nameLength);
+                var shaderFile = Encoding.UTF8.GetString(nameBytes);
+                shaderFiles.Add(shaderFile);
+
+                if (ContentHelper.IsMissingOrOutdated($"{contentPath}{shaderFile}", info.ImportDate))
+                {
+                    Logger.Log(MessageType.Warning, $"Shader file is missing or outdated: {shaderFile}");
+                    shouldSave = true;
+                    break;
+                }
+            }
+
+            // Everything is still there and up-to-date, but it wasn't in the dictionary. So, add a new entry and return it.
+            if (!shouldSave)
+            {
+                _savedMaterials[info.Guid] = new()
+                {
+                    MaterialGuidIndex = AddGuid(info.Guid),
+                    MaterialType = mtlType,
+                    ShaderFlags = shaderFlags,
+                    ShaderCountPerGroup = countsPerGroup,
+                    ShaderFiles = shaderFiles
+                };
+
+                mtlInfo = _savedMaterials[info.Guid];
+                return true;
+            }
+
+            return false;
+        }
+
+        // Output format:
+        // struct{
+        //   u32    material_type;
+        //   u32    shader_flags;
+        //   u32    shader_count;
+        //   u32[]  counts_per_group;
+        //   struct{
+        //     u32  name_length;
+        //     u8[] name_bytes;
+        //   } shader_files[shader_count];
+        // }
+        public static int SaveMaterialData(AssetInfo info, string contentPath)
+        {
+            ArgumentNullException.ThrowIfNull(info);
+            var mtlPath = $"{contentPath}{info.Guid}{Asset.AssetFileExtension}";
+
+            if (TryGetMaterialInfo(info, contentPath, mtlPath, out var mtlInfo)) return mtlInfo.MaterialGuidIndex;
+
+            if (File.Exists(mtlPath))
+            {
+                Logger.Log(MessageType.Warning, $"Overwriting material data: {mtlPath}");
+            }
+
+            // Either the material file is missing or outdated, or one of the shader files is missing or outdated. Re-save everything.
+            var mtl = new Material(info);
+            var shaderFiles = new List<string>();
+            var countsPerGroup = new List<int>();
+            var shaderFlags = 0;
+            var shaderIndex = 0;
+
+            // Save shader files first.
+            foreach (var shader_type in Enum.GetValues<ShaderType>())
+            {
+                if (mtl.GetShaderGroup(shader_type) is not ShaderGroup shaderGroup)
+                {
+                    ++shaderIndex;
+                    continue;
+                }
+
+                shaderFlags |= (1 << shaderIndex);
+                ++shaderIndex;
+
+                var shaderFileName = $"{mtl.Guid}.{shaderGroup.Type}.shader";
+                var shaderPath = $"{contentPath}{shaderFileName}";
+                shaderFiles.Add(shaderFileName);
+                countsPerGroup.Add(shaderGroup.Count);
+
+                var data = shaderGroup.PackForEngine();
+                using var fs = File.Open(shaderPath, FileMode.Create, FileAccess.Write);
+                fs.Write(BitConverter.GetBytes((int)shaderGroup.Type));
+                fs.Write(data, 0, data.Length);
+            }
+
+            // Save material data
+            using var writer = new BinaryWriter(File.Open(mtlPath, FileMode.Create, FileAccess.Write));
+            writer.Write((int)AssetType.Material);
+            writer.Write((int)mtl.MaterialType);
+            writer.Write(shaderFlags);
+            writer.Write(shaderFiles.Count);
+            countsPerGroup.ForEach(writer.Write);
+            shaderFiles.ForEach(s =>
+            {
+                var shaderFileBytes = Encoding.UTF8.GetBytes(s);
+                writer.Write(shaderFileBytes.Length);
+                writer.Write(shaderFileBytes);
+            });
+
+            _savedMaterials[info.Guid] = new()
+            {
+                MaterialGuidIndex = AddGuid(info.Guid),
+                MaterialType = mtl.MaterialType,
+                ShaderFlags = shaderFlags,
+                ShaderCountPerGroup = countsPerGroup,
+                ShaderFiles = shaderFiles
+            };
+
+            return _savedMaterials[info.Guid].MaterialGuidIndex;
+        }
+
         public static void Reset()
         {
             _usedAssets.Clear();
             _assetGuidToIndex.Clear();
+            _savedMaterials.Clear();
         }
 
-        public static void WriteGuidIndexTable(BinaryWriter bw)
+        public static void WriteGuidsArray(BinaryWriter bw)
         {
             var count = _usedAssets.Count;
             Debug.Assert(count == _assetGuidToIndex.Count);
             bw.Write(count);
-            bw.Write(Guid.Empty.ToByteArray().Length);
-
-            foreach (var (guid, index) in _assetGuidToIndex)
+            _usedAssets.ForEach(guid =>
             {
-                bw.Write(guid.ToByteArray());
-                bw.Write(index);
-            }
+                var guidStr = guid.ToString("D");
+                var guidBytes = Encoding.UTF8.GetBytes(guidStr);
+                Debug.Assert(guidBytes.Length == 36);
+                bw.Write(guidBytes);
+
+            });
         }
 
-        public static void DeleteUnused(string contentPath, IEnumerable<string> usedShaders)
+        public static void DeleteUnused(string contentPath)
         {
             var files = Directory.GetFiles(contentPath);
             var existingAssets = new List<Guid>();
@@ -156,24 +309,17 @@ static class Chef
                 File.Delete(file);
             }
 
+            var usedShaders = _savedMaterials.Values.SelectMany(x => x.ShaderFiles);
+
             // Remove unused shaders
             foreach (var fileName in existingShaders.Except(usedShaders))
             {
                 var file = $"{contentPath}{fileName}";
-                Debug.Assert(File.Exists(file) && !usedShaders.Contains(file));
+                Debug.Assert(File.Exists(file) && !usedShaders.Contains(fileName));
                 File.Delete(file);
             }
         }
-    }
-
-    private class MaterialInfo
-    {
-        public int MaterialGuidIndex { get; init; }
-        public MaterialType MaterialType { get; init; }
-        public int ShaderFlags { get; init; }
-        public List<int> ShaderCountPerGroup { get; init; }
-        public List<string> ShaderFiles { get; init; }
-    }
+    } // class Indexer
 
     private static readonly ImmutableDictionary<string, EntityType> _entityTypeMapping = ImmutableDictionary.CreateRange<string, EntityType>(
         [
@@ -188,144 +334,7 @@ static class Chef
             new (nameof(OrthographicCamera), EntityType.Camera),
         ]);
 
-    private static readonly Dictionary<Guid, MaterialInfo> _savedMaterials = [];
-
-    private static bool TryGetMaterialInfo(AssetInfo info, string contentPath, string mtlPath, out MaterialInfo mtlInfo)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-
-        if (_savedMaterials.TryGetValue(info.Guid, out mtlInfo)) return true;
-
-        var shouldSave = ContentHelper.IsMissingOrOutdated(mtlPath, info.ImportDate);
-
-        if (shouldSave) return false;
-
-        // Material asset file exists and is up-to-date. Check if shader files are missing.
-        using var reader = new BinaryReader(File.Open(mtlPath, FileMode.Open, FileAccess.Read));
-        var mtlType = (MaterialType)reader.ReadInt32();
-        var shaderFlags = reader.ReadInt32();
-        var shaderCount = reader.ReadInt32();
-
-        var shaderFiles = new List<string>();
-        var countsPerGroup = new List<int>();
-
-        for (var i = 0; i < shaderCount; ++i)
-        {
-            countsPerGroup.Add(reader.ReadInt32());
-        }
-
-        for (var i = 0; i < shaderCount; ++i)
-        {
-            var nameLength = reader.ReadInt32();
-            var nameBytes = reader.ReadBytes(nameLength);
-            var shaderFile = Encoding.UTF8.GetString(nameBytes);
-            shaderFiles.Add(shaderFile);
-
-            if (ContentHelper.IsMissingOrOutdated($"{contentPath}{shaderFile}", info.ImportDate))
-            {
-                Logger.Log(MessageType.Warning, $"Shader file is missing or outdated: {shaderFile}");
-                shouldSave = true;
-                break;
-            }
-        }
-
-        // Everything is still there and up-to-date, but it wasn't in the dictionary. So, add a new entry and return it.
-        if (!shouldSave)
-        {
-            _savedMaterials[info.Guid] = new()
-            {
-                MaterialGuidIndex = Indexer.AddGuid(info.Guid),
-                MaterialType = mtlType,
-                ShaderFlags = shaderFlags,
-                ShaderCountPerGroup = countsPerGroup,
-                ShaderFiles = shaderFiles
-            };
-
-            mtlInfo = _savedMaterials[info.Guid];
-            return true;
-        }
-
-        return false;
-    }
-
-    // Output format:
-    // struct{
-    //   u32    material_type;
-    //   u32    shader_flags;
-    //   u32    shader_count;
-    //   u32[]  counts_per_group;
-    //   struct{
-    //     u32  name_length;
-    //     u8[] name_bytes;
-    //   } shader_files[shader_count];
-    // }
-    private static MaterialInfo SaveMaterialData(AssetInfo info, string contentPath)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-        var mtlPath = $"{contentPath}{info.Guid}{Asset.AssetFileExtension}";
-
-        if (TryGetMaterialInfo(info, contentPath, mtlPath, out var mtlInfo)) return mtlInfo;
-
-        if (File.Exists(mtlPath))
-        {
-            Logger.Log(MessageType.Warning, $"Overwriting material data: {mtlPath}");
-        }
-
-        // Either the material file is missing or outdated, or one of the shader files is missing or outdated. Re-save everything.
-        var mtl = new Material(info);
-        var shaderFiles = new List<string>();
-        var countsPerGroup = new List<int>();
-        var shaderFlags = 0;
-        var shaderIndex = 0;
-
-        // Save shader files first.
-        foreach (var shader_type in Enum.GetValues<ShaderType>())
-        {
-            if (mtl.GetShaderGroup(shader_type) is not ShaderGroup shaderGroup)
-            {
-                ++shaderIndex;
-                continue;
-            }
-
-            shaderFlags |= (1 << shaderIndex);
-            ++shaderIndex;
-
-            var shaderFileName = $"{mtl.Guid}.{shaderGroup.Type}.shader";
-            var shaderPath = $"{contentPath}{shaderFileName}";
-            shaderFiles.Add(shaderFileName);
-            countsPerGroup.Add(shaderGroup.Count);
-
-            var data = shaderGroup.PackForEngine();
-            using var fs = File.Open(shaderPath, FileMode.Create, FileAccess.Write);
-            fs.Write(data, 0, data.Length);
-        }
-
-        // Save material data
-        using var writer = new BinaryWriter(File.Open(mtlPath, FileMode.Create, FileAccess.Write));
-        writer.Write((int)mtl.MaterialType);
-        writer.Write(shaderFlags);
-        writer.Write(shaderFiles.Count);
-        countsPerGroup.ForEach(writer.Write);
-        shaderFiles.ForEach(s =>
-        {
-            var shaderFileBytes = Encoding.UTF8.GetBytes(s);
-            writer.Write(shaderFileBytes.Length);
-            writer.Write(shaderFileBytes);
-        });
-
-        _savedMaterials[info.Guid] = new()
-        {
-            MaterialGuidIndex = Indexer.AddGuid(info.Guid),
-            MaterialType = mtl.MaterialType,
-            ShaderFlags = shaderFlags,
-            ShaderCountPerGroup = countsPerGroup,
-            ShaderFiles = shaderFiles
-        };
-
-        return _savedMaterials[info.Guid];
-    }
-
-    private static float ParseInt(XElement i)
+    private static int ParseInt(XElement i)
         => i != null ? int.Parse(i.Value, CultureInfo.InvariantCulture) : 0;
 
     private static float ParseFloat(XElement f)
@@ -414,8 +423,8 @@ static class Chef
             var materialGuid = material.Element("Material")?.Value ?? string.Empty;
             if (!Guid.TryParse(materialGuid, out var mtlGuid) || mtlGuid == Guid.Empty) throw new InvalidDataException("Invalid material asset GUID");
 
-            var mtlInfo = SaveMaterialData(AssetRegistry.GetAssetInfo(mtlGuid), contentPath);
-            writer.Write(mtlInfo.MaterialGuidIndex);
+            var mtlIndex = Indexer.SaveMaterialData(AssetRegistry.GetAssetInfo(mtlGuid), contentPath);
+            writer.Write(mtlIndex);
 
             var inputs = material.Element(nameof(AppliedMaterial.Inputs))?.Elements("guid") ?? [];
             writer.Write(inputs.Count());
@@ -443,7 +452,7 @@ static class Chef
             writer.Write(r); writer.Write(g); writer.Write(b);
             writer.Write((byte)(255 * ParseFloat(mtlSurface?.Element(nameof(MaterialSurface.Metallic)))));
             writer.Write((byte)(255 * ParseFloat(mtlSurface?.Element(nameof(MaterialSurface.Roughness)))));
-            writer.Write((byte)(inputMask & 0xf));
+            writer.Write((byte)(inputMask & 0xff));
             writer.Write((ushort)(ParseFloat(mtlSurface?.Element(nameof(MaterialSurface.EmissiveIntensity))) * (65535f / Material.MaxEmissiveIntensity)));
         }
     }
@@ -461,6 +470,12 @@ static class Chef
                     if (!Enum.TryParse(typeof(LightType), typeName, true, out var lightType)) throw new InvalidDataException("Invalid light type");
                     writer.Write((int)lightType);
 
+                    // Light-set key
+                    var lightSetKey = entity.Element(nameof(Light.LightSetKey))?.Value ?? LightSet.DefaultKey;
+                    var keyBytes = Encoding.UTF8.GetBytes(lightSetKey);
+                    writer.Write(keyBytes.Length);
+                    writer.Write(keyBytes);
+
                     // Intensity
                     writer.Write(ParseFloat(entity.Element(nameof(Light.Intensity))));
 
@@ -469,12 +484,12 @@ static class Chef
                     writer.Write((int)r); writer.Write((int)g); writer.Write((int)b);
 
                     // IsEnabled
-                    writer.Write(bool.Parse(entity.Element(nameof(Light.IsEnabled))?.Value ?? bool.FalseString) ? 1 : 0);
+                    writer.Write(bool.Parse(entity.Element(nameof(Light.IsEnabled))?.Value ?? bool.TrueString) ? 1 : 0);
 
                     // Diffuse, Specular, BRDF Lut asset indices
                     var envMapGuid = entity.Element(nameof(AmbientLight.EnvMap))?.Value ?? string.Empty;
                     if ((!Guid.TryParse(envMapGuid, out var guid) || guid == Guid.Empty) && (LightType)lightType == LightType.Ambient) throw new InvalidDataException("Invalid EnvMap GUID");
-                    var (diffuseIndex, specularIndex, brdfLutIndex) = Indexer.SaveIBLTextureData(contentPath, guid);
+                    var (diffuseIndex, specularIndex, brdfLutIndex) = guid != Guid.Empty ? Indexer.SaveIBLTextureData(contentPath, guid) : (ID.INVALID_ID, ID.INVALID_ID, ID.INVALID_ID);
                     writer.Write(diffuseIndex); writer.Write(specularIndex); writer.Write(brdfLutIndex);
 
                     // Range
@@ -494,7 +509,7 @@ static class Chef
             case EntityType.Camera:
                 {
                     // Type
-                    var typeName = entity.Element(nameof(Camera.Type))?.Value;                    
+                    var typeName = entity.Element(nameof(Camera.Type))?.Value;
                     if (!Enum.TryParse(typeof(CameraType), typeName, true, out var cameraType)) throw new InvalidDataException("Invalid camera type");
                     writer.Write((int)cameraType);
 
@@ -506,6 +521,10 @@ static class Chef
                     else if ((CameraType)cameraType == CameraType.Orthographic)
                     {
                         writer.Write(ParseFloat(entity.Element(nameof(OrthographicCamera.OrthographicSize))));
+                    }
+                    else
+                    {
+                        throw new InvalidDataException($"Invalid camera type: {cameraType}");
                     }
 
                     // Near Z
@@ -532,7 +551,7 @@ static class Chef
 
     private static EntityType GetEntityType(XElement entity)
     {
-        var typeName = entity.Attribute("type")?.Value.Split(':').Last();
+        var typeName = entity.Attribute("type")?.Value?.Split(':').Last();
         if (string.IsNullOrEmpty(typeName))
         {
             return _entityTypeMapping[nameof(GameEntity)];
@@ -553,13 +572,13 @@ static class Chef
         var game = RemoveAllNamespaces(doc.Root);
 
         var scenes = game.Element(nameof(Project.Scenes))?.Elements(nameof(Scene)) ?? [];
-        var sceneData = new List<byte[]>();
+        var sceneData = new List<(int IsActive, List<int> AssetIndices, byte[] Data)>();
 
         foreach (var scene in scenes)
         {
+            var oldAssetList = Indexer.GetUsedAssets();
             using var writer = new BinaryWriter(new MemoryStream());
-            var isActive = bool.Parse(scene.Element(nameof(Scene.IsActive))?.Value ?? bool.FalseString);
-            writer.Write(isActive ? 1 : 0);
+            var isActive = bool.Parse(scene.Element(nameof(Scene.IsActive))?.Value ?? bool.FalseString) ? 1 : 0;
 
             var entities = scene.Element(nameof(Scene.GameEntities))?.Elements(nameof(GameEntity)) ?? [];
             writer.Write(entities.Count());
@@ -568,7 +587,6 @@ static class Chef
             {
                 var entityType = GetEntityType(entity);
                 writer.Write((int)entityType);
-                SaveEntitySpecificData(contentPath, entityType, entity, writer);
 
                 var components = entity.Element(nameof(GameEntity.Components))?.Elements(nameof(Component)) ?? [];
                 Debug.Assert(components.Any());
@@ -583,25 +601,35 @@ static class Chef
                         case nameof(Transform): TransformToBinary(component, writer); break;
                         case nameof(Script): ScriptToBinary(component, writer); break;
                         case nameof(Components.Geometry): GeometryToBinary(component, writer, contentPath); break;
+                        default:
+                            throw new InvalidDataException("Invalid component type.");
                     }
                 }
+
+                SaveEntitySpecificData(contentPath, entityType, entity, writer);
             }
 
+            var newAssetList = Indexer.GetUsedAssets();
+            var indices = newAssetList.Except(oldAssetList).Select(x => newAssetList.IndexOf(x)).ToList();
+
             writer.Flush();
-            sceneData.Add((writer.BaseStream as MemoryStream).ToArray());
+            sceneData.Add((isActive, indices, (writer.BaseStream as MemoryStream).ToArray()));
         }
 
         var bin = $"{outputPath}game.bin";
         using var bw = new BinaryWriter(File.Open(bin, FileMode.Create, FileAccess.Write));
 
-        Indexer.WriteGuidIndexTable(bw);
+        Indexer.WriteGuidsArray(bw);
 
         bw.Write(sceneData.Count);
 
-        foreach (var scene in sceneData)
+        foreach (var (isActive, assetIndices, data) in sceneData)
         {
-            bw.Write(scene.Length);
-            bw.Write(scene);
+            bw.Write(data.Length + assetIndices.Count * sizeof(int));
+            bw.Write(isActive);
+            bw.Write(assetIndices.Count);
+            assetIndices.ForEach(bw.Write);
+            bw.Write(data);
         }
     }
 
@@ -614,14 +642,13 @@ static class Chef
         Debug.Assert(Directory.Exists(outputPath));
         Directory.CreateDirectory(contentPath);
         ProjectToBinary(project, outputPath, contentPath);
-        Indexer.DeleteUnused(contentPath, _savedMaterials.Values.SelectMany(x => x.ShaderFiles));
+        Indexer.DeleteUnused(contentPath);
     }
 
     public static void SaveForDryRun()
     {
         Logger.Log(MessageType.Info, "Preparing the project for launch...");
         Indexer.Reset();
-        _savedMaterials.Clear();
         SaveProjectData();
     }
 }
