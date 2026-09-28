@@ -341,7 +341,6 @@ AddShaderGroup(shader_group_data* data)
 
     for (u32 i{ 0 }; i < count; ++i)
     {
-
         // NOTE: byteCodeLength is a 64-bit value!
         const u32 block_size{ sizeof(u64) + content::compiled_shader::hash_length + *(u32*)blob.position() };
         shader_pointers[i] = blob.position();

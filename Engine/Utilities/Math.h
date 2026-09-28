@@ -113,7 +113,7 @@ align_size_down(u64 size, u64 alignment)
 calc_crc32_u64(const u8 *const data, u64 size)
 {
     assert(size >= sizeof(u64));
-    u64 crc{ 0 };
+    u64 crc{ u64_invalid_id };
     const u8* at{ data };
     const u8 *const end{ data + align_size_down<sizeof(u64)>(size) };
     while (at < end)

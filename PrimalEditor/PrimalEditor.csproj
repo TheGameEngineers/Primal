@@ -11,6 +11,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Resources\Icons\Primal.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>0.0.1</Version>
     <OutputPath>..\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>..\$(Platform)\intermediate\$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>

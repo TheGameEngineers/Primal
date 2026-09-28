@@ -14,6 +14,8 @@ public:
     {
         perspective,
         orthographic,
+
+        count
     };
 
     constexpr explicit camera(camera_id id) : _id{ id } {}

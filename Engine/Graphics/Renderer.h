@@ -73,9 +73,9 @@ struct spot_light_params
 
 struct ambient_params
 {
-    id::id_type diffuse_texture_id;
-    id::id_type specular_texture_id;
-    id::id_type brdf_lut_texture_id;
+    id::id_type diffuse_texture_id{ id::invalid_id };
+    id::id_type specular_texture_id{ id::invalid_id };
+    id::id_type brdf_lut_texture_id{ id::invalid_id };
 };
 
 struct light_init_info

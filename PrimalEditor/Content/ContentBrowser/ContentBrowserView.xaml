@@ -237,7 +237,7 @@
         <DataTemplate x:Key="tileTemplate">
             <StackPanel Width="{StaticResource AssetIconWidth}" HorizontalAlignment="Center">
                 <StackPanel.CacheMode>
-                    <BitmapCache EnableClearType="True" RenderAtScale="1"/>
+                    <BitmapCache EnableClearType="True" RenderAtScale="4"/>
                 </StackPanel.CacheMode>
                 <Border MinHeight="{StaticResource AssetIconWidth}">
                     <Image Style="{StaticResource LargeIconStyle}">
