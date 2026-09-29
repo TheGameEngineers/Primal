@@ -52,7 +52,7 @@ exists(script_id id)
     assert(index < generations.size() && !(id::is_valid(id_mapping[index]) && id_mapping[index] >= entity_scripts.size()));
     assert(generations[index] == id::generation(id));
     return (id::is_valid(id_mapping[index]) &&
-            generations[index] == id::generation(id)) &&
+        generations[index] == id::generation(id)) &&
         entity_scripts[id_mapping[index]] &&
         entity_scripts[id_mapping[index]]->is_valid();
 }
@@ -122,7 +122,7 @@ get_script_creator(size_t tag)
 {
     auto script = primal::script::registry().find(tag);
     assert(script != primal::script::registry().end() && script->first == tag);
-    return script->second;
+    return script != primal::script::registry().end() && script->first == tag ? script->second : nullptr;
 }
 
 #ifdef USE_WITH_EDITOR

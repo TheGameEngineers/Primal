@@ -103,7 +103,7 @@ create_applied_material_if_necessary(const graphics::material_init_info& mtl_inf
     // NOTE: assumes texture_ids is the first member of material_init_info. 
     memcpy(data + ids_size, &mtl_info.surface, sizeof(mtl_info) - sizeof(id::id_type*));
 
-    const u64 key{ math::calc_crc32_u64(data, aligned_size) };
+    const u64 key{ math::crc64_ecma182(data, aligned_size) };
     auto pair = applied_materials.find(key);
 
     if (pair != applied_materials.end())
@@ -181,12 +181,16 @@ read_geometry(utl::blob_stream_reader& blob, geometry::init_info& info, utl::vec
 
         // Make sure that we only create a material if it's different (like we do in the editor).        
         id::id_type mtl_id{ create_applied_material_if_necessary(mtl_info) };
+        // Reset mtl_info's texture_count and texture_ids, just so it doesn't point to a dead stack array
+        mtl_info.texture_count = 0;
+        mtl_info.texture_ids = nullptr;
         assert(id::is_valid(mtl_id));
         if (!id::is_valid(mtl_id)) return false;
         mtl_ids.emplace_back(mtl_id);
-        assert(mtl_ids.size() == info.material_count);
         info.material_ids = mtl_ids.data();
     }
+
+    assert(mtl_ids.size() == info.material_count);
 
     return true;
 }
@@ -405,15 +409,15 @@ read_light_info(utl::blob_stream_reader& blob, game_entity::entity_id entity_id)
         .penumbra = penumbra
     };
 
-    if (light_set_key_size == graphics::light::point)
+    if (light_type == graphics::light::point)
     {
         info.point_params = point_params;
     }
-    else if (light_set_key_size == graphics::light::spot)
+    else if (light_type == graphics::light::spot)
     {
         info.spot_params = spot_params;
     }
-    else if (light_set_key_size == graphics::light::ambient)
+    else if (light_type == graphics::light::ambient)
     {
         info.ambient_params = ambient_params;
     }
@@ -483,6 +487,8 @@ load_game()
         for (u32 entity_index{ 0 }; entity_index < entity_count; ++entity_index)
         {
             const entity_type entity_type{ blob.read<u32>() };
+            assert(entity_type < entity_type::count);
+            if (entity_type >= entity_type::count) return fail();
             const u32 component_count{ blob.read<u32>() };
             assert(component_count > 0 && component_count <= component_type::count);
             if (!component_count || component_count > component_type::count) return fail();
@@ -542,11 +548,7 @@ load_game()
                 camera_info = read_camera_info(blob, entity.get_id());
                 cameras.emplace_back(graphics::create_camera(camera_info));
                 if (!cameras.back().is_valid()) return fail();
-            }
-            else
-            {
-                return fail();
-            }
+            }            
         }
     }
 
@@ -573,13 +575,19 @@ unload_game()
 
     for (auto& asset : loaded_assets)
     {
-        if (id::is_valid(asset.id) && asset.type != asset_type::material)
+        if (!id::is_valid(asset.id)) continue;
+
+        destroy_resource(asset.id, asset.type);
+        if (asset.type == asset_type::material)
         {
-            destroy_resource(asset.id, asset.type);
-            // TODO: unload materials
+            for (const id::id_type shader_id : materials[asset.id].shader_ids)
+            {
+                if (id::is_valid(shader_id)) remove_shader_group(shader_id);
+            }
         }
     }
     loaded_assets.clear();
+    materials.clear();
 }
 
 bool
