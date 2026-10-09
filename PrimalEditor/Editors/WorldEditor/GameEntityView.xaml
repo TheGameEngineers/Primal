@@ -16,6 +16,8 @@
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <primal:NullableBoolToBoolConverter x:Key="nullableBoolToBoolConverter"/>
+        <local:NoAccessKeyConverter x:Key="noAccessKeyConverter"/>
+
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
 
         <DataTemplate DataType="{x:Type vm:MSTransform}">
@@ -61,18 +63,9 @@
             </MenuItem>
             <MenuItem Header="Script">
                 <MenuItem.Resources>
-                    <CollectionViewSource Source="{Binding ParentScene.Project.AvailableScripts}" x:Key="availableScripts"/>
+                    <CollectionViewSource Source="{Binding ParentScene.Project.AvailableScripts}"
+                                          x:Key="availableScripts"/>
                 </MenuItem.Resources>
-                <MenuItem.Style>
-                    <Style TargetType="{x:Type MenuItem}">
-                        <Setter Property="Padding" Value="5,3,2,3"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding ParentScene.Project.AvailableScripts}" Value="{x:Null}">
-                                <Setter Property="IsEnabled" Value="False"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </MenuItem.Style>
                 <MenuItem.ItemsSource>
                     <CompositeCollection>
                         <MenuItem Header="New Script..." Click="OnCreateNewScript_MenuItem_Click">
@@ -83,14 +76,25 @@
                                 </Style>
                             </MenuItem.Style>
                         </MenuItem>
-                        <Separator Foreground="{StaticResource Editor.Window.GrayBrush4}"/>
+                        <Separator Foreground="{StaticResource Editor.Window.GrayBrush4}">
+                            <Separator.Style>
+                                <Style TargetType="{x:Type Separator}" BasedOn="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ParentScene.Project.AvailableScripts}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Separator.Style>
+                        </Separator>
                         <CollectionContainer Collection="{Binding Source={StaticResource availableScripts}}"/>
                     </CompositeCollection>
                 </MenuItem.ItemsSource>
                 <MenuItem.ItemContainerStyle>
                     <Style TargetType="{x:Type MenuItem}">
                         <Setter Property="Padding" Value="5,3,2,3"/>
-                        <Setter Property="Header" Value="{Binding}"/>
+                        <Setter Property="Header" Value="{Binding ., Converter={StaticResource noAccessKeyConverter}}"/>
+                        <Setter Property="Tag" Value="{Binding}"/>
                         <EventSetter Event="Click" Handler="OnAddScriptComponent"/>
                     </Style>
                 </MenuItem.ItemContainerStyle>
@@ -137,17 +141,28 @@
 
                 <TextBlock Text="Name" Grid.Column="0" Margin="5,5,0,5"/>
                 <TextBox Text="{Binding Name, UpdateSourceTrigger=Explicit}" Margin="0,5" d:Text="GOAT Player"
-                         IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBoolToBoolConverter}}" Grid.Column="1"/>
+                         IsEnabled="{Binding Path=IsEnabled, ElementName=addComponent}" Grid.Column="1"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Enabled" Margin="5,0,0,0"/>
                     <CheckBox IsChecked="{Binding IsEnabled}" Margin="5,0" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <ContentPresenter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Content="{Binding}"/>
+                <ContentPresenter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Content="{Binding}"
+                                  IsEnabled="{Binding Path=IsEnabled, ElementName=addComponent}">
+                    <ContentPresenter.Style>
+                        <Style TargetType="{x:Type ContentPresenter}">
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ContentPresenter.Style>
+                </ContentPresenter>
             </Grid>
             <ItemsControl ItemsSource="{Binding Components}" IsTabStop="False" SnapsToDevicePixels="True"
-                          IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBoolToBoolConverter}}" />
+                          IsEnabled="{Binding Path=IsEnabled, ElementName=addComponent}"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

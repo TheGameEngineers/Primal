@@ -7,6 +7,7 @@ using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -87,6 +88,9 @@ class MeshRendererVertexData : ViewModelBase
 //       renderer, this class and the WPF viewer will become obsolete.
 class MeshRenderer : ViewModelBase
 {
+    private int _totalVertexCount;
+    private int _totalIndexCount;
+
     public ObservableCollection<MeshRendererVertexData> Meshes { get; } = [];
 
     public Vector3D CameraDirection
@@ -225,8 +229,8 @@ class MeshRenderer : ViewModelBase
 
         lodInfo ??= new() { Meshes = [.. lod.Meshes.Select(m => new MeshInfo() { Name = m.Name })] };
         var lodData = lod.Meshes.Zip(lodInfo.Meshes, (Mesh, Info) => (Mesh, Info));
-        IndexCount = lodData.Sum(item => item.Mesh.IndexCount);
-        VertexCount = lodData.Sum(item => item.Mesh.VertexCount);
+        IndexCount = _totalIndexCount = lodData.Sum(item => item.Mesh.IndexCount);
+        VertexCount = _totalVertexCount = lodData.Sum(item => item.Mesh.VertexCount);
 
         foreach (var item in lodData)
         {
@@ -289,6 +293,8 @@ class MeshRenderer : ViewModelBase
                 else
                     for (int i = 0; i < mesh.IndexCount; ++i) vertexData.Indices.Add(reader.ReadInt32());
 
+            vertexData.PropertyChanged += OnVertexData_PropertyChanged;
+
             vertexData.Positions.Freeze();
             vertexData.Normals.Freeze();
             vertexData.UVs.Freeze();
@@ -333,6 +339,23 @@ class MeshRenderer : ViewModelBase
             }
 
             CameraTarget = new Point3D(minX + width * 0.5, minY + height * 0.5, minZ + depth * 0.5);
+        }
+    }
+
+    private void OnVertexData_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (sender is MeshRendererVertexData vertextData)
+        {
+            if (e.PropertyName == nameof(MeshRendererVertexData.IsIsolated) && vertextData.IsIsolated)
+            {
+                VertexCount = vertextData.Positions.Count;
+                IndexCount = vertextData.Indices.Count;
+            }
+            else if (Meshes.All(m => !m.IsIsolated))
+            {
+                VertexCount = _totalVertexCount;
+                IndexCount = _totalIndexCount;
+            }
         }
     }
 }

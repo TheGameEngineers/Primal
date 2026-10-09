@@ -149,23 +149,27 @@ static class VisualStudio
         OpenVisualStudio_Internal(solution);
         try
         {
-            if (_vsInstance != null)
+            if (_vsInstance == null) throw new InvalidOperationException("Could not connect to Visual Studio.");
+
+            Exception addFilesException = null;
+            CallOnSTAThread(() =>
             {
-                CallOnSTAThread(() =>
+                try
                 {
                     if (!_vsInstance.Solution.IsOpen) _vsInstance.Solution.Open(solution);
                     else _vsInstance.ExecuteCommand("File.SaveAll");
 
-                    foreach (EnvDTE.Project project in _vsInstance.Solution.Projects)
+                    var project = _vsInstance.Solution.Projects
+                        .Cast<EnvDTE.Project>()
+                        .FirstOrDefault(x => string.Equals(x.Name, projectName, StringComparison.OrdinalIgnoreCase)) 
+                        ?? throw new InvalidOperationException($"Could not find project {projectName} in the solution.");
+                    dynamic vcProject = project.Object;
+                    foreach (var file in files)
                     {
-                        if (project.UniqueName.Contains(projectName))
-                        {
-                            foreach (var file in files)
-                            {
-                                project.ProjectItems.AddFromFile(file);
-                            }
-                        }
+                        vcProject.AddFile(file);
                     }
+
+                    _vsInstance.ExecuteCommand("File.SaveAll");
 
                     var cpp = files.FirstOrDefault(x => Path.GetExtension(x) == ".cpp");
                     if (!string.IsNullOrEmpty(cpp))
@@ -174,8 +178,11 @@ static class VisualStudio
                     }
                     _vsInstance.MainWindow.Activate();
                     _vsInstance.MainWindow.Visible = true;
-                });
-            }
+                }
+                catch (Exception ex) { addFilesException = ex; }
+            });
+
+            if (addFilesException != null) throw new InvalidOperationException("Failed to add files to the Visual Studio project.", addFilesException);
         }
         catch (Exception ex)
         {

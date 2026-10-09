@@ -238,7 +238,11 @@ class Project : ViewModelBase
         {
             Save(this);
             Chef.SaveForDryRun();
-            await Task.Run(() => { }); // () => VisualStudio.Run(this, StandAloneBuildConfig, debug));
+            await Task.Run(() =>
+            {
+                Logger.Log(MessageType.Info, $"Starting game {(debug ? "with" : "without")} debugging");
+                VisualStudio.Run(this, StandAloneBuildConfig, debug);
+            });
         }
     }
 

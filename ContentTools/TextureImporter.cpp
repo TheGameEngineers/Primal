@@ -121,6 +121,7 @@ get_adapters_by_performance()
 
     ComPtr<IDXGIFactory7> factory;
     utl::vector<ComPtr<IDXGIAdapter>> adapters;
+    utl::vector<ComPtr<IDXGIAdapter>> integrated_adapters;
 
     if (SUCCEEDED(create_dxgi_factory1(IID_PPV_ARGS(factory.GetAddressOf()))))
     {
@@ -134,10 +135,18 @@ get_adapters_by_performance()
             DXGI_ADAPTER_DESC desc;
             adapter->GetDesc(&desc);
 
-            if (desc.VendorId != warp_id) adapters.emplace_back(adapter);
+            // Don't use WARP and integrated adapters for texture compression. We want to use a discrete GPU if available.
+            if (desc.VendorId != warp_id && desc.DedicatedVideoMemory > 0) adapters.emplace_back(adapter);
+            else if (desc.DedicatedVideoMemory == 0) integrated_adapters.emplace_back(adapter);
 
             adapter.Reset();
         }
+    }
+
+    // If we didn't find any discrete adapters, use integrated adapters. That's still better than CPU compression.
+    if (!adapters.size() && integrated_adapters.size())
+    {
+        adapters = std::move(integrated_adapters);
     }
 
     return adapters;

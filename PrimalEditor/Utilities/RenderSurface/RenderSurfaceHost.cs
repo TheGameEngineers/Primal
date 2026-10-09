@@ -182,6 +182,9 @@ partial class RenderSurfaceHost : HwndHost
         Debug.Assert(ID.IsValid(SurfaceId));
         _windowHandle = EngineAPI.GetWindowHandle(SurfaceId);
         Debug.Assert(_windowHandle != IntPtr.Zero);
+        // NOTE: resize the surface before starting the renderer in order to set the camera's aspect ratio correctly.
+        //       It is needed for grid frustum calculation.
+        EngineAPI.ResizeRenderSurface(SurfaceId);
         RenderThread.RegisterCallback(_windowHandle, _renderFrameCallback);
         HostReady = RenderThread.IsRunning;
         _resetEvent.Set();

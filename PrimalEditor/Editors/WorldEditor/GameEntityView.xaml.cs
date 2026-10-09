@@ -8,13 +8,26 @@ using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace PrimalEditor.Editors;
+
+class NoAccessKeyConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {        
+        if (value is not string str) return value;
+        return str.Replace("_", "__");
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}
 
 /// <summary>
 /// Interaction logic for GameEntityView.xaml
@@ -110,7 +123,7 @@ partial class GameEntityView : UserControl
             _propertyName = string.Empty;
         });
     }
-    
+
 
     // NOTE: when the selection is a mix of game entities and lights, or any other heterogeneous selection, then the multi-selection type
     //       will be an MSEntity and therefore cannot handle IsEnabled property for selected lights. This is why we handle it here instead
@@ -154,7 +167,7 @@ partial class GameEntityView : UserControl
             _propertyName = string.Empty;
         });
     }
-    
+
     private void OnAddComponent_Button_PreviewMouse_LBD(object sender, MouseButtonEventArgs e)
     {
         var menu = FindResource("addComponentMenu") as ContextMenu;
@@ -206,7 +219,7 @@ partial class GameEntityView : UserControl
 
     private void OnAddScriptComponent(object sender, RoutedEventArgs e)
     {
-        AddComponent(ComponentType.Script, (sender as MenuItem).Header.ToString());
+        AddComponent(ComponentType.Script, (sender as MenuItem).Tag as string);
     }
 
     private void OnAddGeometryComponent(object sender, RoutedEventArgs e)

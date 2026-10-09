@@ -78,7 +78,8 @@ static class Chef
                     var asset = loadAsset(info);
                     var data = asset.PackForEngine();
                     using var fs = File.Open(filePath, FileMode.Create, FileAccess.Write);
-                    fs.Write(BitConverter.GetBytes((int)info.Type));
+                    var typeBytes = BitConverter.GetBytes((int)info.Type);
+                    fs.Write(typeBytes, 0, sizeof(int));
                     fs.Write(data, 0, data.Length);
                 }
 
@@ -227,7 +228,7 @@ static class Chef
 
                 var data = shaderGroup.PackForEngine();
                 using var fs = File.Open(shaderPath, FileMode.Create, FileAccess.Write);
-                fs.Write(BitConverter.GetBytes((int)shaderGroup.Type));
+                fs.Write(BitConverter.GetBytes((int)shaderGroup.Type), 0, sizeof(int));
                 fs.Write(data, 0, data.Length);
             }
 
@@ -459,7 +460,6 @@ static class Chef
 
     private static void SaveEntitySpecificData(string contentPath, EntityType entityType, XElement entity, BinaryWriter writer)
     {
-
         switch (entityType)
         {
             case EntityType.GameEntity: return;
@@ -481,7 +481,7 @@ static class Chef
 
                     // Color
                     var (r, g, b, _) = ParseColor(entity.Element(nameof(Light.Color)));
-                    writer.Write((int)r); writer.Write((int)g); writer.Write((int)b);
+                    writer.Write(r); writer.Write(g); writer.Write(b);
 
                     // IsEnabled
                     writer.Write(bool.Parse(entity.Element(nameof(Light.IsEnabled))?.Value ?? bool.TrueString) ? 1 : 0);
@@ -580,6 +580,11 @@ static class Chef
             using var writer = new BinaryWriter(new MemoryStream());
             var isActive = bool.Parse(scene.Element(nameof(Scene.IsActive))?.Value ?? bool.FalseString) ? 1 : 0;
 
+            var lightSetKey = scene.Element(nameof(Scene.LightSetKey))?.Value ?? LightSet.DefaultKey;
+            var keyBytes = Encoding.UTF8.GetBytes(lightSetKey);
+            writer.Write(keyBytes.Length);
+            writer.Write(keyBytes);
+
             var entities = scene.Element(nameof(Scene.GameEntities))?.Elements(nameof(GameEntity)) ?? [];
             writer.Write(entities.Count());
 
@@ -633,6 +638,31 @@ static class Chef
         }
     }
 
+    private static void CopyD3D12AndShadersFolders(string outputPath)
+    {
+        foreach (var folderName in new[] { "D3D12", "Shaders" })
+        {
+            var sourceFolder = Path.Combine(Project.EditorPath, folderName);
+            if (!Directory.Exists(sourceFolder))
+            {
+                continue;
+            }
+
+            foreach (var sourceFile in Directory.EnumerateFiles(sourceFolder, "*", SearchOption.AllDirectories))
+            {
+                var relativePath = Path.GetRelativePath(sourceFolder, sourceFile);
+                var destinationFile = Path.Combine(outputPath, folderName, relativePath);
+                if (File.Exists(destinationFile) && File.GetLastWriteTimeUtc(destinationFile) >= File.GetLastWriteTimeUtc(sourceFile))
+                {
+                    continue;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+                File.Copy(sourceFile, destinationFile, overwrite: true);
+            }
+        }
+    }
+
     private static void SaveProjectData()
     {
         var project = Project.Current;
@@ -643,6 +673,7 @@ static class Chef
         Directory.CreateDirectory(contentPath);
         ProjectToBinary(project, outputPath, contentPath);
         Indexer.DeleteUnused(contentPath);
+        CopyD3D12AndShadersFolders(outputPath);
     }
 
     public static void SaveForDryRun()

@@ -1,0 +1,62 @@
+name: Discord push notifications
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BRANCH: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          URL: ${{ github.event.compare }}
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not configured" >&2
+            exit 1
+          fi
+
+          SHORT="${SHA:0:7}"
+          COLOR=3066993
+          if [ "$BRANCH" = "master" ]; then COLOR=15158332; fi
+
+          PAYLOAD=$(jq -n \
+            --arg branch "$BRANCH" \
+            --arg actor "$ACTOR" \
+            --arg repo "$REPO" \
+            --arg sha "$SHA" \
+            --arg shortSha "$SHORT" \
+            --arg url "${URL:-https://github.com/${REPO}/commit/${SHA}}" \
+            --arg message "${MSG:-}" \
+            --arg color "$COLOR" \
+            '{
+              username: "GitHub",
+              embeds: [{
+                title: ("Push to " + $branch),
+                url: $url,
+                color: ($color | tonumber),
+                description: (if ($message | length) > 4096 then $message[0:4093] + "..." else ($message // "") end),
+                fields: [
+                  {name: "Repo", value: ("[" + $repo + "](https://github.com/" + $repo + ")"), inline: true},
+                  {name: "Branch", value: ("`" + $branch + "`"), inline: true},
+                  {name: "Commit", value: ("[`" + $shortSha + "`](https://github.com/" + $repo + "/commit/" + $sha + ")"), inline: true},
+                  {name: "Author", value: $actor, inline: true}
+                ]
+              }]
+            }')
+
+          curl -fsS --max-time 15 \
+            -H "Content-Type: application/json" \
+            --data-binary "$PAYLOAD" \
+            "$WEBHOOK"

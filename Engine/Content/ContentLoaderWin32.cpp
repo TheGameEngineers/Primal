@@ -45,6 +45,7 @@ utl::vector<loaded_asset>                   loaded_assets;
 utl::vector<std::string>                    asset_guids;
 utl::vector<graphics::material_init_info>   materials;
 std::unordered_map<u64, id::id_type>        applied_materials;
+u64                                         current_light_set_key{};
 
 bool
 read_transform(utl::blob_stream_reader& blob, transform::init_info& info)
@@ -55,6 +56,7 @@ read_transform(utl::blob_stream_reader& blob, transform::init_info& info)
     f32 scale[3]{ blob.read<f32>(), blob.read<f32>() , blob.read<f32>() };
 
     math::v3 rot{ &rotation[0] };
+    rot = math::to_radians(rot);
     XMVECTOR quat{ XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&rot)) };
     math::v4 rot_quat{};
     XMStoreFloat4(&rot_quat, quat);
@@ -295,7 +297,7 @@ load_material(utl::blob_stream_reader& blob)
             assert(file_name_size < 256);
             if (file_name_size > 255) return id::invalid_id;
             std::string shader_file{ (const char*)blob.position(), file_name_size };
-            std::filesystem::path path{ "/Content/" + shader_file };
+            std::filesystem::path path{ "Content/" + shader_file };
             blob.skip(file_name_size);
 
             info.shader_ids[shader_idx] = load_shader(path, group_counts[file_idx]);
@@ -323,12 +325,12 @@ load_scene_assets(utl::blob_stream_reader& blob)
 
         if (id::is_valid(loaded_assets[index].id)) continue;
 
-        std::filesystem::path path{ "/Content/" + asset_guids[index] + ".asset" };
+        std::filesystem::path path{ "Content/" + asset_guids[index] + ".asset" };
         u64 size{ 0 };
         std::unique_ptr<u8[]> data{};
         if (!read_file(path, data, size) || !size) return false;
 
-        utl::blob_stream_reader reader{ &data[0] };
+        utl::blob_stream_reader reader{ data.get() };
         const asset_type::type asset_type{ reader.read<u32>() };
         assert(asset_type < asset_type::count);
 
@@ -362,12 +364,14 @@ read_light_info(utl::blob_stream_reader& blob, game_entity::entity_id entity_id)
         graphics::create_light_set(key);
     }
 
+    constexpr f32 inv255{ 1.0f / 255.0f };
+
     graphics::light_init_info info{};
     info.light_set_key = key;
     info.entity_id = entity_id;
     info.type = light_type;
     info.intensity = blob.read<f32>();
-    info.color = { blob.read<f32>(), blob.read<f32>(), blob.read<f32>() };
+    info.color = { blob.read<u8>() * inv255, blob.read<u8>() * inv255, blob.read<u8>() * inv255 };
     info.is_enabled = blob.read<u32>();
 
     graphics::ambient_params ambient_params{};
@@ -405,8 +409,8 @@ read_light_info(utl::blob_stream_reader& blob, game_entity::entity_id entity_id)
     {
         .attenuation = attenuation,
         .range = range,
-        .umbra = umbra,
-        .penumbra = penumbra
+        .umbra = umbra * math::to_rad,
+        .penumbra = penumbra * math::to_rad
     };
 
     if (light_type == graphics::light::point)
@@ -432,8 +436,13 @@ read_camera_info(utl::blob_stream_reader& blob, game_entity::entity_id entity_id
     const graphics::camera::type camera_type{ blob.read<u32>() };
     assert(camera_type < graphics::camera::count);
 
-    const f32 fov_or_size{ blob.read<f32>() };
+    f32 fov_or_size{ blob.read<f32>() };
     assert(fov_or_size > 0.f);
+
+    if (camera_type == graphics::camera::perspective)
+    {
+        fov_or_size /= 180.f;
+    }
 
     const f32 near_z{ blob.read<f32>() };
     const f32 far_z{ blob.read<f32>() };
@@ -481,6 +490,11 @@ load_game()
         }
 
         if (!load_scene_assets(blob)) return fail();
+
+        const u32 light_set_key_size{ blob.read<u32>() };
+        assert(light_set_key_size > 0 && light_set_key_size < 256);
+        current_light_set_key = std::hash<std::string>()({ (const char*)blob.position(), light_set_key_size });
+        blob.skip(light_set_key_size);
 
         const u32 entity_count{ blob.read<u32>() };
 
@@ -548,10 +562,10 @@ load_game()
                 camera_info = read_camera_info(blob, entity.get_id());
                 cameras.emplace_back(graphics::create_camera(camera_info));
                 if (!cameras.back().is_valid()) return fail();
-            }            
+            }
         }
     }
-
+    assert(blob.offset() == size);
     return true;
 }
 
@@ -573,12 +587,21 @@ unload_game()
     }
     entities.clear();
 
+    for (auto& [key, id] : applied_materials)
+    {
+        if (id::is_valid(id)) destroy_resource(id, asset_type::material);
+    }
+    applied_materials.clear();
+
     for (auto& asset : loaded_assets)
     {
         if (!id::is_valid(asset.id)) continue;
 
-        destroy_resource(asset.id, asset.type);
-        if (asset.type == asset_type::material)
+        if (asset.type != asset_type::material)
+        {
+            destroy_resource(asset.id, asset.type);
+        }
+        else
         {
             for (const id::id_type shader_id : materials[asset.id].shader_ids)
             {
@@ -586,8 +609,26 @@ unload_game()
             }
         }
     }
+
     loaded_assets.clear();
     materials.clear();
+}
+
+u64
+get_current_light_set_key()
+{
+    return current_light_set_key;
+}
+
+id::id_type
+get_camera()
+{
+    for (graphics::camera camera : cameras)
+    {
+        if (camera.is_valid() && camera.projection_type() == graphics::camera::perspective) return camera.get_id();
+    }
+
+    return id::invalid_id;
 }
 
 bool

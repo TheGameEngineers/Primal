@@ -122,7 +122,7 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             PostMessage(hwnd, WM_CLOSE, 0, 0);
             return 0;
         }
-        else if(wparam == VK_SPACE)
+        else if (wparam == VK_SPACE)
         {
             bool vsync{ false };
             graphics::get_option(graphics::renderer_option::vsync, &vsync, sizeof(bool));
@@ -153,11 +153,10 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                     // this message.
                     return 0;
                 }
-                else
+                else if (win.width() && win.height())
                 {
                     _surfaces[i].surface.surface.resize(win.width(), win.height());
                     _surfaces[i].camera.aspect_ratio((f32)win.width() / win.height());
-
                     resized = false;
                 }
                 break;

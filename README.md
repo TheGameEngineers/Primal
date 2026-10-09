@@ -13,8 +13,9 @@
 [![GitHub stars](https://img.shields.io/github/stars/TheGameEngineers/Primal?style=flat-square)](https://github.com/TheGameEngineers/Primal/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Discord chat](https://img.shields.io/discord/740606294846865549?logo=discord)](https://discord.gg/75ZmXwz)
-[![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCU0ZLgIv87jlqS6G58DKPyg)](https://www.youtube.com/gameengineseries?sub_confirmation=1)
-[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/primalnippleman)](https://img.shields.io/twitter/follow/primalnippleman.svg?style=social)
+[![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?logo=YouTube&logoColor=white)](https://www.youtube.com/gameengineseries?sub_confirmation=1)
+[![X](https://img.shields.io/badge/X-%23000000.svg?logo=X&logoColor=white)](https://x.com/primalnippleman)
+[![Patreon](https://img.shields.io/badge/Patreon-F96854?logo=patreon&logoColor=white)](https://www.patreon.com/c/gameengineseries)
 
 ### Overview
 
@@ -51,11 +52,11 @@ through June 15, 2026.
 
 ### Repository layout (high level)
 
-- `Engine/` — Core native static library (renderer, platform layer, input, components)
-- `EngineDLL/` — Thin DLL wrapper that exposes the native engine API to the editor
-- `ContentTools/` — Native tools for importing and processing FBX models and textures
-- `EngineTest/` — Stand-alone native application used to exercise and validate engine features
-- `PrimalEditor/` — WPF (C# / .NET) editor and tooling front-end
+- `Engine/` - Core native static library (renderer, platform layer, input, components)
+- `EngineDLL/` - Thin DLL wrapper that exposes the native engine API to the editor
+- `ContentTools/` - Native tools for importing and processing FBX models and textures
+- `EngineTest/` - Stand-alone native application used to exercise and validate engine features
+- `PrimalEditor/` - WPF (C# / .NET) editor and tooling front-end
 
 ### Quick start
 
@@ -64,8 +65,8 @@ through June 15, 2026.
 3. Restore NuGet packages and vcpkg ports (Visual Studio normally does this automatically).
 4. Install the FBX SDK and, if necessary, update the include/library paths in `ContentTools.vcxproj` and `FbxImporter.cpp` to match your installation location.
 5. Choose a solution configuration:
-   - **DebugEditor / ReleaseEditor** — builds with editor support
-   - **Debug / Release** — pure runtime / test builds
+   - **DebugEditor / ReleaseEditor** - builds with editor support
+   - **Debug / Release** - pure runtime / test builds
 6. Build the solution for the x64 platform. Building a DebugEditor or ReleaseEditor configuration also produces the PrimalEditor binaries under the configured
    OutputPath (for example `\x64\DebugEditor`).
 
@@ -76,7 +77,7 @@ through June 15, 2026.
 
 ### Running EngineTest
 
-<img align="right" src="https://github.com/Rashmatash/ImageRepo/blob/master/Animation.gif?raw=true" width="480px"/>
+<img src="https://github.com/Rashmatash/ImageRepo/blob/master/Animation.gif?raw=true" width="480px"/>
 
 EngineTest is a minimal game that demonstrates and validates the engine’s capabilities.
 1. Build with the Debug or Release configuration.
@@ -101,3 +102,8 @@ All third-party licenses are included in the `Licenses` folder of the repository
 - Join the [Discord](https://discord.gg/75ZmXwz) server for questions and community support.
 - Report bugs via [GitHub Issues](https://github.com/TheGameEngineers/Primal/issues).
 - Watch the [Game Engine Series](https://www.youtube.com/gameengineseries) YouTube channel for a complete development history and detailed code walkthroughs (through June 15, 2026).
+
+### Support the project
+
+If you enjoy Primal Engine and would like to support its continued development, please consider supporting me on [Patreon](https://www.patreon.com/c/gameengineseries).
+Your support helps me keep developing the engine and creating videos for my YouTube channel. I’m incredibly grateful to everyone who supports the project!

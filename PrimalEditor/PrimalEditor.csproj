@@ -55,7 +55,13 @@
     <Content Include="Resources\Icons\Primal.ico" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <ItemGroup>
+    <EngineBuildInput Include="$(SolutionDir)Engine\**\*.cpp;$(SolutionDir)Engine\**\*.h;$(SolutionDir)Engine\Engine.vcxproj" />
+    <UpToDateCheckInput Include="$(OutDir)engine.lib;@(EngineBuildInput)" />
+    <UpToDateCheckOutput Include="$(OutDir)Lib\engine.lib" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="Build" Inputs="$(OutDir)engine.lib;@(EngineBuildInput)" Outputs="$(OutDir)Lib\engine.lib">
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
       <EngineConfig>Debug</EngineConfig>
     </PropertyGroup>
