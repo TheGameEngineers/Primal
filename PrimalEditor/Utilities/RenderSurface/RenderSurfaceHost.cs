@@ -13,6 +13,7 @@ namespace PrimalEditor.Utilities;
 
 class FrameInfo
 {
+    public float AvgFrameTime { get; init; }
     public int SurfaceId { get; init; }
     public ulong LightSetKey { get; init; }
     public IdType CameraId { get; init; } = ID.INVALID_ID;

@@ -45,11 +45,12 @@
     <Resource Include="Resources\TextureEditor\ChannelSelectShader.cso" />
     <Resource Include="Resources\TextureEditor\Checker64.png" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\DefaultAssets\**" Link=".\Resources\DefaultAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Engine\EngineAPI\**" Link=".\Include\EngineAPI\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Engine\EditorAPI\**" Link=".\Include\EditorAPI\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Engine\Common\**" Link=".\Include\Common\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Engine\Utilities\**" Link=".\Include\Utilities\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Resources\Icons\Primal.ico" />
@@ -57,18 +58,27 @@
 
   <ItemGroup>
     <EngineBuildInput Include="$(SolutionDir)Engine\**\*.cpp;$(SolutionDir)Engine\**\*.h;$(SolutionDir)Engine\Engine.vcxproj" />
-    <UpToDateCheckInput Include="$(OutDir)engine.lib;@(EngineBuildInput)" />
-    <UpToDateCheckOutput Include="$(OutDir)Lib\engine.lib" />
+    <UpToDateCheckInput Include="$(OutDir)engine.lib;$(OutDir)engined.lib;@(EngineBuildInput)" />
+    <UpToDateCheckOutput Include="$(OutDir)Lib\engine.lib;$(OutDir)Lib\engined.lib" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="Build" Inputs="$(OutDir)engine.lib;@(EngineBuildInput)" Outputs="$(OutDir)Lib\engine.lib">
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
-      <EngineConfig>Debug</EngineConfig>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
-      <EngineConfig>Release</EngineConfig>
-    </PropertyGroup>
-    <Exec Command="&quot;$(MSBuildBinPath)\msbuild.exe&quot; -noAutoRsp -nologo -verbosity:minimal -p:SolutionDir=$(SolutionDir) -p:Configuration=$(EngineConfig) -p:Platform=$(Platform) -p:OutDir=$(OutDir)Lib\ &quot;$(SolutionDir)Engine\Engine.vcxproj&quot;" />
+  <ItemGroup>
+    <EngineBuild Include="$(SolutionDir)Engine\Engine.vcxproj">
+      <Properties>SolutionDir=$(SolutionDir);Configuration=Debug;Platform=$(Platform);OutDir=$(OutDir)Lib\;TargetName=Engined</Properties>
+    </EngineBuild>
+    <EngineBuild Include="$(SolutionDir)Engine\Engine.vcxproj">
+      <Properties>SolutionDir=$(SolutionDir);Configuration=Release;Platform=$(Platform);OutDir=$(OutDir)Lib\</Properties>
+    </EngineBuild>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="Build" Inputs="$(OutDir)engine.lib;$(OutDir)engined.lib;@(EngineBuildInput)" Outputs="$(OutDir)Lib\engine.lib;$(OutDir)engined.lib">
+    <MSBuild Projects="@(EngineBuild)" BuildInParallel="true" />
   </Target>
-  
+
+   <Target Name="RemoveWpfTempDirectories" AfterTargets="PostBuild">
+    <PropertyGroup>
+      <WpfTempDirectories>$([System.IO.Directory]::GetDirectories('$(MSBuildProjectDirectory)\..\$(Platform)\intermediate', '*_wpftmp'))</WpfTempDirectories>
+    </PropertyGroup>
+    <RemoveDir Directories="$(WpfTempDirectories)" />
+  </Target>     
 </Project>

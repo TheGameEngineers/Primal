@@ -184,6 +184,23 @@ remove(component c)
 }
 
 void
+begin_play(script_id id)
+{
+    assert(exists(id));
+    entity_scripts[id_mapping[id::index(id)]]->begin_play();
+}
+
+void
+begin_play()
+{
+    for (auto& script : entity_scripts)
+    {
+        assert(script && script->is_valid());
+        script->begin_play();
+    }
+}
+
+void
 update(f32 dt)
 {
     for (const auto& ptr : entity_scripts)

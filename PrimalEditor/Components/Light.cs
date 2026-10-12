@@ -111,8 +111,20 @@ abstract class Light(Scene scene, LightType type, string lightSetKey) : GameEnti
                 field = value;
                 if (ID.IsValid(LightId))
                 {
+                    var scriptName = string.Empty;
+                    if (GetComponent<Script>() is Script script)
+                    {
+                        Debug.Assert(IsActive && ID.IsValid(EntityId));
+                        scriptName = script.Name;
+                        RemoveComponent(script);
+                    }
                     EngineAPI.RemoveLight(LightId, LightSet.GetKey(oldKey));
                     LightId = EngineAPI.CreateLight(this);
+                    if(!string.IsNullOrEmpty(scriptName))
+                    {
+                        var component = ComponentFactory.GetCreationFunction(ComponentType.Script)(this, scriptName);
+                        AddComponent(component);
+                    }
                     Debug.Assert(ID.IsValid(LightId));
                 }
                 OnPropertyChanged(nameof(LightSetKey));

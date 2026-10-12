@@ -244,14 +244,10 @@ struct primitive_topology {
     };
 };
 
-#ifndef PRIMAL_PLUS
 enum class graphics_platform :u32
 {
     direct3d12 = 0,
 };
-#else
-#include "Graphics/GraphicsPlatform.h"
-#endif
 
 bool initialize(graphics_platform platform);
 void shutdown();
@@ -275,9 +271,11 @@ void remove_light_set(u64 light_set_key);
 
 light create_light(light_init_info info);
 void remove_light(light_id id, u64 light_set_key);
+light get_light(id::id_type entity_id);
 
 camera create_camera(camera_init_info info);
 void remove_camera(camera_id id);
+camera get_camera(id::id_type entity_id);
 
 void add_mesh(const u8 *const data, id::id_type *const ids, u32 count);
 void remove_mesh(const id::id_type *const ids, u32 count);

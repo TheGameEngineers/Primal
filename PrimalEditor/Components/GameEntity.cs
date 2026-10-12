@@ -83,15 +83,61 @@ class GameEntity : ViewModelBase
     public Component GetComponent(Type type) => Components.FirstOrDefault(c => c.GetType() == type);
     public T GetComponent<T>() where T : Component => GetComponent(typeof(T)) as T;
 
+    private bool UpdateComponent(Component component)
+    {
+        if (component is not Script)
+        {
+            return EngineAPI.EntityAPI.UpdateComponent(this, component.ToEnumType());
+        }
+
+        // NOTE: If IsHeldByCurrentThread is true, the current thread already owns the lock.
+        // That ownership remains in place while this synchronous call runs, so another thread
+        // cannot acquire the lock until the outer caller releases it. If the property is false,
+        // the subsequent Enter() acquires the lock or waits for the current owner to release it.
+        var scriptUpdateLock = Project.LockScriptUpdates;
+        var lockAlreadyHeld = scriptUpdateLock.IsHeldByCurrentThread;
+        if (!lockAlreadyHeld) scriptUpdateLock.Enter();
+
+        try
+        {
+            if (EngineAPI.EntityAPI.UpdateComponent(this, ComponentType.Script))
+            {
+                var id = EngineAPI.EntityAPI.GetComponentId(component.Owner.EntityId, ComponentType.Script);
+                Debug.Assert(ID.IsValid(id));
+                if (!lockAlreadyHeld && ID.IsValid(id))
+                {
+                    EngineAPI.EntityAPI.BeginPlay(id);
+                }
+                return true;
+            }
+            return false;
+        }
+        finally { if (!lockAlreadyHeld) scriptUpdateLock.Exit(); }
+    }
+
     public bool AddComponent(Component component)
     {
-        Debug.Assert(component != null);
+        ArgumentNullException.ThrowIfNull(component);
+
+        if (component.Owner != this)
+        {
+            Logger.Log(MessageType.Warning, $"The {component.GetType().Name} component belongs to another entity.");
+            return false;
+        }
+
         if (!Components.Any(x => x.GetType() == component.GetType()))
         {
             component.Load();
             _components.Add(component);
-            EngineAPI.EntityAPI.UpdateComponent(this, component.ToEnumType());
-            return true;
+
+            if (UpdateComponent(component))
+            {
+                return true;
+            }
+
+            _components.Remove(component);
+            component.Unload();
+            return false;
         }
         Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component.");
         return false;
@@ -99,11 +145,11 @@ class GameEntity : ViewModelBase
 
     public void RemoveComponent(Component component)
     {
-        Debug.Assert(component != null);
+        ArgumentNullException.ThrowIfNull(component);
         if (component is Transform || !_components.Contains(component)) return; // Transform component can't be removed
 
         _components.Remove(component);
-        EngineAPI.EntityAPI.UpdateComponent(this, component.ToEnumType());
+        UpdateComponent(component);
         component.Unload();
     }
 

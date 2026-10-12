@@ -91,13 +91,15 @@ class RenderSurfaceControl : ContentControl, IDisposable
     private bool _isMouseOver;
     private bool _isXZLocked = false;
     private ulong _lightSetKey;
+    private bool _isPlaying;
+    private bool _isRunning;
 
     public event EventHandler<RenderSurfaceFrameStatsArgs> FrameStatsUpdated;
 
     public bool IsXZLocked
     {
-        get { return (bool)GetValue(IsXZLockedProperty); }
-        set { SetValue(IsXZLockedProperty, value); }
+        get => (bool)GetValue(IsXZLockedProperty);
+        set => SetValue(IsXZLockedProperty, value);
     }
     public static readonly DependencyProperty IsXZLockedProperty =
         DependencyProperty.Register(nameof(IsXZLocked), typeof(bool), typeof(RenderSurfaceControl),
@@ -105,8 +107,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public int CameraSpeed
     {
-        get { return (int)GetValue(CameraSpeedProperty); }
-        set { SetValue(CameraSpeedProperty, value); }
+        get => (int)GetValue(CameraSpeedProperty);
+        set => SetValue(CameraSpeedProperty, value);
     }
     public static readonly DependencyProperty CameraSpeedProperty =
         DependencyProperty.Register(nameof(CameraSpeed), typeof(int), typeof(RenderSurfaceControl),
@@ -114,8 +116,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public float CameraFov
     {
-        get { return (float)GetValue(CameraFovProperty); }
-        set { SetValue(CameraFovProperty, value); }
+        get => (float)GetValue(CameraFovProperty);
+        set => SetValue(CameraFovProperty, value);
     }
     public static readonly DependencyProperty CameraFovProperty =
         DependencyProperty.Register(nameof(CameraFov), typeof(float), typeof(RenderSurfaceControl),
@@ -123,8 +125,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public float CameraNearZ
     {
-        get { return (float)GetValue(CameraNearZProperty); }
-        set { SetValue(CameraNearZProperty, value); }
+        get => (float)GetValue(CameraNearZProperty);
+        set => SetValue(CameraNearZProperty, value);
     }
     public static readonly DependencyProperty CameraNearZProperty =
         DependencyProperty.Register(nameof(CameraNearZ), typeof(float), typeof(RenderSurfaceControl),
@@ -132,12 +134,40 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public float CameraFarZ
     {
-        get { return (float)GetValue(CameraFarZProperty); }
-        set { SetValue(CameraFarZProperty, value); }
+        get => (float)GetValue(CameraFarZProperty);
+        set => SetValue(CameraFarZProperty, value);
     }
     public static readonly DependencyProperty CameraFarZProperty =
         DependencyProperty.Register(nameof(CameraFarZ), typeof(float), typeof(RenderSurfaceControl),
             new PropertyMetadata(100f, new PropertyChangedCallback(CameraFarZChanged)));
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the render surface is playing.
+    /// When set to true, Game scripts are updated, the input will be captured and the active scene camera will be used.
+    /// When set to false, the input will be released and the editor camera will be used.
+    /// </summary>
+    public bool IsPlaying
+    {
+        get => (bool)GetValue(IsPlayingProperty);
+        set => SetValue(IsPlayingProperty, value);
+    }
+
+    public static readonly DependencyProperty IsPlayingProperty =
+        DependencyProperty.Register(nameof(IsPlaying), typeof(bool), typeof(RenderSurfaceControl),
+            new PropertyMetadata(false, new PropertyChangedCallback(IsPlayingChanged)));
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the game scripts are updated.
+    /// </summary>
+    public bool IsRunning
+    {
+        get => (bool)GetValue(IsRunningProperty);
+        set => SetValue(IsRunningProperty, value);
+    }
+
+    public static readonly DependencyProperty IsRunningProperty =
+        DependencyProperty.Register(nameof(IsRunning), typeof(bool), typeof(RenderSurfaceControl),
+            new PropertyMetadata(false, new PropertyChangedCallback(IsRunningChanged)));
 
     private static void IsXZLockedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -169,10 +199,35 @@ class RenderSurfaceControl : ContentControl, IDisposable
         control._camera.FarZ = (float)e.NewValue;
     }
 
+    private static void IsPlayingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = d as RenderSurfaceControl;
+        control._isPlaying = (bool)e.NewValue;
+
+        if (control._isPlaying && !(bool)e.OldValue && !control.IsRunning)
+        {
+            EngineAPI.EntityAPI.BeginPlayAll();
+            // TODO: capture input, use active scene camera.
+        }
+    }
+
+    private static void IsRunningChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = d as RenderSurfaceControl;
+        Debug.Assert(!control.IsPlaying);
+        control._isRunning = (bool)e.NewValue;
+
+        if (control._isRunning && !(bool)e.OldValue)
+        {
+            EngineAPI.EntityAPI.BeginPlayAll();
+        }
+    }
+
     private async void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (e.NewValue != null && _host == null)
         {
+            IsRunning = true; // TODO: for testing. Add and use play/run buttons instead.
             _host = new RenderSurfaceHost(ActualWidth, ActualHeight, new RenderFrameCallback(OnRenderFrame));
             _host.MessageHook += new HwndSourceHook(HostMsgFilter);
             Content = _host;
@@ -202,19 +257,38 @@ class RenderSurfaceControl : ContentControl, IDisposable
             FrameStatsUpdated?.Invoke(this, new RenderSurfaceFrameStatsArgs(_frameTimer.AverageFrameTime, _frameTimer.FPS));
         }
 
+        var dt = MathF.Min(_frameTimer.AverageFrameTime, 1f / 30f);
+
         if (_capturedLeft && !_isXZLocked && GetAsyncKeyState(VKey.Alt) == 0)
         {
             var moveDir = GetMoveDirection();
             if (moveDir.LengthSquared() > MathUtil.Epsilon)
             {
-                _camera.ChangePosition(moveDir, _frameTimer.AverageFrameTime);
+                _camera.ChangePosition(moveDir, dt);
             }
         }
 
-        _camera.Update(_frameTimer.AverageFrameTime);
+        _camera.Update(dt);
+
+        if (_isPlaying || _isRunning)
+        {
+            var scriptUpdateLock = Project.LockScriptUpdates;
+            if (scriptUpdateLock.TryEnter())
+            {
+                try
+                {
+                    EngineAPI.EntityAPI.UpdateScripts(dt);
+                }
+                finally
+                {
+                    scriptUpdateLock.Exit();
+                }
+            }
+        }
 
         return new()
         {
+            AvgFrameTime = _frameTimer.AverageFrameTime,
             SurfaceId = _host.SurfaceId,
             LightSetKey = _lightSetKey,
         };

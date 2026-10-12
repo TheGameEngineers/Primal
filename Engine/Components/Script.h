@@ -12,6 +12,9 @@ struct init_info
 
 component create(init_info info, game_entity::entity entity);
 void remove(component c);
+
+void begin_play(script_id id);
+void begin_play();
 void update(f32 dt);
 
 }

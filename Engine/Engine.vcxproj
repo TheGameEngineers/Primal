@@ -31,6 +31,8 @@
     <ClInclude Include="Content\ContentLoader.h" />
     <ClInclude Include="Content\ContentToEngine.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
+    <ClInclude Include="EditorAPI\EditorAPI.h" />
+    <ClInclude Include="EngineAPI\Engine.h" />
     <ClInclude Include="EngineAPI\GameEntity.h" />
     <ClInclude Include="EngineAPI\GeometryComponent.h" />
     <ClInclude Include="EngineAPI\Input.h" />
@@ -75,6 +77,7 @@
     <ClCompile Include="Components\Transform.cpp" />
     <ClCompile Include="Content\ContentLoaderWin32.cpp" />
     <ClCompile Include="Content\ContentToEngine.cpp" />
+    <ClCompile Include="EditorAPI\EditorAPI.cpp" />
     <ClCompile Include="Core\EngineWin32.cpp" />
     <ClCompile Include="Core\MainWin32.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12Camera.cpp" />

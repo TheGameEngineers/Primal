@@ -2,11 +2,25 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #pragma once
 #include "CommonHeaders.h"
+#include "Engine.h"
 #include "TransformComponent.h"
 #include "ScriptComponent.h"
 #include "GeometryComponent.h"
 
-namespace primal::game_entity {
+namespace primal {
+
+struct component_type
+{
+    enum type : u32 {
+        transform,
+        script,
+        geometry,
+
+        count
+    };
+};
+
+namespace game_entity {
 
 DEFINE_TYPED_ID(entity_id);
 
@@ -34,6 +48,7 @@ private:
     entity_id _id;
 };
 } // namespace game_entity
+} // namespace primal
 
 namespace primal::script {
 class entity_script : public game_entity::entity

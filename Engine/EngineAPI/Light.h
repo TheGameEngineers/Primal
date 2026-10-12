@@ -21,9 +21,9 @@ public:
 
     constexpr explicit light(light_id id, u64 light_set_key) : _light_set_key{ light_set_key }, _id{ id } {}
     constexpr light() = default;
-    constexpr light_id get_id() const { return _id; }
-    constexpr u64 light_set_key() const { return _light_set_key; }
-    constexpr bool is_valid() const { return id::is_valid(_id); }
+    [[nodiscard]] constexpr light_id get_id() const { return _id; }
+    [[nodiscard]] constexpr u64 light_set_key() const { return _light_set_key; }
+    [[nodiscard]] constexpr bool is_valid() const { return id::is_valid(_id); }
 
     void is_enabled(bool is_enabled) const;
     void intensity(f32 intensity) const;
@@ -32,15 +32,15 @@ public:
     void range(f32 range) const;
     void cone_angles(f32 umbra, f32 penumbra) const;
 
-    bool is_enabled() const;
-    f32 intensity() const;
-    math::v3 color() const;
-    math::v3 attenuation() const;
-    f32 range() const;
-    f32 umbra() const;
-    f32 penumbra() const;
-    type light_type() const;
-    id::id_type entity_id() const;
+    [[nodiscard]] bool is_enabled() const;
+    [[nodiscard]] f32 intensity() const;
+    [[nodiscard]] math::v3 color() const;
+    [[nodiscard]] math::v3 attenuation() const;
+    [[nodiscard]] f32 range() const;
+    [[nodiscard]] f32 umbra() const;
+    [[nodiscard]] f32 penumbra() const;
+    [[nodiscard]] type light_type() const;
+    [[nodiscard]] id::id_type entity_id() const;
 
 private:
     u64         _light_set_key{ 0 };

@@ -1,9 +1,11 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
+using PrimalEditor.DllWrappers;
 using PrimalEditor.Utilities;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -91,6 +93,18 @@ class Scene : ViewModelBase
 
             entity.IsEnabled = isEnabled;
             entity.IsActive = IsActive;
+            if(IsActive && entity.GetComponent<Script>() is not null)
+            {
+                lock(Project.LockScriptUpdates)
+                {
+                    var id = EngineAPI.EntityAPI.GetComponentId(entity.EntityId, ComponentType.Script);
+                    Debug.Assert(ID.IsValid(id));
+                    if (ID.IsValid(id))
+                    {
+                        EngineAPI.EntityAPI.BeginPlay(id);
+                    }
+                }
+            }
 
             if (index == -1 || index >= _gameEntities.Count)
             {

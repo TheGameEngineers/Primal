@@ -155,6 +155,7 @@ engine_initialize()
     source.multiplier = 1.f;
     input::bind(source);
 
+    script::begin_play();
     return true;
 }
 

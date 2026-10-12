@@ -43,7 +43,12 @@ class {0} : public primal::script::entity_script
 {{
 public:
     constexpr explicit {0}(primal::game_entity::entity entity)
-        : primal::script::entity_script{{entity}} {{}}
+        : primal::script::entity_script{{entity}} 
+    {{
+        // NOTE: prefer to use begin_play() for initialization instead of the constructor
+        //       because the entity may not be fully initialized yet
+        //       This is especially true when the script is attached to a light or camera entity.
+    }}
 
     void begin_play() override;
     void update(float dt) override;
@@ -159,7 +164,7 @@ private:
         }
     }
 
-    private void CreateScript(string name, string path, string solution, string projectName)
+    private static void CreateScript(string name, string path, string solution, string projectName)
     {
         Directory.CreateDirectory(path);
 

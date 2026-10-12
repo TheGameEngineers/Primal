@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -23,11 +24,14 @@ class Project : ViewModelBase
 {
     public static event EventHandler SceneUpdated;
 
+    private string _lastLoadedDllPath = string.Empty;
+
     public static string EngineApi => @"Include\EngineAPI";
     public static string EngineLib => "engine.lib";
     public static string PrimalEnv => "PRIMAL_ENGINE";
     public static string EditorPath { get; } = AppDomain.CurrentDomain.BaseDirectory;
     public static string Extension => ".primal";
+    public static Lock LockScriptUpdates { get; private set; } = new();
 
     [DataMember]
     public string Name { get; private set; } = "New Project";
@@ -250,19 +254,20 @@ class Project : ViewModelBase
 
     private async Task BuildGameCodeDLL(bool showWindow = true)
     {
+        var scriptNames = UnloadGameCodeDLL();
         try
         {
-            var scriptNames = UnloadGameCodeDLL();
             await Task.Run(() => VisualStudio.BuildSolution(this, DLLBuildConfig, showWindow));
-            if (VisualStudio.BuildSucceeded)
-            {
-                LoadGameCodeDLL(scriptNames);
-            }
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
             throw;
+        }
+        finally
+        {
+            LoadGameCodeDLL(scriptNames);
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 
@@ -273,16 +278,18 @@ class Project : ViewModelBase
 
             var scriptNames = new List<(GameEntity Entity, string ScriptName)>();
 
-            foreach (var entity in ActiveScene.GameEntities)
+            lock (LockScriptUpdates)
             {
-                if (ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
+                foreach (var entity in ActiveScene.GameEntities)
                 {
-                    Debug.Assert(entity.IsActive && ID.IsValid(entity.EntityId));
-                    scriptNames.Add((entity, script.Name));
-                    entity.RemoveComponent(script);
+                    if (ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
+                    {
+                        Debug.Assert(entity.IsActive && ID.IsValid(entity.EntityId));
+                        scriptNames.Add((entity, script.Name));
+                        entity.RemoveComponent(script);
+                    }
                 }
             }
-
             MSEntity.Refresh();
             return scriptNames;
         });
@@ -291,14 +298,18 @@ class Project : ViewModelBase
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
-            foreach (var (entity, scriptName) in scriptNames)
+            lock (LockScriptUpdates)
             {
-                if (!ID.IsValid(entity.EntityId) || !AvailableScripts.Contains(scriptName)) continue;
-                Debug.Assert(entity.GetComponent<Script>() == null && !string.IsNullOrEmpty(scriptName));
-                var script = ComponentFactory.GetCreationFunction(ComponentType.Script)(entity, scriptName);
-                entity.AddComponent(script);
-            }
+                foreach (var (entity, scriptName) in scriptNames)
+                {
+                    if (!ID.IsValid(entity.EntityId) || !AvailableScripts.Contains(scriptName)) continue;
+                    Debug.Assert(entity.GetComponent<Script>() == null && !string.IsNullOrEmpty(scriptName));
+                    var script = ComponentFactory.GetCreationFunction(ComponentType.Script)(entity, scriptName);
+                    entity.AddComponent(script);
+                }
 
+                EngineAPI.EntityAPI.BeginPlayAll();
+            }
             MSEntity.Refresh();
         });
     }
@@ -307,12 +318,25 @@ class Project : ViewModelBase
     {
         var configName = VisualStudio.GetConfigurationName(DLLBuildConfig);
         var dll = $@"{Path}x64\{configName}\{Name}.dll";
+        if (!File.Exists(dll) && !string.IsNullOrEmpty(_lastLoadedDllPath))
+        {
+            Logger.Log(MessageType.Error, $@"Failed to load \{configName}\{Name}.dll.");
+            Logger.Log(MessageType.Info, $"Loading {System.IO.Path.GetRelativePath(Path, _lastLoadedDllPath)}");
+            dll = _lastLoadedDllPath;
+            if (!File.Exists(dll))
+            {
+                Logger.Log(MessageType.Error, "Failed to load previous version.");
+                return;
+            }
+        }
+
         AvailableScripts = null;
         if (File.Exists(dll) && EngineAPI.LoadGameCodeDll(dll) != 0)
         {
             AvailableScripts = EngineAPI.GetScriptNames();
             Logger.Log(MessageType.Info, "Game code DLL loaded successfully.");
             AddScriptComponents(scriptNames);
+            _lastLoadedDllPath = dll;
         }
         else
         {
@@ -336,6 +360,8 @@ class Project : ViewModelBase
     [OnDeserialized]
     private async void OnDeserialized(StreamingContext context)
     {
+        LockScriptUpdates ??= new();
+
         if (_scenes != null)
         {
             Scenes = new ReadOnlyObservableCollection<Scene>(_scenes);

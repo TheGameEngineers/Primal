@@ -15,8 +15,9 @@ constexpr const char* engine_shader_paths[]{
 };
 
 platform_interface gfx{};
+std::unordered_map<id::id_type, light> light_id_map{};
+std::unordered_map<id::id_type, camera> camera_id_map{};
 
-#ifndef PRIMAL_PLUS
 bool
 set_platform_interface(graphics_platform platform, platform_interface& pi)
 {
@@ -32,12 +33,8 @@ set_platform_interface(graphics_platform platform, platform_interface& pi)
     assert(pi.platform == platform);
     return true;
 }
-#endif
-} // anonymous namespace
 
-#ifdef PRIMAL_PLUS
-extern bool set_platform_interface(graphics_platform platform, platform_interface& pi);
-#endif
+} // anonymous namespace
 
 bool
 initialize(graphics_platform platform)
@@ -130,13 +127,31 @@ remove_light_set(u64 light_set_key)
 light
 create_light(light_init_info info)
 {
-    return gfx.light.create(info);
+    light l{ gfx.light.create(info) };
+    if (id::is_valid(l.get_id()) && id::is_valid(info.entity_id))
+    {
+        light_id_map[info.entity_id] = l;
+    }
+
+    return l;
 }
 
 void
 remove_light(light_id id, u64 light_set_key)
 {
+    light l{ id, light_set_key };
+    if (l.is_valid() && id::is_valid(l.entity_id()))
+    {
+        light_id_map.erase(l.entity_id());
+    }
+
     gfx.light.remove(id, light_set_key);
+}
+
+light
+get_light(id::id_type entity_id)
+{
+    return light_id_map.contains(entity_id) ? light_id_map[entity_id] : light{};
 }
 
 void
@@ -266,13 +281,31 @@ light::entity_id() const
 camera
 create_camera(camera_init_info info)
 {
-    return gfx.camera.create(info);
+    camera c{ gfx.camera.create(info) };
+    if (id::is_valid(c.get_id()))
+    {
+        camera_id_map[info.entity_id] = c;
+    }
+
+    return c;
 }
 
 void
 remove_camera(camera_id id)
 {
+    camera c{ id };
+    if (id::is_valid(c.get_id()))
+    {
+        camera_id_map.erase(c.entity_id());
+    }
+
     gfx.camera.remove(id);
+}
+
+camera
+get_camera(id::id_type entity_id)
+{
+    return camera_id_map.contains(entity_id) ? camera_id_map[entity_id] : camera{};
 }
 
 void
@@ -466,7 +499,7 @@ remove_material(id::id_type id)
 
 id::id_type
 add_render_item(id::id_type entity_id, id::id_type geometry_content_id,
-                u32 material_count, const id::id_type *const material_ids)
+    u32 material_count, const id::id_type *const material_ids)
 {
     return gfx.resources.add_render_item(entity_id, geometry_content_id, material_count, material_ids);
 }
