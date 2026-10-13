@@ -30,7 +30,7 @@ public:
 
     // Copy-constructor. Constructs by copying another vector. The items
     // in the copied vector must be copyable.
-    constexpr vector(const vector& o)
+    constexpr vector(const vector& o) requires(destruct)
     {
         *this = o;
     }
@@ -45,7 +45,7 @@ public:
 
     // Copy-assignment operator. Clears this vector and copies items
     // from another vector. The items must be copyable.
-    constexpr vector& operator=(const vector& o)
+    constexpr vector& operator=(const vector& o) requires(destruct)
     {
         assert(this != std::addressof(o));
         if (this != std::addressof(o))
@@ -97,7 +97,19 @@ public:
     {
         if (_size == _capacity)
         {
-            reserve(((_capacity + 1) * 3) >> 1); // reserve 50% more
+            const u64 new_capacity{ ((_capacity + 1) * 3) >> 1 }; // reserve 50% more
+            // This is to make sure that we can add an element that is already in the vector,
+            // effectively appending it to the vector by copying/moving it.
+            if (_size)
+            {
+                T value(std::forward<params>(p)...);
+                reserve(new_capacity);
+                T *const item{ new (std::addressof(_data[_size])) T(std::move(value)) };
+                ++_size;
+                return *item;
+            }
+
+            reserve(new_capacity);
         }
         assert(_size < _capacity);
 
@@ -109,8 +121,8 @@ public:
     // Resizes the vector and initializes new items with their default value.
     constexpr void resize(u64 new_size)
     {
-        static_assert(std::is_default_constructible<T>::value,
-                      "Type must be default-constructible.");
+        static_assert(std::is_default_constructible_v<T>,
+            "Type must be default-constructible.");
 
         if (new_size > _size)
         {
@@ -137,15 +149,26 @@ public:
     // Resizes the vector and initializes new items by copying 'value'.
     constexpr void resize(u64 new_size, const T& value)
     {
-        static_assert(std::is_copy_constructible<T>::value,
-                      "Type must be copy-constructible.");
+        static_assert(std::is_copy_constructible_v<T>,
+            "Type must be copy-constructible.");
 
         if (new_size > _size)
         {
-            reserve(new_size);
-            while (_size < new_size)
+            if (new_size > _capacity)
             {
-                emplace_back(value);
+                T value_copy(value);
+                reserve(new_size);
+                while (_size < new_size)
+                {
+                    emplace_back(value_copy);
+                }
+            }
+            else
+            {
+                while (_size < new_size)
+                {
+                    emplace_back(value);
+                }
             }
         }
         else if (new_size < _size)
@@ -167,14 +190,39 @@ public:
     {
         if (new_capacity > _capacity)
         {
-            // NOTE: realoc() will automatically copy the data in the buffer
-            //       if a new region of memory is allocated.
-            void* new_buffer{ realloc(_data, new_capacity * sizeof(T)) };
-            assert(new_buffer);
-            if (new_buffer)
+            if constexpr (std::is_trivially_copyable_v<T>)
             {
-                _data = static_cast<T*>(new_buffer);
-                _capacity = new_capacity;
+                // NOTE: realoc() will automatically copy the data in the buffer
+                //       if a new region of memory is allocated.
+                void* new_buffer{ realloc(_data, new_capacity * sizeof(T)) };
+                assert(new_buffer);
+                if (new_buffer)
+                {
+                    _data = static_cast<T*>(new_buffer);
+                    _capacity = new_capacity;
+                }
+            }
+            else
+            {
+                void* new_buffer{ malloc(new_capacity * sizeof(T)) };
+                assert(new_buffer);
+                if (new_buffer)
+                {
+                    T* const new_data{ static_cast<T*>(new_buffer) };
+                    for (u64 i{0}; i < _size; ++i)
+                    {
+                        new (std::addressof(new_data[i])) T(std::move(_data[i]));
+                    }
+
+                    if constexpr (destruct)
+                    {
+                        destruct_range(0, _size);
+                    }
+
+                    free(_data);
+                    _data = new_data;
+                    _capacity = new_capacity;
+                }
             }
         }
     }
@@ -190,13 +238,14 @@ public:
     constexpr T *const erase(T *const item)
     {
         assert(_data && item >= std::addressof(_data[0]) &&
-               item < std::addressof(_data[_size]));
-        if constexpr (destruct) item->~T();
-        --_size;
-        if (item < std::addressof(_data[_size]))
+            item < std::addressof(_data[_size]));
+        T* const last{ std::addressof(_data[_size - 1]) };
+        for (T* current{ item }; current < last; ++current)
         {
-            memcpy(item, item + 1, (std::addressof(_data[_size]) - item) * sizeof(T));
+            *current = std::move(*(current + 1));
         }
+        if constexpr (destruct) last->~T();
+        --_size;
 
         return item;
     }
@@ -212,13 +261,14 @@ public:
     constexpr T *const erase_unordered(T *const item)
     {
         assert(_data && item >= std::addressof(_data[0]) &&
-               item < std::addressof(_data[_size]));
-        if constexpr (destruct) item->~T();
-        --_size;
-        if (item < std::addressof(_data[_size]))
+            item < std::addressof(_data[_size]));
+        T* const last{ std::addressof(_data[_size - 1]) };
+        if (item != last)
         {
-            memcpy(item, std::addressof(_data[_size]), sizeof(T));
+            *item = std::move(*last);
         }
+        if constexpr (destruct) last->~T();
+        --_size;
 
         return item;
     }
@@ -251,7 +301,7 @@ public:
     }
 
     // Pointer to the start of data. Might be null.
-    [[nodiscard]] constexpr T *const data() const
+    [[nodiscard]] constexpr const T* data() const
     {
         return _data;
     }
@@ -336,15 +386,15 @@ public:
     // Returns a pointer to the last item. Returns null when vector is empty.
     [[nodiscard]] constexpr T* end()
     {
-        assert(!(_data == nullptr && _size>0));
-        return std::addressof(_data[_size]);
+        assert(!(_data == nullptr && _size > 0));
+        return _data ? std::addressof(_data[_size]) : nullptr;
     }
 
     // Returns a constant pointer to the last item. Returns null when vector is empty.
     [[nodiscard]] constexpr const T* end() const
     {
         assert(!(_data == nullptr && _size > 0));
-        return std::addressof(_data[_size]);
+        return _data ? std::addressof(_data[_size]) : nullptr;
     }
 
 private:

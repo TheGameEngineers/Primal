@@ -16,7 +16,7 @@ public:
     {
         assert(_window.handle());
     }
-#if USE_STL_VECTOR
+
     DISABLE_COPY(d3d12_surface);
     constexpr d3d12_surface(d3d12_surface&& o)
         : _swap_chain{ o._swap_chain }, _window{ o._window }, _current_bb_index{ o._current_bb_index }
@@ -41,9 +41,7 @@ public:
 
         return *this;
     }
-#else
-    DISABLE_COPY_AND_MOVE(d3d12_surface);
-#endif // USE_STL_VECTOR
+
     ~d3d12_surface() { release(); }
 
     void create_swap_chain(IDXGIFactory7* factory, ID3D12CommandQueue* cmd_queue);
@@ -62,7 +60,6 @@ private:
     void finalize();
     void release();
 
-#if USE_STL_VECTOR
     constexpr void move(d3d12_surface& o)
     {
         _swap_chain = o._swap_chain;
@@ -92,7 +89,6 @@ private:
         _scissor_rect = {};
         _light_culling_id = id::invalid_id;
     }
-#endif // USE_STL_VECTOR
 
     struct render_target_data
     {

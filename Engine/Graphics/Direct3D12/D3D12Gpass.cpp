@@ -42,7 +42,7 @@ struct gpass_cache
     u32                         gpass_pso_count{ 0 };
     u32                         depth_pso_count{ 0 };
 
-    // NOTE: when adding new arrays, make sure to update resize() and struct_size.
+    // NOTE: when adding new arrays, update layout().
     id::id_type*                entity_ids{ nullptr };
     id::id_type*                submesh_gpu_ids{ nullptr };
     id::id_type*                material_ids{ nullptr };
@@ -110,7 +110,7 @@ struct gpass_cache
     CONSTEXPR void resize()
     {
         const u64 items_count{ d3d12_render_item_ids.size() };
-        const u64 new_buffer_size{ items_count * struct_size };
+        const u64 new_buffer_size{ layout(nullptr, items_count) };
         const u64 old_buffer_size{ _buffer.size() };
 
         if (new_buffer_size != old_buffer_size)
@@ -118,51 +118,48 @@ struct gpass_cache
             draw_indirect_pso_sort_flags.resize(items_count);
             gpass_grouped_indices.resize(items_count);
             depth_grouped_indices.resize(items_count);
-
             _buffer.resize(new_buffer_size);
-
-            entity_ids = (id::id_type*)_buffer.data();
-            submesh_gpu_ids = (id::id_type*)&entity_ids[items_count];
-            material_ids = (id::id_type*)&submesh_gpu_ids[items_count];
-            gpass_pipeline_states = (ID3D12PipelineState**)&material_ids[items_count];
-            depth_pipeline_states = (ID3D12PipelineState**)&gpass_pipeline_states[items_count];
-            root_signatures = (ID3D12RootSignature**)&depth_pipeline_states[items_count];
-            cmd_signatures = (ID3D12CommandSignature**)&root_signatures[items_count];
-            material_types = (material_type::type*)&cmd_signatures[items_count];
-            descriptor_indices = (u32**)&material_types[items_count];
-            texture_counts = (u32*)&descriptor_indices[items_count];
-            material_surfaces = (material_surface**)&texture_counts[items_count];
-            position_buffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&material_surfaces[items_count];
-            element_buffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&position_buffers[items_count];
-            index_buffer_views = (D3D12_INDEX_BUFFER_VIEW*)&element_buffers[items_count];
-            primitive_topologies = (D3D_PRIMITIVE_TOPOLOGY*)&index_buffer_views[items_count];
-            elements_types = (u32*)&primitive_topologies[items_count];
-            per_object_data = (D3D12_GPU_VIRTUAL_ADDRESS*)&elements_types[items_count];
-            material_data = (D3D12_GPU_VIRTUAL_ADDRESS*)&per_object_data[items_count];
+            layout(_buffer.data(), items_count);
         }
     }
 
 private:
-    constexpr static u32 struct_size{
-        sizeof(id::id_type) +                   // entity_ids
-        sizeof(id::id_type) +                   // submesh_gpu_ids
-        sizeof(id::id_type) +                   // material_ids
-        sizeof(ID3D12PipelineState *) +         // gpass_pipeline_states
-        sizeof(ID3D12PipelineState *) +         // depth_pipeline_states
-        sizeof(ID3D12RootSignature*) +          // root_signatures
-        sizeof(ID3D12CommandSignature*) +       // cmd_signatures
-        sizeof(material_type::type) +           // material_types
-        sizeof(u32*) +                          // descriptor_indices
-        sizeof(u32) +                           // texture_counts
-        sizeof(material_surface*) +             // material_surface
-        sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +     // position_buffers
-        sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +     // element_buffers
-        sizeof(D3D12_INDEX_BUFFER_VIEW) +       // index_buffer_views
-        sizeof(D3D_PRIMITIVE_TOPOLOGY) +        // primitive_topologies
-        sizeof(u32) +                           // elements_types
-        sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +     // per_object_data
-        sizeof(D3D12_GPU_VIRTUAL_ADDRESS)       // material_data
-    };
+
+    // Returns the needed buffer size if base == nullptr. Otherwise also writes the slice pointers.
+    // NOTE: when adding new arrays, add a place(...) line here.
+    constexpr u64 layout(u8* base, u64 items_count)
+    {
+        u64 offset{ 0 };
+
+        auto place = [&](auto*& slot)
+            {
+                using T = std::remove_reference_t<decltype(*slot)>;
+                offset = math::align_size_up<alignof(T)>(offset);
+                if (base) slot = (T*)(base + offset);
+                offset += items_count * sizeof(T);
+            };
+
+        place(entity_ids);
+        place(submesh_gpu_ids);
+        place(material_ids);
+        place(gpass_pipeline_states);
+        place(depth_pipeline_states);
+        place(root_signatures);
+        place(cmd_signatures);
+        place(material_types);
+        place(descriptor_indices);
+        place(texture_counts);
+        place(material_surfaces);
+        place(position_buffers);
+        place(element_buffers);
+        place(index_buffer_views);
+        place(primitive_topologies);
+        place(elements_types);
+        place(per_object_data);
+        place(material_data);
+
+        return offset;
+    }
 
     utl::vector<u8> _buffer;
 } frame_cache;
@@ -704,9 +701,9 @@ depth_prepass_indirect(id3d12_graphics_command_list* cmd_list, const d3d12_frame
         cmd_list->IASetPrimitiveTopology(topology);
 
         cmd_list->ExecuteIndirect(cache.cmd_signatures[cache_index], cmd_count,
-                                  cmd_buffer.buffer(),
-                                  cmd_buffer.size() + new_pso_indices[i] * sizeof(draw_indexed_indirect_command),
-                                  nullptr, 0);
+            cmd_buffer.buffer(),
+            cmd_buffer.size() + new_pso_indices[i] * sizeof(draw_indexed_indirect_command),
+            nullptr, 0);
     }
 }
 
@@ -738,9 +735,9 @@ render_indirect(id3d12_graphics_command_list* cmd_list, const d3d12_frame_info& 
         cmd_list->IASetPrimitiveTopology(topology);
 
         cmd_list->ExecuteIndirect(cache.cmd_signatures[cache_index], cmd_count,
-                                  cmd_buffer.buffer(),
-                                  new_pso_indices[i] * sizeof(draw_indexed_indirect_command),
-                                  nullptr, 0);
+            cmd_buffer.buffer(),
+            new_pso_indices[i] * sizeof(draw_indexed_indirect_command),
+            nullptr, 0);
     }
 }
 
@@ -748,30 +745,30 @@ void
 add_transitions_for_depth_prepass(d3dx::d3d12_resource_barrier& barriers)
 {
     barriers.add(gpass_main_buffer.resource(),
-                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
     barriers.add(gpass_depth_buffer.resource(),
-                 D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                 D3D12_RESOURCE_STATE_DEPTH_WRITE);
+        D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
 void
 add_transitions_for_gpass(d3dx::d3d12_resource_barrier& barriers)
 {
     barriers.add(gpass_main_buffer.resource(),
-                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
     barriers.add(gpass_depth_buffer.resource(),
-                 D3D12_RESOURCE_STATE_DEPTH_WRITE,
-                 D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 }
 
 void
 add_transitions_for_post_process(d3dx::d3d12_resource_barrier& barriers)
 {
     barriers.add(gpass_main_buffer.resource(),
-                 D3D12_RESOURCE_STATE_RENDER_TARGET,
-                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
 void
