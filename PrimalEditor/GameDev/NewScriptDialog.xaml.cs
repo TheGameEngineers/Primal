@@ -161,7 +161,7 @@ private:
 
     private void CreateScript(string name, string path, string solution, string projectName)
     {
-        if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+        Directory.CreateDirectory(path);
 
         var cpp = Path.GetFullPath(Path.Combine(path, $"{name}.cpp"));
         var h = Path.GetFullPath(Path.Combine(path, $"{name}.h"));

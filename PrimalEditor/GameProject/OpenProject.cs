@@ -89,7 +89,7 @@ class OpenProject
     {
         try
         {
-            if (!Directory.Exists(_applicationDataPath)) Directory.CreateDirectory(_applicationDataPath);
+            Directory.CreateDirectory(_applicationDataPath);
             _projectDataPath = $@"{_applicationDataPath}ProjectData.xml";
             Projects = new ReadOnlyObservableCollection<ProjectData>(_projects);
             ReadProjectData();

@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System;
-using System.IO;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace PrimalEditor.Components;
 
@@ -25,13 +23,6 @@ class Script(GameEntity owner) : Component(owner)
     }
 
     public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSScript(msEntity);
-
-    public override void WriteToBinary(BinaryWriter bw)
-    {
-        var nameBytes = Encoding.UTF8.GetBytes(Name);
-        bw.Write(nameBytes.Length);
-        bw.Write(nameBytes);
-    }
 }
 
 sealed class MSScript : MSComponent<Script>
