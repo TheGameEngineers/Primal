@@ -11,31 +11,24 @@
              xmlns:vm="clr-namespace:PrimalEditor.Components"
              xmlns:ctrl="clr-namespace:PrimalEditor.Utilities.Controls"
              mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:MSSpotlight}"
-             d:DesignHeight="450" d:DesignWidth="800" IsTabStop="False">
+             d:DesignHeight="450" d:DesignWidth="400" IsTabStop="False">
     <local:PointLightView>
         <local:PointLightView.SpecificLight>
-            <Grid>
+            <Grid Height="32">
                 <Grid.Resources>
                     <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
                 </Grid.Resources>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="32"/>
-                    <RowDefinition Height="32"/>
-                </Grid.RowDefinitions>
+
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="73"/>
                     <ColumnDefinition Width="29"/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Umbra" Grid.Column="0" Grid.Row="0"/>
-                <ctrl:ScalarBox Value="{Binding Umbra, TargetNullValue=''}" Grid.Column="2" Grid.Row="0"
-                                Minimum="0" Maximum="{Binding Penumbra, TargetNullValue=180}"
-                                PreviewMouseLeftButtonUp="On_ScalarBox_PreviewMouse_LBU"/>
-
-                <TextBlock Text="Penumbra" Grid.Column="0" Grid.Row="1"/>
-                <ctrl:ScalarBox Value="{Binding Penumbra, TargetNullValue=''}" Grid.Column="2" Grid.Row="1"
-                                Minimum="{Binding Umbra, TargetNullValue=0}" Maximum="180"
+                <TextBlock Text="Cone Angles" Grid.Column="0" Grid.Row="0"/>
+                <ctrl:VectorBox Grid.Column="2" Grid.Row="0" Minimum="0" VectorType="Vector2"
+                                X="{Binding Umbra, TargetNullValue=''}"
+                                Y="{Binding Penumbra, TargetNullValue=''}" 
                                 PreviewMouseLeftButtonUp="On_ScalarBox_PreviewMouse_LBU"/>
             </Grid>
         </local:PointLightView.SpecificLight>

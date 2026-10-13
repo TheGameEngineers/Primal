@@ -297,17 +297,10 @@ camera::aspect_ratio(f32 aspect_ratio) const
 }
 
 void
-camera::view_width(f32 width) const
+camera::orthographic_size(f32 size) const
 {
     assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::view_width, &width, sizeof(width));
-}
-
-void
-camera::view_height(f32 height) const
-{
-    assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::view_height, &height, sizeof(height));
+    gfx.camera.set_parameter(_id, camera_parameter::orthographic_size, &size, sizeof(size));
 }
 
 void
@@ -409,21 +402,12 @@ camera::aspect_ratio() const
 }
 
 f32
-camera::view_width() const
+camera::orthographic_size() const
 {
     assert(is_valid());
-    f32 width;
-    gfx.camera.get_parameter(_id, camera_parameter::view_width, &width, sizeof(width));
-    return width;
-}
-
-f32
-camera::view_height() const
-{
-    assert(is_valid());
-    f32 height;
-    gfx.camera.get_parameter(_id, camera_parameter::view_height, &height, sizeof(height));
-    return height;
+    f32 size;
+    gfx.camera.get_parameter(_id, camera_parameter::orthographic_size, &size, sizeof(size));
+    return size;
 }
 
 camera::type

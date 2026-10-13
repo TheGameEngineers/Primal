@@ -418,6 +418,19 @@ abstract class MSLight<T> : MSEntity where T : Light
         }
     }
 
+    public LightType? LightType
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(LightType));
+            }
+        }
+    }
+
     public float? Intensity
     {
         get;
@@ -530,6 +543,7 @@ abstract class MSLight<T> : MSEntity where T : Light
             ColorR = light.Color.ScR;
             ColorG = light.Color.ScG;
             ColorB = light.Color.ScB;
+            LightType = light.Type;
         }
         else
         {
@@ -538,6 +552,7 @@ abstract class MSLight<T> : MSEntity where T : Light
             ColorR = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScR));
             ColorG = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScG));
             ColorB = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScB));
+            LightType = (LightType?)GetMixedValue(SelectedLights, new Func<Light, int>(x => (int)x.Type));
         }
 
         return base.UpdateMSGameEntity();
@@ -684,7 +699,7 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, 0f, Penumbra ?? 180f);
+                value = float.Clamp(value.Value, 0f, Penumbra ?? SelectedLights.Min(x => x.Penumbra));
             }
 
             if (!field.IsTheSameAs(value))
@@ -702,7 +717,7 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, Umbra ?? 0f, 180f);
+                value = float.Clamp(value.Value, Umbra ?? SelectedLights.Max(x => x.Umbra), 180f);
             }
 
             if (!field.IsTheSameAs(value))

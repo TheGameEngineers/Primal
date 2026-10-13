@@ -28,28 +28,18 @@ set_field_of_view(d3d12_camera& camera, const void* const data, [[maybe_unused]]
 constexpr void
 set_aspect_ratio(d3d12_camera& camera, const void* const data, [[maybe_unused]] u32 size)
 {
-    assert(camera.projection_type() == graphics::camera::perspective);
     f32 aspect_ratio{ *(f32*)data };
     assert(sizeof(aspect_ratio) == size);
     camera.aspect_ratio(aspect_ratio);
 }
 
-constexpr  void
-set_view_width(d3d12_camera& camera, const void* const data, [[maybe_unused]] u32 size)
+constexpr void
+set_orthographic_size(d3d12_camera& camera, const void* const data, [[maybe_unused]] u32 size)
 {
     assert(camera.projection_type() == graphics::camera::orthographic);
-    f32 view_width{ *(f32*)data };
-    assert(sizeof(view_width) == size);
-    camera.view_width(view_width);
-}
-
-constexpr  void
-set_view_height(d3d12_camera& camera, const void* const data, [[maybe_unused]] u32 size)
-{
-    assert(camera.projection_type() == graphics::camera::orthographic);
-    f32 view_height{ *(f32*)data };
-    assert(sizeof(view_height) == size);
-    camera.view_height(view_height);
+    f32 ortho_size{ *(f32*)data };
+    assert(sizeof(ortho_size) == size);
+    camera.orthographic_size(ortho_size);
 }
 
 constexpr void
@@ -128,28 +118,18 @@ get_field_of_view(const d3d12_camera& camera, void* const data, [[maybe_unused]]
 constexpr void
 get_aspect_ratio(const d3d12_camera& camera, void* const data, [[maybe_unused]] u32 size)
 {
-    assert(camera.projection_type() == graphics::camera::perspective);
     f32 *const aspect_ratio{ (f32 *const)data };
     assert(sizeof(f32) == size);
     *aspect_ratio = camera.aspect_ratio();
 }
 
 constexpr void
-get_view_width(const d3d12_camera& camera, void* const data, [[maybe_unused]] u32 size)
+get_orthographic_size(const d3d12_camera& camera, void* const data, [[maybe_unused]] u32 size)
 {
     assert(camera.projection_type() == graphics::camera::orthographic);
-    f32 *const view_width{ (f32 *const)data };
+    f32 *const ortho_size{ (f32 *const)data };
     assert(sizeof(f32) == size);
-    *view_width = camera.view_width();
-}
-
-constexpr void
-get_view_height(const d3d12_camera& camera, void* const data, [[maybe_unused]] u32 size)
-{
-    assert(camera.projection_type() == graphics::camera::orthographic);
-    f32 *const view_height{ (f32 *const)data };
-    assert(sizeof(f32) == size);
-    *view_height = camera.view_height();
+    *ortho_size = camera.orthographic_size();
 }
 
 constexpr void
@@ -186,7 +166,8 @@ get_entity_id(const d3d12_camera& camera, void* const data, [[maybe_unused]] u32
 
 constexpr void
 dummy_set(d3d12_camera&, const void *const, u32)
-{}
+{
+}
 
 using set_function = void(*)(d3d12_camera&, const void *const, u32);
 using get_function = void(*)(const d3d12_camera&, void *const, u32);
@@ -195,8 +176,7 @@ constexpr set_function set_functions[]
     set_up_vector,
     set_field_of_view,
     set_aspect_ratio,
-    set_view_width,
-    set_view_height,
+    set_orthographic_size,
     set_near_z,
     set_far_z,
     dummy_set,
@@ -215,8 +195,7 @@ constexpr get_function get_functions[]
     get_up_vector,
     get_field_of_view,
     get_aspect_ratio,
-    get_view_width,
-    get_view_height,
+    get_orthographic_size,
     get_near_z,
     get_far_z,
     get_view,
@@ -258,9 +237,17 @@ d3d12_camera::update()
     if (_is_dirty)
     {
         // NOTE: _near_z and _far_z are swapped because we use inverse depth in d3d12 renderer.
-        _projection = (_projection_type == graphics::camera::perspective)
-            ? XMMatrixPerspectiveFovRH(_field_of_view * XM_PI, _aspect_ratio, _far_z, _near_z)
-            : XMMatrixOrthographicRH(_view_width, _view_height, _far_z, _near_z);
+        if (_projection_type == graphics::camera::perspective)
+        {
+            _projection = XMMatrixPerspectiveFovRH(_field_of_view * math::pi, _aspect_ratio, _far_z, _near_z);
+        }
+        else
+        {
+            const f32 view_height{ _orthographic_size * 0.5f };
+            const f32 view_width{ view_height * _aspect_ratio };
+            _projection = XMMatrixOrthographicRH(view_width, view_height, _far_z, _near_z);
+        }
+
         _inverse_projection = XMMatrixInverse(nullptr, _projection);
         _is_dirty = false;
     }
@@ -286,26 +273,17 @@ d3d12_camera::field_of_view(f32 fov)
 constexpr void
 d3d12_camera::aspect_ratio(f32 aspect_ratio)
 {
-    assert(_projection_type == graphics::camera::perspective);
+    assert(aspect_ratio > 0.f);
     _aspect_ratio = aspect_ratio;
     _is_dirty = true;
 }
 
 constexpr void
-d3d12_camera::view_width(f32 width)
+d3d12_camera::orthographic_size(f32 size)
 {
-    assert(width);
+    assert(size > 0.f);
     assert(_projection_type == graphics::camera::orthographic);
-    _view_width = width;
-    _is_dirty = true;
-}
-
-constexpr void
-d3d12_camera::view_height(f32 height)
-{
-    assert(height);
-    assert(_projection_type == graphics::camera::orthographic);
-    _view_height = height;
+    _orthographic_size = size;
     _is_dirty = true;
 }
 

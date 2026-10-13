@@ -40,6 +40,17 @@
         <DataTemplate DataType="{x:Type vm:MSLight}">
             <local:LightView Margin="5,0,5,5"/>
         </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:MSPerspectiveCamera}">
+            <local:CameraView Margin="5,0,5,5"/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MSOrthographicCamera}">
+            <local:CameraView Margin="5,0,5,5"/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MSCamera}">
+            <local:CameraView Margin="5,0,5,5"/>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vm:MSGameEntity}"/>
 
         <ContextMenu x:Key="addComponentMenu"
@@ -66,7 +77,7 @@
                     <CompositeCollection>
                         <MenuItem Header="New Script..." Click="OnCreateNewScript_MenuItem_Click">
                             <MenuItem.Style>
-                                <Style TargetType="{x:Type MenuItem}">
+                                <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource {x:Type MenuItem}}">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                     <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                                 </Style>

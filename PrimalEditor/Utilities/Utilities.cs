@@ -17,7 +17,7 @@ static class ID
 static class MathUtil
 {
     public static float Epsilon => 1e-5f;
-    public static float Pi => (float)Math.PI;
+    public static float Pi => float.Pi;
     public static float HalfPi => Pi * 0.5f;
 
     public static float WrapAngle(float angle)
