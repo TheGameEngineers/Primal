@@ -360,6 +360,32 @@ sealed class MSTransform : MSComponent<Transform>
         return true;
     }
 
+    public override void UpdateEngine()
+    {
+        var count = SelectedComponents.Count;
+        var componentIds = SelectedComponents.Select(c => c.Owner.EntityId).ToArray();
+        Debug.Assert(count == componentIds.Length);
+        float[] px = new float[count], py = new float[count], pz = new float[count];
+        float[] rx = new float[count], ry = new float[count], rz = new float[count];
+        float[] sx = new float[count], sy = new float[count], sz = new float[count];
+        var index = 0;
+
+        SelectedComponents.ForEach(c =>
+        {
+            var p = c.Position;
+            var r = c.Rotation;
+            var s = c.Scale;
+            px[index] = p.X; py[index] = p.Y; pz[index] = p.Z;
+            rx[index] = r.X; ry[index] = r.Y; rz[index] = r.Z;
+            sx[index] = s.X; sy[index] = s.Y; sz[index] = s.Z;
+            ++index;
+        });
+
+        EngineAPI.EntityAPI.SetPosition(componentIds, px, py, pz, count, (int)Space.Absolute);
+        EngineAPI.EntityAPI.SetRotation(componentIds, rx, ry, rz, count, (int)Space.Absolute);
+        EngineAPI.EntityAPI.SetScale(componentIds, sx, sy, sz, count, (int)Space.Local);
+    }
+
     public MSTransform(MSEntity msEntity) : base(msEntity)
     {
         Refresh();

@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
 using PrimalEditor.Content;
+using PrimalEditor.DllWrappers;
 using PrimalEditor.GameDev;
 using PrimalEditor.GameProject;
 using System;
@@ -9,6 +10,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace PrimalEditor.Editors;
@@ -18,15 +20,55 @@ namespace PrimalEditor.Editors;
 /// </summary>
 partial class WorldEditorView : UserControl
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the render surface is playing.
+    /// When set to true, Game scripts are updated, the input will be captured and the active scene camera will be used.
+    /// When set to false, the input will be released and the editor camera will be used.
+    /// </summary>
+    private volatile bool _isPlaying = false;
+    /// <summary>
+    /// Gets or sets a value indicating whether the game scripts are updated.
+    /// </summary>
+    private volatile bool _isRunning;
+
     public WorldEditorView()
     {
         InitializeComponent();
         Project.SceneUpdated += OnSceneUpdated;
         DataContextChanged += OnWorldEditorDataContextChanged;
+        sv1.RenderSurfaceControl.IsHostReadyChanged += OnRenderSurfaceView_IsHostReadyChanged;
+        sv1.RenderSurfaceControl.RenderFrame += OnRenderFrame;
+    }
+
+    // NOTE: OnRenderFrame is run on RenderSurfaceHost's render thread.
+    //       Don't access any UI owned data in here.
+    private void OnRenderFrame(object sender, float dt)
+    {
+        if (_isPlaying || _isRunning)
+        {
+            var scriptUpdateLock = Project.LockScriptUpdates;
+            if (scriptUpdateLock.TryEnter())
+            {
+                try
+                {
+                    if (_isPlaying || _isRunning)
+                        EngineAPI.EntityAPI.UpdateScripts(dt);
+                }
+                finally { scriptUpdateLock.Exit(); }
+            }
+        }
+    }
+
+    private void OnRenderSurfaceView_IsHostReadyChanged(object sender, RoutedPropertyChangedEventArgs<bool> e)
+    {
+        if (e.NewValue && DataContext is Project vm)
+        {
+            vm.UpdateScene();
+        }
     }
 
     private void OnWorldEditorDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-    {        
+    {
         if (DataContext is Project vm)
         {
             var index = LightSet.LightSets.IndexOf(vm.ActiveScene.LightSetKey);
@@ -57,6 +99,21 @@ partial class WorldEditorView : UserControl
         }
     }
 
+    private void OnRun_ToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        lock (Project.LockScriptUpdates)
+        {
+            _isRunning = (sender as ToggleButton).IsChecked == true;
+            if (_isRunning)
+            {
+                EngineAPI.EntityAPI.BeginPlayAll();
+            }
+            else
+            {
+                MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
+            }
+        }
+    }
 
     private void OnNewScript_Button_Click(object sender, RoutedEventArgs e)
     {
@@ -137,7 +194,7 @@ partial class WorldEditorView : UserControl
         var lightSetKey = (sender as ComboBox).SelectedItem as string;
 
         var key = LightSet.GetKey(lightSetKey);
-        if(key == LightSet.InvalidKey)
+        if (key == LightSet.InvalidKey)
         {
             key = LightSet.AddLightSet(lightSetKey, true);
         }

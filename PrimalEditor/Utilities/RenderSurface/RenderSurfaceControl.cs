@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.DllWrappers;
-using PrimalEditor.GameProject;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -90,17 +89,18 @@ class RenderSurfaceControl : ContentControl, IDisposable
     private bool _capturedRight;
     private bool _isMouseOver;
     private bool _isXZLocked = false;
-    private ulong _lightSetKey;
-    private bool _isPlaying;
-    private bool _isRunning;
+    private ulong _lightSetKey;    
 
     public event EventHandler<RenderSurfaceFrameStatsArgs> FrameStatsUpdated;
+    public event EventHandler<float> RenderFrame;
+    public event RoutedPropertyChangedEventHandler<bool> IsHostReadyChanged;
 
     public bool IsXZLocked
     {
         get => (bool)GetValue(IsXZLockedProperty);
         set => SetValue(IsXZLockedProperty, value);
     }
+
     public static readonly DependencyProperty IsXZLockedProperty =
         DependencyProperty.Register(nameof(IsXZLocked), typeof(bool), typeof(RenderSurfaceControl),
             new PropertyMetadata(false, new PropertyChangedCallback(IsXZLockedChanged)));
@@ -140,35 +140,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     public static readonly DependencyProperty CameraFarZProperty =
         DependencyProperty.Register(nameof(CameraFarZ), typeof(float), typeof(RenderSurfaceControl),
             new PropertyMetadata(100f, new PropertyChangedCallback(CameraFarZChanged)));
-
-    /// <summary>
-    /// Gets or sets a value indicating whether the render surface is playing.
-    /// When set to true, Game scripts are updated, the input will be captured and the active scene camera will be used.
-    /// When set to false, the input will be released and the editor camera will be used.
-    /// </summary>
-    public bool IsPlaying
-    {
-        get => (bool)GetValue(IsPlayingProperty);
-        set => SetValue(IsPlayingProperty, value);
-    }
-
-    public static readonly DependencyProperty IsPlayingProperty =
-        DependencyProperty.Register(nameof(IsPlaying), typeof(bool), typeof(RenderSurfaceControl),
-            new PropertyMetadata(false, new PropertyChangedCallback(IsPlayingChanged)));
-
-    /// <summary>
-    /// Gets or sets a value indicating whether the game scripts are updated.
-    /// </summary>
-    public bool IsRunning
-    {
-        get => (bool)GetValue(IsRunningProperty);
-        set => SetValue(IsRunningProperty, value);
-    }
-
-    public static readonly DependencyProperty IsRunningProperty =
-        DependencyProperty.Register(nameof(IsRunning), typeof(bool), typeof(RenderSurfaceControl),
-            new PropertyMetadata(false, new PropertyChangedCallback(IsRunningChanged)));
-
+    
     private static void IsXZLockedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = d as RenderSurfaceControl;
@@ -199,40 +171,15 @@ class RenderSurfaceControl : ContentControl, IDisposable
         control._camera.FarZ = (float)e.NewValue;
     }
 
-    private static void IsPlayingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        var control = d as RenderSurfaceControl;
-        control._isPlaying = (bool)e.NewValue;
-
-        if (control._isPlaying && !(bool)e.OldValue && !control.IsRunning)
-        {
-            EngineAPI.EntityAPI.BeginPlayAll();
-            // TODO: capture input, use active scene camera.
-        }
-    }
-
-    private static void IsRunningChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        var control = d as RenderSurfaceControl;
-        Debug.Assert(!control.IsPlaying);
-        control._isRunning = (bool)e.NewValue;
-
-        if (control._isRunning && !(bool)e.OldValue)
-        {
-            EngineAPI.EntityAPI.BeginPlayAll();
-        }
-    }
-
     private async void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (e.NewValue != null && _host == null)
         {
-            IsRunning = true; // TODO: for testing. Add and use play/run buttons instead.
             _host = new RenderSurfaceHost(ActualWidth, ActualHeight, new RenderFrameCallback(OnRenderFrame));
+            _host.IsHostReadyChanged += OnRenderHost_IsHostReadyChanged;
             _host.MessageHook += new HwndSourceHook(HostMsgFilter);
             Content = _host;
             await _host.WaitReady();
-            Project.Current.UpdateScene();
             _camera.SetSurfaceId(_host.SurfaceId);
             _disposedValue = false;
         }
@@ -242,6 +189,11 @@ class RenderSurfaceControl : ContentControl, IDisposable
             Content = null;
             Dispose();
         }
+    }
+
+    private void OnRenderHost_IsHostReadyChanged(object sender, RoutedPropertyChangedEventArgs<bool> e)
+    {
+        IsHostReadyChanged?.Invoke(this, e);
     }
 
     private void OnRenderSurfaceControl_KeyDown(object sender, KeyEventArgs e)
@@ -269,22 +221,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
         }
 
         _camera.Update(dt);
-
-        if (_isPlaying || _isRunning)
-        {
-            var scriptUpdateLock = Project.LockScriptUpdates;
-            if (scriptUpdateLock.TryEnter())
-            {
-                try
-                {
-                    EngineAPI.EntityAPI.UpdateScripts(dt);
-                }
-                finally
-                {
-                    scriptUpdateLock.Exit();
-                }
-            }
-        }
+        
+        RenderFrame?.Invoke(this, dt);
 
         return new()
         {
@@ -454,7 +392,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     public void SetComponentIds(List<IdType> componentIds)
     {
         Debug.Assert(componentIds != null);
-        if (_host?.HostReady == true)
+        if (_host?.IsHostReady == true)
         {
             EngineAPI.SetGeometryIds(_host.SurfaceId, [.. componentIds], componentIds.Count);
         }
@@ -495,6 +433,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
             {
                 Content = null;
                 _host.Dispose();
+                _host.IsHostReadyChanged -= OnRenderHost_IsHostReadyChanged;
                 _host = null;
             }
 

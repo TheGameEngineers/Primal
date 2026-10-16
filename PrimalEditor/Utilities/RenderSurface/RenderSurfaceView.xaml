@@ -36,7 +36,7 @@
                     <VisualBrush Visual="{StaticResource PrimalLogoShape}" Stretch="Uniform" Opacity="0.07"/>
                 </Border.Background>
             </Border>
-            
+
             <local:RenderSurfaceControl x:Name="renderSurface" Grid.Row="1" x:FieldModifier="private"/>
 
             <Border Background="{StaticResource Editor.Window.GrayBrush3}" BorderThickness="0,0,0,2" Grid.Row="0"
@@ -73,7 +73,7 @@
             <Popup AllowsTransparency="True" x:Name="cameraSettingsPopup" PopupAnimation="Fade"
                    DataContext="{Binding ElementName=renderSurface}"
                    PlacementTarget="{Binding ElementName=cameraSettingsButton}" Placement="Bottom" StaysOpen="False"
-                   HorizontalOffset="-220" VerticalOffset="5">
+                   HorizontalOffset="-224" VerticalOffset="5">
                 <Border CornerRadius="5" ClipToBounds="True" Width="250"
                         BorderBrush="{StaticResource Editor.Window.GrayBrush5}" BorderThickness="1">
                     <Border.Background>

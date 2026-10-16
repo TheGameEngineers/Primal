@@ -639,6 +639,8 @@ sealed class MSGeometry : MSComponent<Geometry>
         return true;
     }
 
+    public override void UpdateEngine() { }
+
     public MSGeometry(MSEntity msEntity) : base(msEntity)
     {
         Refresh();

@@ -7,7 +7,10 @@ using System.Runtime.Serialization;
 
 namespace PrimalEditor.Components;
 
-interface IMSComponent { }
+interface IMSComponent
+{
+    void UpdateEngine();
+}
 
 [DataContract]
 abstract class Component : ViewModelBase
@@ -42,9 +45,11 @@ abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
         _enableUpdates = true;
     }
 
+    public abstract void UpdateEngine();
+
     public MSComponent(MSEntity msEntity)
     {
-        Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
+        Debug.Assert(msEntity?.SelectedEntities?.Count > 0);
         SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
         PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
     }

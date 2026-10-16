@@ -93,9 +93,9 @@ class Scene : ViewModelBase
 
             entity.IsEnabled = isEnabled;
             entity.IsActive = IsActive;
-            if(IsActive && entity.GetComponent<Script>() is not null)
+            if (IsActive && entity.GetComponent<Script>() is not null)
             {
-                lock(Project.LockScriptUpdates)
+                lock (Project.LockScriptUpdates)
                 {
                     var id = EngineAPI.EntityAPI.GetComponentId(entity.EntityId, ComponentType.Script);
                     Debug.Assert(ID.IsValid(id));
@@ -142,11 +142,14 @@ class Scene : ViewModelBase
         var enableList = DisableAndUpdate(entities);
         var indices = enableList.Select(x => (x.Entity, x.IsEnabled, _gameEntities.IndexOf(x.Entity))).ToList();
 
-        foreach (var entity in entities)
+        lock (Project.LockScriptUpdates)
         {
-            Debug.Assert(_gameEntities.Contains(entity));
-            entity.IsActive = false;
-            _gameEntities.Remove(entity);
+            foreach (var entity in entities)
+            {
+                Debug.Assert(_gameEntities.Contains(entity));
+                entity.IsActive = false;
+                _gameEntities.Remove(entity);
+            }
         }
 
         return indices;

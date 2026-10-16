@@ -570,6 +570,27 @@ abstract class MSLight<T> : MSEntity where T : Light
         return base.UpdateMSGameEntity();
     }
 
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedLights.Count;
+        var ids = SelectedLights.Select(x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var intensity = SelectedLights.Select(x => x.Intensity).ToArray();
+        EngineAPI.SetLightIntensity(ids, lightSetKeys, intensity, count);
+
+        var index = 0;
+        var r = new float[count]; var g = new float[count]; var b = new float[count];
+        SelectedLights.ForEach(x =>
+        {
+            var color = x.Color;
+            r[index] = color.ScR; g[index] = color.ScG; b[index] = color.ScB; ++index;
+        });
+
+        EngineAPI.SetLightColor(ids, lightSetKeys, r, g, b, count);
+    }
+
     protected MSLight(List<GameEntity> entities) : base(entities)
     {
         SelectedLights = [.. entities.OfType<T>()];
@@ -698,6 +719,27 @@ abstract class MSPointLight<T>(List<GameEntity> entities) : MSLight<T>(entities)
 
         return base.UpdateMSGameEntity();
     }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedLights.Count;
+        var ids = SelectedLights.Select(x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var range = SelectedLights.Select(x => x.Range).ToArray();        
+        EngineAPI.SetLightRange(ids, lightSetKeys, range, count);
+
+        var index = 0;
+        var a = new float[count]; var b = new float[count]; var c = new float[count];
+        SelectedLights.ForEach(x =>
+        {
+            var att = x.Attenuation;
+            a[index] = att.X; b[index] = att.Y; c[index] = att.Z; ++index;
+        });
+        EngineAPI.SetLightAttenuation(ids, lightSetKeys, a, b, c, count);
+
+    }
 }
 
 class MSPointLight(List<GameEntity> entities) : MSPointLight<PointLight>(entities) { }
@@ -791,6 +833,23 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         }
 
         return base.UpdateMSGameEntity();
+    }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedLights.Count;
+        var ids = SelectedLights.Select(x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var index = 0;
+
+        var umbra = new float[count]; var penumbra = new float[count];
+        SelectedLights.ForEach(x =>
+        {
+            umbra[index] = x.Umbra; penumbra[index] = x.Penumbra; ++index;
+        });
+        EngineAPI.SetLightConeAngles(ids, lightSetKeys, umbra, penumbra, count);
     }
 }
 

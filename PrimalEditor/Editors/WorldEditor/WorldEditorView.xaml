@@ -20,12 +20,34 @@
         <sys:Boolean x:Key="True">True</sys:Boolean>
         <sys:Boolean x:Key="False">False</sys:Boolean>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
+
+        <Style x:Key="undorRedoPathStyle" TargetType="{x:Type Path}">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="StrokeStartLineCap" Value="Round"/>
+            <Setter Property="StrokeEndLineCap" Value="Round"/>
+            <Setter Property="StrokeLineJoin" Value="Round"/>
+            <Setter Property="StrokeThickness" Value="1.5"/>
+            <Setter Property="Stroke" Value="{StaticResource Editor.FontBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Stroke" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="verticalSeparatorStyle" TargetType="{x:Type Separator}" BasedOn="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}">
+            <Setter Property="Margin" Value="10,0"/>
+            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}"/>
+        </Style>
     </UserControl.Resources>
+    
     <UserControl.CommandBindings>
         <CommandBinding Command="ApplicationCommands.New" Executed="OnNewProject"/>
         <CommandBinding Command="ApplicationCommands.Open" Executed="OnOpenProject"/>
         <CommandBinding Command="ApplicationCommands.Close" Executed="OnEditorClose"/>
     </UserControl.CommandBindings>
+    
     <UserControl.InputBindings>
         <KeyBinding Command="{Binding UndoCommand}" Key="Z" Modifiers="Ctrl"/>
         <KeyBinding Command="{Binding RedoCommand}" Key="Z" Modifiers="Ctrl+Shift"/>
@@ -35,6 +57,7 @@
         <KeyBinding Command="{Binding DebugStopCommand}" Key="F5" Modifiers="Shift"/>
         <KeyBinding Command="{Binding BuildCommand}" CommandParameter="{StaticResource True}" Key="F7"/>
     </UserControl.InputBindings>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -57,21 +80,60 @@
         </Menu>
         <Border Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}">
             <StackPanel Orientation="Horizontal" Margin="0,5">
-                <Button Content="Undo" Command="{Binding UndoCommand}" Margin="8,0,10,0"/>
-                <Button Content="Redo" Command="{Binding RedoCommand}"/>
-                <Button Content="New Script" Click="OnNewScript_Button_Click" Margin="10,0"
-                    IsEnabled="{Binding Path=IsEnabled, ElementName=buildButton}"/>
-                <Button x:Name="buildButton" Content="Build"
-                    Command="{Binding BuildCommand}" CommandParameter="{StaticResource True}"/>
-                <ComboBox x:Name="runConfig" VerticalAlignment="Center" Margin="10,0"
-                      Width="72" SelectedIndex="{Binding BuildConfig}">
+                <Button Command="{Binding UndoCommand}" Margin="8,0,5,0" ToolTip="Undo"
+                        AutomationProperties.Name="Undo">
+                    <Path Data="M 5,4 L 2,4 L 5,1 M 2,4 L 5,7 M 5,4 C 11,1 15,5 14,10 C 13,14 8,16 4,13"
+                          Style="{StaticResource undorRedoPathStyle}"/>
+                </Button>
+                <Button Command="{Binding RedoCommand}" ToolTip="Redo" AutomationProperties.Name="Redo">
+                    <Path Data="M 11,4 L 14,4 L 11,1 M 14,4 L 11,7 M 11,4 C 5,1 1,5 2,10 C 3,14 8,16 12,13"
+                          Style="{StaticResource undorRedoPathStyle}"/>
+                </Button>
+                <Separator Style="{StaticResource verticalSeparatorStyle}"/>
+                <Button Content="New Script" Click="OnNewScript_Button_Click"
+                        IsEnabled="{Binding Path=IsEnabled, ElementName=buildButton}"/>
+                <Button x:Name="buildButton" Content="Build" Margin="5,0"
+                        Command="{Binding BuildCommand}" CommandParameter="{StaticResource True}"/>
+                <ComboBox x:Name="runConfig" VerticalAlignment="Center"
+                          Width="72" SelectedIndex="{Binding BuildConfig}">
                     <ComboBoxItem Content="Debug"/>
                     <ComboBoxItem Content="Release"/>
                 </ComboBox>
-                <Button Content="Primitive mesh" Click="OnCreatePrimitiveMesh_Button_Click" Margin="10,0"/>
-                <TextBlock Text="Light Set:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                <Separator Style="{StaticResource verticalSeparatorStyle}"/>
+                <Button Content="Primitive mesh" Click="OnCreatePrimitiveMesh_Button_Click"/>
+                <Separator Style="{StaticResource verticalSeparatorStyle}"/>
+                <TextBlock Text="Light Set:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                 <ComboBox ItemsSource="{Binding Source={x:Static components:LightSet.LightSets}}" MinWidth="96" MaxWidth="200"
-                      x:Name="lightSetComboBox" SelectionChanged="OnLightSet_ComboBox_SelectionChanged" VerticalAlignment="Center"/>
+                          x:Name="lightSetComboBox" SelectionChanged="OnLightSet_ComboBox_SelectionChanged" VerticalAlignment="Center"/>
+                <Separator Style="{StaticResource verticalSeparatorStyle}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" d:Visibility="Visible">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <ToggleButton Width="32" Height="24" Padding="0,6" Background="Transparent" BorderBrush="Transparent"
+                                  Click="OnRun_ToggleButton_Click" Focusable="False">
+                        <ToggleButton.Content>
+                            <Path Data="M 0,0.167 Q 0,0 0.141,0.088 L 0.659,0.412 Q 0.8,0.5 0.659,0.588 L 0.141,0.912 Q 0,1 0,0.833 Z" Stretch="Uniform">
+                                <Path.Style>
+                                    <Style TargetType="{x:Type Path}">
+                                        <Setter Property="Fill" Value="{StaticResource Editor.FontBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRunningScripts}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource Editor.GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </ToggleButton.Content>
+                    </ToggleButton>
+                </StackPanel>
             </StackPanel>
         </Border>
         <Grid Grid.Row="2">
@@ -79,7 +141,7 @@
                 <ColumnDefinition Width="10*"/>
                 <ColumnDefinition Width="1*" MinWidth="300" MaxWidth="600"/>
             </Grid.ColumnDefinitions>
-            
+
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="3*" MinHeight="400"/>
@@ -104,9 +166,9 @@
                     <utl:RenderSurfaceView Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" x:Name="sv4" KeyDown="OnProjectLayoutView_KeyDown"/>-->
                     <utl:RenderSurfaceView Grid.Row="0" Grid.Column="0" Margin="0,0,0,0" x:Name="sv1" KeyDown="OnProjectLayoutView_KeyDown"/>
                 </Grid>
-                                   
+
                 <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" Background="Transparent"/>
-                
+
                 <Grid Grid.Row="1" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*" MinWidth="250"/>
@@ -121,7 +183,7 @@
                                           IsVisibleChanged="OnContentBrowser_IsVisibleChanged"/>
                 </Grid>
             </Grid>
-            
+
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Left" VerticalAlignment="Stretch" Background="Transparent"/>
 
             <Grid Grid.Column="1" MinWidth="250" Margin="5,0,0,0">

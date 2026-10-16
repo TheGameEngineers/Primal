@@ -47,7 +47,7 @@ abstract class Camera(Scene scene, CameraType type) : GameEntity(scene)
                 }
             }
         }
-    }        
+    }
 
     [DataMember]
     public float NearZ
@@ -207,7 +207,7 @@ abstract class MSCamera<T> : MSEntity where T : Camera
                     });
                     EngineAPI.SetCameraRange(ids, nearZ, farZ, count);
                     return true;
-                }            
+                }
         }
 
         return base.UpdateGameEntities(propertyName);
@@ -223,13 +223,32 @@ abstract class MSCamera<T> : MSEntity where T : Camera
             CameraType = camera.Type;
         }
         else
-        {            
+        {
             NearZ = GetMixedValue(SelectedCameras, new Func<Camera, float>(x => x.NearZ));
             FarZ = GetMixedValue(SelectedCameras, new Func<Camera, float>(x => x.FarZ));
             CameraType = (CameraType?)GetMixedValue(SelectedCameras, new Func<Camera, int>(x => (int)x.Type));
         }
 
         return base.UpdateMSGameEntity();
+    }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedCameras.Count;
+        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
+        var nearZ = new float[count]; var farZ = new float[count];
+        var index = 0;
+
+        SelectedCameras.ForEach(x =>
+        {
+            nearZ[index] = x.NearZ;
+            farZ[index] = x.FarZ;
+            ++index;
+        });
+
+        EngineAPI.SetCameraRange(ids, nearZ, farZ, count);
     }
 
     protected MSCamera(List<GameEntity> entities) : base(entities)
@@ -292,6 +311,16 @@ class MSPerspectiveCamera(List<GameEntity> entities) : MSCamera<PerspectiveCamer
 
         return base.UpdateMSGameEntity();
     }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedCameras.Count;
+        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
+        var fov = SelectedCameras.Select(x => x.FieldOfView).ToArray();
+        EngineAPI.SetCameraFieldOfView(ids, fov, count);
+    }
 }
 
 class MSOrthographicCamera(List<GameEntity> entities) : MSCamera<OrthographicCamera>(entities)
@@ -344,5 +373,15 @@ class MSOrthographicCamera(List<GameEntity> entities) : MSCamera<OrthographicCam
             GetMixedValue(SelectedCameras, new Func<OrthographicCamera, float>(x => x.OrthographicSize));
 
         return base.UpdateMSGameEntity();
+    }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedCameras.Count;
+        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
+        var size = SelectedCameras.Select(x => x.OrthographicSize).ToArray();
+        EngineAPI.SetCameraOrthographicSize(ids, size, count);
     }
 }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Interop;
 
 namespace PrimalEditor.Utilities;
@@ -134,7 +135,28 @@ partial class RenderSurfaceHost : HwndHost
 
     public int SurfaceId { get; private set; } = ID.INVALID_ID;
 
-    public bool HostReady { get; private set; }
+    public static readonly RoutedEvent IsHostReadyChangedEvent =
+        EventManager.RegisterRoutedEvent(nameof(IsHostReadyChanged), RoutingStrategy.Bubble,
+            typeof(RoutedPropertyChangedEventHandler<bool>), typeof(RenderSurfaceHost));
+
+    public event RoutedPropertyChangedEventHandler<bool> IsHostReadyChanged
+    {
+        add => AddHandler(IsHostReadyChangedEvent, value);
+        remove => RemoveHandler(IsHostReadyChangedEvent, value);
+    }
+
+    private static readonly DependencyPropertyKey IsHostReadyPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(IsHostReady), typeof(bool), typeof(RenderSurfaceHost),
+                new PropertyMetadata(false, OnIsHostReadyChanged));
+
+    public static readonly DependencyProperty IsHostReadyProperty = IsHostReadyPropertyKey.DependencyProperty;
+    public bool IsHostReady => (bool)GetValue(IsHostReadyProperty);
+
+    private static void OnIsHostReadyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var host = (RenderSurfaceHost)d;
+        host.RaiseEvent(new RoutedPropertyChangedEventArgs<bool>((bool)e.OldValue, (bool)e.NewValue, IsHostReadyChangedEvent));
+    }
 
     private void Resize(object sender, DelayEventTimerArgs e)
     {
@@ -163,6 +185,7 @@ partial class RenderSurfaceHost : HwndHost
         {
             if (disposing)
             {
+                SetValue(IsHostReadyPropertyKey, false);
                 RenderThread.UnregisterCallback(_windowHandle);
                 EngineAPI.RemoveRenderSurface(SurfaceId);
                 _windowHandle = IntPtr.Zero;
@@ -187,7 +210,7 @@ partial class RenderSurfaceHost : HwndHost
         //       It is needed for grid frustum calculation.
         EngineAPI.ResizeRenderSurface(SurfaceId);
         RenderThread.RegisterCallback(_windowHandle, _renderFrameCallback);
-        HostReady = RenderThread.IsRunning;
+        SetValue(IsHostReadyPropertyKey, RenderThread.IsRunning);
         _resetEvent.Set();
         return new HandleRef(this, _windowHandle);
     }

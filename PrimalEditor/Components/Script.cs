@@ -57,6 +57,8 @@ sealed class MSScript : MSComponent<Script>
         return true;
     }
 
+    public override void UpdateEngine() { }
+
     public MSScript(MSEntity msEntity) : base(msEntity)
     {
         Refresh();

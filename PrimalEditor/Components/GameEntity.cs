@@ -315,6 +315,58 @@ abstract class MSEntity : ViewModelBase
         _enableUpdates = true;
     }
 
+    protected virtual void UpdateEngine()
+    {
+        foreach (var c in _components)
+        {
+            c.UpdateEngine();
+        }
+    }
+
+    public static void RestoreEntityStates(IEnumerable<GameEntity> entities)
+    {
+        if (!entities.Any()) return;
+
+        var currentSelection = CurrentSelection;
+
+        var gameEntities = new List<GameEntity>();
+        var dirLights = new List<GameEntity>();
+        var pointLights = new List<GameEntity>();
+        var spotlights = new List<GameEntity>();
+        var ambientLights = new List<GameEntity>();
+        var persCameras = new List<GameEntity>();
+        var orthoCameras = new List<GameEntity>();
+
+        foreach (var entity in entities)
+        {
+            switch (entity)
+            {
+                case Spotlight spotlight: spotlights.Add(spotlight); break;
+                case PointLight pointLight: pointLights.Add(pointLight); break;
+                case DirectionalLight directionalLight: dirLights.Add(directionalLight); break;
+                case AmbientLight ambientLight: ambientLights.Add(ambientLight); break;
+                case PerspectiveCamera perspectiveCamera: persCameras.Add(perspectiveCamera); break;
+                case OrthographicCamera orthographicCamera: orthoCameras.Add(orthographicCamera); break;
+                default: gameEntities.Add(entity); break;
+            }
+        }
+
+        UpdateEngine(gameEntities, entities => new MSGameEntity(entities));
+        UpdateEngine(dirLights, entities => new MSDirectionalLight(entities));
+        UpdateEngine(pointLights, entities => new MSPointLight(entities));
+        UpdateEngine(spotlights, entities => new MSSpotlight(entities));
+        UpdateEngine(ambientLights, entities => new MSAmbientLight(entities));
+        UpdateEngine(persCameras, entities => new MSPerspectiveCamera(entities));
+        UpdateEngine(orthoCameras, entities => new MSOrthographicCamera(entities));
+
+        CurrentSelection = currentSelection;
+
+        static void UpdateEngine<T>(List<GameEntity> entities, Func<List<GameEntity>, T> create) where T : MSEntity
+        {
+            if (entities.Count > 0) create(entities).UpdateEngine();
+        }
+    }
+
     public MSEntity(List<GameEntity> entities)
     {
         Debug.Assert(entities?.Count > 0);

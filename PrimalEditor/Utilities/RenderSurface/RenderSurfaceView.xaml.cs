@@ -11,11 +11,6 @@ namespace PrimalEditor.Utilities;
 partial class RenderSurfaceView : UserControl
 {
     internal RenderSurfaceControl RenderSurfaceControl => renderSurface;
-    public RenderSurfaceView()
-    {
-        InitializeComponent();
-        Loaded += OnRenderSurfaceViewLoaded;
-    }
 
     private void OnRenderSurfaceViewLoaded(object sender, RoutedEventArgs e)
     {
@@ -34,5 +29,11 @@ partial class RenderSurfaceView : UserControl
     private void OnCameraSettings_Button_Click(object sender, RoutedEventArgs e)
     {
         cameraSettingsPopup.IsOpen = true;
+    }
+
+    public RenderSurfaceView()
+    {
+        InitializeComponent();
+        Loaded += OnRenderSurfaceViewLoaded;
     }
 }

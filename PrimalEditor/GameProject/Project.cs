@@ -95,7 +95,7 @@ class Project : ViewModelBase
             }
         }
     }
-
+    
     public static Project Current { get; private set; }
 
     public static UndoRedo UndoRedo { get; } = new UndoRedo();
