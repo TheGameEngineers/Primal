@@ -209,7 +209,7 @@ public:
             if (func.instance == instance && func.callback == callback) return;
         }
 
-        collection.emplace_back(input_callback{ instance, callback });
+        collection.emplace_back(instance, callback);
     }
 
     void add_handler(u64 binding, T* instance, binding_callback_t callback)
@@ -221,7 +221,7 @@ public:
             if (func.binding == binding && func.instance == instance && func.callback == callback) return;
         }
 
-        _binding_callbacks.emplace_back(binding_callback{ binding, instance, callback });
+        _binding_callbacks.emplace_back(binding, instance, callback);
     }
 
     void on_event(input_source::type type, input_code::code code, const input_value& value) override

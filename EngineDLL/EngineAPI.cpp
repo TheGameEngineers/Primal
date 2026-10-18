@@ -15,7 +15,7 @@
 #include "Components/Transform.h"
 #include "Utilities/Threading.h"
 #include "../Engine/EditorAPI/EditorAPI.h"
-#include "EngineAPI/Input.h"
+#include "Input/Input.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -353,6 +353,37 @@ InitializeEngine()
 
     // Create a light-set for uninitialized light-set keys in the editor
     graphics::create_light_set(0);
+
+    // TODO: define key bindings in the editor and load them from the game file. For now, we will just use the default key bindings.
+    input::input_source source{};
+    source.binding = std::hash<std::string>()("move");
+    source.source_type = input::input_source::keyboard;
+    source.code = input::input_code::key_a;
+    source.multiplier = 1.f;
+    source.axis = input::axis::x;
+    input::bind(source);
+
+    source.code = input::input_code::key_d;
+    source.multiplier = -1.f;
+    input::bind(source);
+
+    source.code = input::input_code::key_w;
+    source.multiplier = 1.f;
+    source.axis = input::axis::z;
+    input::bind(source);
+
+    source.code = input::input_code::key_s;
+    source.multiplier = -1.f;
+    input::bind(source);
+
+    source.code = input::input_code::key_q;
+    source.multiplier = -1.f;
+    source.axis = input::axis::y;
+    input::bind(source);
+
+    source.code = input::input_code::key_e;
+    source.multiplier = 1.f;
+    input::bind(source);
 
     return engine_init_error::succeeded;
 }
@@ -1037,7 +1068,7 @@ GetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* 
 {
     std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && a && b && c && count);
-        
+
     for (u32 i{ 0 }; i < count; ++i)
     {
         assert(id::is_valid(ids[i]));
@@ -1429,6 +1460,25 @@ AddScriptName(const char* name)
     return script::detail::add_script_name(name);
 }
 
+namespace primal::input {
+void add_input_callback(detail::input_system_base*);
+void remove_input_callback(detail::input_system_base*);
+}
+
+EDITOR_INTERFACE void
+AddInputCallback(void* callback)
+{
+    assert(callback);
+    primal::input::add_input_callback(static_cast<primal::input::detail::input_system_base*>(callback));
+}
+
+EDITOR_INTERFACE void
+RemoveInputCallback(void* callback)
+{
+    assert(callback);
+    primal::input::remove_input_callback(static_cast<primal::input::detail::input_system_base*>(callback));
+}
+
 EDITOR_INTERFACE void
 GetInput(u32 type, u32 code, f32* value)
 {
@@ -1450,7 +1500,7 @@ GetCameraProjectionType(id::id_type id)
 {
     std::lock_guard lock{ mutex };
     assert(id::is_valid(id));
-    return graphics::camera{ graphics::camera_id{ id } }.projection_type();    
+    return graphics::camera{ graphics::camera_id{ id } }.projection_type();
 }
 
 EDITOR_INTERFACE id::id_type
@@ -1466,7 +1516,7 @@ GetLightType(id::id_type id, u64 light_set_key)
 {
     std::lock_guard lock{ mutex };
     assert(id::is_valid(id));
-    return graphics::light { graphics::light_id{ id }, light_set_key }.light_type();
+    return graphics::light{ graphics::light_id{ id }, light_set_key }.light_type();
 }
 
 EDITOR_INTERFACE id::id_type
@@ -1474,7 +1524,7 @@ GetLightEntityId(id::id_type id, u64 light_set_key)
 {
     std::lock_guard lock{ mutex };
     assert(id::is_valid(id));
-    return graphics::light { graphics::light_id{ id }, light_set_key }.entity_id();
+    return graphics::light{ graphics::light_id{ id }, light_set_key }.entity_id();
 }
 
 #include "../Engine/EditorAPI/EditorAPI.h"
@@ -1534,6 +1584,8 @@ GetEditorAPI()
         .RegisterScript = RegisterScript,
         .AddScriptName = AddScriptName,
         // INPUT
+        .AddInputCallback = AddInputCallback,
+        .RemoveInputCallback = RemoveInputCallback,
         .GetInput = GetInput,
         .GetInputBinding = GetInputBinding
     };

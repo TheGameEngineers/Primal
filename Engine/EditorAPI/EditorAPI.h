@@ -60,6 +60,8 @@ struct editor_api final
     u8(*RegisterScript)(size_t, uintptr_t) { nullptr };
     u8(*AddScriptName)(const char*) { nullptr };
     // INPUT
+    void (*AddInputCallback)(void*) { nullptr };
+    void (*RemoveInputCallback)(void*) { nullptr };
     void (*GetInput)(u32, u32, f32*) { nullptr };
     void (*GetInputBinding)(u64, f32*) { nullptr };
 

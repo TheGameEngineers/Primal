@@ -244,9 +244,6 @@ get_script_names()
 } // namespace script
 
 namespace input {
-namespace {
-utl::vector<detail::input_system_base*> input_callbacks;
-} // anonymous namespace
 
 void
 get(input_source::type type, input_code::code code, input_value& value)
@@ -262,19 +259,12 @@ get(u64 binding, input_value& value)
 
 detail::input_system_base::input_system_base()
 {
-    input_callbacks.emplace_back(this);
+    editor::api.AddInputCallback(this);
 }
 
 detail::input_system_base::~input_system_base()
 {
-    for (u32 i{ 0 }; i < input_callbacks.size(); ++i)
-    {
-        if (input_callbacks[i] == this)
-        {
-            utl::erase_unordered(input_callbacks, i);
-            break;
-        }
-    }
+    editor::api.RemoveInputCallback(this);
 }
 
 } // namespace input
