@@ -2,13 +2,12 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #if !defined(SHIPPING) && defined(_WIN64)
 #include "Content/ContentLoader.h"
+#include "Components/Transform.h"
 #include "Components/Script.h"
 #include "Components/Geometry.h"
-#include "Platform/PlatformTypes.h"
 #include "Platform/Platform.h"
 #include "Graphics/Renderer.h"
 #include "Input/Input.h"
-#include <thread>
 
 using namespace primal;
 namespace {
@@ -98,6 +97,8 @@ calculate_thresholds(const game_entity::entity_id *const entity_ids,
 bool
 engine_initialize()
 {
+    if (!input::initialize()) return false;
+
     // TODO: implement and get engine and game settings. For now use D3D12
     if (!graphics::initialize(graphics::graphics_platform::direct3d12)) return false;
 
@@ -162,7 +163,11 @@ engine_initialize()
 void
 engine_update()
 {
+    input::process();
     script::update(1.f / 60.f);
+    transform::update();
+    graphics::update_lights();
+    graphics::update_cameras();
 
     const u32 count{ (u32)game_window.geometry_ids.size() };
     const u64 item_id_buffer_size{ sizeof(id::id_type) * count };
@@ -201,5 +206,6 @@ engine_shutdown()
     platform::remove_window(game_window.window.get_id());
     content::unload_game();
     graphics::shutdown();
+    input::shutdown();
 }
 #endif // !defined(SHIPPING)

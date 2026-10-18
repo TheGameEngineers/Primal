@@ -15,7 +15,6 @@ class EditorCamera
     private static readonly float _maxFov = 180f;
 
     private int _surfaceId = -1;
-    private IdType _cameraId = ID.INVALID_ID;
     private bool _updatePosition;
     private bool _updateRotation;
     private float _acceleration = 0f;
@@ -26,6 +25,8 @@ class EditorCamera
     private Vector3 _desiredRotation;
 
     public float OrbitRadius { get; private set; }
+
+    public IdType CameraId { get; private set; } = ID.INVALID_ID;
 
     public float Speed
     {
@@ -49,7 +50,7 @@ class EditorCamera
             if (!field.IsTheSameAs(value))
             {
                 field = value;
-                EngineAPI.SetCameraFieldOfView([_cameraId], [field], 1);
+                EngineAPI.SetCameraFieldOfView([CameraId], [field], 1);
             }
         }
     } = 45f;
@@ -63,7 +64,7 @@ class EditorCamera
             if (!field.IsTheSameAs(value))
             {
                 field = value;
-                EngineAPI.SetCameraRange([_cameraId], [field], [FarZ], 1);
+                EngineAPI.SetCameraRange([CameraId], [field], [FarZ], 1);
             }
         }
     } = 0.1f;
@@ -77,7 +78,7 @@ class EditorCamera
             if (!field.IsTheSameAs(value))
             {
                 field = value;
-                EngineAPI.SetCameraRange([_cameraId], [NearZ], [field], 1);
+                EngineAPI.SetCameraRange([CameraId], [NearZ], [field], 1);
             }
         }
     } = 100f;
@@ -196,14 +197,14 @@ class EditorCamera
     public void SetSurfaceId(int surfaceId)
     {
         _surfaceId = surfaceId;
-        _cameraId = EngineAPI.GetSurfaceCameraId(_surfaceId);
-        Debug.Assert(ID.IsValid(_cameraId));
+        CameraId = EngineAPI.GetSurfaceCameraId(_surfaceId);
+        Debug.Assert(ID.IsValid(CameraId));
         EngineAPI.UpdateEditorCamera(_surfaceId, _position, _rotation);
     }
 
     public void Update(float dt)
     {
-        if ((_updatePosition || _updateRotation) && ID.IsValid(_cameraId))
+        if ((_updatePosition || _updateRotation) && ID.IsValid(CameraId))
         {
             Seek(dt);
         }

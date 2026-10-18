@@ -71,7 +71,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
             </Expander>
-            <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="Transparent">
+            <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="Transparent" IsMainMenu="False">
                 <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Width="24" Padding="0">
                     <MenuItem Header="Empty Game Entity" Click="OnAddGameEntity_MenuItem_Click" Tag="0" IsEnabled="{Binding IsActive}"/>
                     <Separator/>
@@ -132,7 +132,7 @@
                                     </Grid>
                                 </Border>
                                 <!-- NOTE: Scene management is work in progress. -->
-                                <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="Transparent">
+                                <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="Transparent" IsMainMenu="False">
                                     <MenuItem HeaderTemplate="{StaticResource sceneMenuHeaderTemplate}" Padding="0" Width="24">
                                         <MenuItem Header="Set Active Scene" IsEnabled="{Binding IsActive, Converter={StaticResource negateBoolConverter}}"/>
                                         <MenuItem Header="Rename Scene" Click="OnRenameScene_MenuItem_Click" Tag="{Binding ElementName=renameTextBox}"/>

@@ -272,10 +272,12 @@ void remove_light_set(u64 light_set_key);
 light create_light(light_init_info info);
 void remove_light(light_id id, u64 light_set_key);
 light get_light(id::id_type entity_id);
+void update_lights();
 
 camera create_camera(camera_init_info info);
 void remove_camera(camera_id id);
 camera get_camera(id::id_type entity_id);
+void update_cameras();
 
 void add_mesh(const u8 *const data, id::id_type *const ids, u32 count);
 void remove_mesh(const id::id_type *const ids, u32 count);

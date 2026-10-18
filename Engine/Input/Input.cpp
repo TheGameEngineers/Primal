@@ -188,4 +188,27 @@ detail::input_system_base::~input_system_base()
         }
     }
 }
+
+#ifdef USE_WITH_EDITOR
+void 
+add_input_callback(detail::input_system_base* callback)
+{
+    assert(callback);
+    input_callbacks.emplace_back(callback);
+}
+
+void
+remove_input_callback(detail::input_system_base* callback)
+{
+    assert(callback);
+    for (u32 i{ 0 }; i < input_callbacks.size(); ++i)
+    {
+        if (input_callbacks[i] == callback)
+        {
+            utl::erase_unordered(input_callbacks, i);
+            break;
+        }
+    }
+}
+#endif
 }

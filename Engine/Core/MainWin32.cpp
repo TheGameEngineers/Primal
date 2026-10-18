@@ -46,7 +46,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         bool is_running{ true };
         while (is_running)
         {
-            while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+            // Keep WM_INPUT queued for GetRawInputBuffer in input::process().
+            while (PeekMessage(&msg, NULL, 0, WM_INPUT - 1, PM_REMOVE) ||
+                PeekMessage(&msg, NULL, WM_INPUT + 1, 0xFFFF, PM_REMOVE))
             {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);

@@ -20,6 +20,12 @@ class RenderSurfaceFrameStatsArgs(float averageFrameTime, int fps) : EventArgs
     public int FPS { get; } = fps;
 }
 
+class RenderFrameEventArgs(float dt) : EventArgs
+{
+    public float DeltaTime { get; } = dt;
+    public IdType CameraId { get; set; } = ID.INVALID_ID;
+}
+
 class RenderSurfaceControl : ContentControl, IDisposable
 {
     private class FrameTimer
@@ -89,10 +95,12 @@ class RenderSurfaceControl : ContentControl, IDisposable
     private bool _capturedRight;
     private bool _isMouseOver;
     private bool _isXZLocked = false;
-    private ulong _lightSetKey;    
+    private ulong _lightSetKey;
+    private bool _isPlaying;
 
     public event EventHandler<RenderSurfaceFrameStatsArgs> FrameStatsUpdated;
-    public event EventHandler<float> RenderFrame;
+    public event EventHandler<RenderFrameEventArgs> RenderFrame;
+    public event EventHandler RequestStop;
     public event RoutedPropertyChangedEventHandler<bool> IsHostReadyChanged;
 
     public bool IsXZLocked
@@ -140,7 +148,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     public static readonly DependencyProperty CameraFarZProperty =
         DependencyProperty.Register(nameof(CameraFarZ), typeof(float), typeof(RenderSurfaceControl),
             new PropertyMetadata(100f, new PropertyChangedCallback(CameraFarZChanged)));
-    
+
     private static void IsXZLockedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = d as RenderSurfaceControl;
@@ -209,7 +217,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
             FrameStatsUpdated?.Invoke(this, new RenderSurfaceFrameStatsArgs(_frameTimer.AverageFrameTime, _frameTimer.FPS));
         }
 
-        var dt = MathF.Min(_frameTimer.AverageFrameTime, 1f / 30f);
+        var dt = float.Min(_frameTimer.AverageFrameTime, 1f / 30f);
 
         if (_capturedLeft && !_isXZLocked && GetAsyncKeyState(VKey.Alt) == 0)
         {
@@ -221,11 +229,13 @@ class RenderSurfaceControl : ContentControl, IDisposable
         }
 
         _camera.Update(dt);
-        
-        RenderFrame?.Invoke(this, dt);
+
+        var renderFrameEventArgs = new RenderFrameEventArgs(dt);
+        RenderFrame?.Invoke(this, renderFrameEventArgs);
 
         return new()
         {
+            CameraId = ID.IsValid(renderFrameEventArgs.CameraId) ? renderFrameEventArgs.CameraId : _camera.CameraId,
             AvgFrameTime = _frameTimer.AverageFrameTime,
             SurfaceId = _host.SurfaceId,
             LightSetKey = _lightSetKey,
@@ -319,6 +329,19 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     private IntPtr HostMsgFilter(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        if (_isPlaying)
+        {
+            if ((Win32Msg)msg == Win32Msg.WM_KEYDOWN)
+            {
+                var key = (VKey)(wParam.ToInt64() & 0xff);
+                if (key == VKey.Escape)
+                {
+                    RequestStop?.Invoke(this, EventArgs.Empty);
+                }               
+            }
+            return IntPtr.Zero;
+        }
+
         switch ((Win32Msg)msg)
         {
             case Win32Msg.WM_SIZING:
@@ -406,12 +429,41 @@ class RenderSurfaceControl : ContentControl, IDisposable
         }
     }
 
+    public void FocusHost(bool focus)
+    {
+        if (focus)
+        {
+            _isPlaying = true;
+            RenderSurfaceHost.SetFocus(_host.Handle);
+            SetCapture(_host.Handle);
+        }
+        else
+        {
+            ReleaseCapture();
+            RenderSurfaceHost.SetFocus(nint.Zero);
+            _isPlaying = false;
+        }
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        // Prevent main menu from gaining focus when Alt-key is pressed in renderer.
+        if (e.Key == Key.System && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt) &&
+            e.OriginalSource is RenderSurfaceControl)
+        {
+            e.Handled = true;
+        }
+        else
+        {
+            base.OnPreviewKeyDown(e);
+        }
+    }
+
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
 
         DataContextChanged += OnDataContextChanged;
-        KeyDown += OnRenderSurfaceControl_KeyDown;
 
         OnDataContextChanged(this, new(DataContextProperty, null, DataContext));
     }

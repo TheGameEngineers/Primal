@@ -3,7 +3,7 @@
 #include "Renderer.h"
 #include "GraphicsPlatformInterface.h"
 #include "Direct3D12\D3D12Interface.h"
-
+#include "Utilities/MutationCache.h"
 
 namespace primal::graphics {
 namespace {
@@ -14,9 +14,61 @@ constexpr const char* engine_shader_paths[]{
     // ".\\shaders\\vulkan\\shaders.bin", etc.
 };
 
-platform_interface gfx{};
-std::unordered_map<id::id_type, light> light_id_map{};
-std::unordered_map<id::id_type, camera> camera_id_map{};
+struct light_mutation_cache
+{
+    enum flags : u8 {
+        color_flag = 0x01,
+        attenuation_flag = 0x02,
+        cone_angles_flag = 0x04,
+        intensity_flag = 0x08,
+        range_flag = 0x10,
+        is_enabled_flag = 0x20,
+
+        all_flag =
+        color_flag | attenuation_flag | cone_angles_flag |
+        intensity_flag | range_flag | is_enabled_flag
+    };
+
+    u64         light_set_key{};
+    math::v3    color;
+    math::v3    attenuation;
+    math::v2    cone_angles;
+    f32         intensity;
+    f32         range;
+    light_id    id{ id::invalid_id };
+    bool        is_enabled;
+    u8          flags;
+};
+
+struct camera_mutation_cache
+{
+    enum flags : u8
+    {
+        up_flag = 0x01,
+        fov_flag = 0x02,
+        aspect_flag = 0x04,
+        size_flag = 0x08,
+        range_flag = 0x10,
+
+        all_flag =
+        up_flag | fov_flag | aspect_flag | size_flag | range_flag
+    };
+
+    math::v3    up;
+    f32         field_of_view;
+    math::v2    range;
+    f32         aspect_ratio;
+    f32         orthographic_size;
+    camera_id   id;
+    u8          flags;
+};
+
+platform_interface                                      gfx{};
+std::unordered_map<id::id_type, light>                  light_id_map{};
+std::unordered_map<id::id_type, camera>                 camera_id_map{};
+
+utl::mutation_cache<light_mutation_cache, light_id>     light_cache{};
+utl::mutation_cache<camera_mutation_cache, camera_id>   camera_cache{};
 
 bool
 set_platform_interface(graphics_platform platform, platform_interface& pi)
@@ -155,46 +207,109 @@ get_light(id::id_type entity_id)
 }
 
 void
+update_lights()
+{
+    light_mutation_cache* cache{ nullptr };
+    u32 count{};
+    light_cache.get_cache_array(&cache, &count);
+
+    if (!count) return;
+
+    assert(cache);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        const light_mutation_cache c{ cache[i] };
+        assert(light(c.id, c.light_set_key).is_valid());
+
+        if (c.flags & light_mutation_cache::color_flag)
+        {
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::color, &c.color, sizeof(c.color));
+        }
+        if (c.flags & light_mutation_cache::attenuation_flag)
+        {
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::attenuation, &c.attenuation, sizeof(c.attenuation));
+        }
+        if (c.flags & light_mutation_cache::cone_angles_flag)
+        {
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::umbra, &c.cone_angles.x, sizeof(c.cone_angles.x));
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::penumbra, &c.cone_angles.y, sizeof(c.cone_angles.y));
+        }
+        if (c.flags & light_mutation_cache::intensity_flag)
+        {
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::intensity, &c.intensity, sizeof(c.intensity));
+        }
+        if (c.flags & light_mutation_cache::range_flag)
+        {
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::range, &c.range, sizeof(c.range));
+        }
+        if (c.flags & light_mutation_cache::is_enabled_flag)
+        {
+            gfx.light.set_parameter(c.id, c.light_set_key, light_parameter::is_enabled, &c.is_enabled, sizeof(c.is_enabled));
+        }
+    }
+
+    light_cache.clear();
+}
+
+void
 light::is_enabled(bool is_enabled) const
 {
     assert(is_valid());
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::is_enabled, &is_enabled, sizeof(is_enabled));
+    light_mutation_cache& cache{ *light_cache.get_cache_ptr(_id) };
+    cache.light_set_key = _light_set_key;
+    cache.flags |= light_mutation_cache::is_enabled_flag;
+    cache.is_enabled = is_enabled;
 }
 
 void
 light::intensity(f32 intensity) const
 {
     assert(is_valid());
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::intensity, &intensity, sizeof(intensity));
+    light_mutation_cache& cache{ *light_cache.get_cache_ptr(_id) };
+    cache.light_set_key = _light_set_key;
+    cache.flags |= light_mutation_cache::intensity_flag;
+    cache.intensity = intensity;
 }
 
 void
 light::color(math::v3 color) const
 {
     assert(is_valid());
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::color, &color, sizeof(color));
+    light_mutation_cache& cache{ *light_cache.get_cache_ptr(_id) };
+    cache.light_set_key = _light_set_key;
+    cache.flags |= light_mutation_cache::color_flag;
+    cache.color = color;
 }
 
 void
 light::attenuation(math::v3 attenuation) const
 {
     assert(is_valid());
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::attenuation, &attenuation, sizeof(attenuation));
+    light_mutation_cache& cache{ *light_cache.get_cache_ptr(_id) };
+    cache.light_set_key = _light_set_key;
+    cache.flags |= light_mutation_cache::attenuation_flag;
+    cache.attenuation = attenuation;
 }
 
 void
 light::range(f32 range) const
 {
     assert(is_valid());
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::range, &range, sizeof(range));
+    light_mutation_cache& cache{ *light_cache.get_cache_ptr(_id) };
+    cache.light_set_key = _light_set_key;
+    cache.flags |= light_mutation_cache::range_flag;
+    cache.range = range;
 }
 
 void
 light::cone_angles(f32 umbra, f32 penumbra) const
 {
     assert(is_valid());
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::umbra, &umbra, sizeof(umbra));
-    gfx.light.set_parameter(_id, _light_set_key, light_parameter::penumbra, &penumbra, sizeof(penumbra));
+    light_mutation_cache& cache{ *light_cache.get_cache_ptr(_id) };
+    cache.light_set_key = _light_set_key;
+    cache.flags |= light_mutation_cache::cone_angles_flag;
+    cache.cone_angles = { umbra, penumbra };
 }
 
 bool
@@ -309,39 +424,90 @@ get_camera(id::id_type entity_id)
 }
 
 void
+update_cameras()
+{
+    camera_mutation_cache* cache{ nullptr };
+    u32 count{};
+    camera_cache.get_cache_array(&cache, &count);
+
+    if (!count) return;
+
+    assert(cache);
+
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        const camera_mutation_cache c{ cache[i] };
+        assert(camera(c.id).is_valid());
+
+        if (c.flags & camera_mutation_cache::up_flag)
+        {
+            gfx.camera.set_parameter(c.id, camera_parameter::up_vector, &c.up, sizeof(c.up));
+        }
+        if (c.flags & camera_mutation_cache::fov_flag)
+        {
+            gfx.camera.set_parameter(c.id, camera_parameter::field_of_view, &c.field_of_view, sizeof(c.field_of_view));
+        }
+        if (c.flags & camera_mutation_cache::aspect_flag)
+        {
+            gfx.camera.set_parameter(c.id, camera_parameter::aspect_ratio, &c.aspect_ratio, sizeof(c.aspect_ratio));
+        }
+        if (c.flags & camera_mutation_cache::size_flag)
+        {
+            gfx.camera.set_parameter(c.id, camera_parameter::orthographic_size, &c.orthographic_size, sizeof(c.orthographic_size));
+        }
+        if (c.flags & camera_mutation_cache::range_flag)
+        {
+            gfx.camera.set_parameter(c.id, camera_parameter::near_z, &c.range.x, sizeof(c.range.x));
+            gfx.camera.set_parameter(c.id, camera_parameter::far_z, &c.range.y, sizeof(c.range.y));
+        }
+    }
+
+    camera_cache.clear();
+}
+
+void
 camera::up(math::v3 up) const
 {
     assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::up_vector, &up, sizeof(up));
+    camera_mutation_cache& cache{ *camera_cache.get_cache_ptr(_id) };
+    cache.flags |= camera_mutation_cache::up_flag;
+    cache.up = up;
 }
 
 void
 camera::field_of_view(f32 fov) const
 {
     assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::field_of_view, &fov, sizeof(fov));
+    camera_mutation_cache& cache{ *camera_cache.get_cache_ptr(_id) };
+    cache.flags |= camera_mutation_cache::fov_flag;
+    cache.field_of_view = fov;
 }
 
 void
 camera::aspect_ratio(f32 aspect_ratio) const
 {
     assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::aspect_ratio, &aspect_ratio, sizeof(aspect_ratio));
+    camera_mutation_cache& cache{ *camera_cache.get_cache_ptr(_id) };
+    cache.flags |= camera_mutation_cache::aspect_flag;
+    cache.aspect_ratio = aspect_ratio;
 }
 
 void
 camera::orthographic_size(f32 size) const
 {
     assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::orthographic_size, &size, sizeof(size));
+    camera_mutation_cache& cache{ *camera_cache.get_cache_ptr(_id) };
+    cache.flags |= camera_mutation_cache::size_flag;
+    cache.orthographic_size = size;
 }
 
 void
 camera::range(f32 near_z, f32 far_z) const
 {
     assert(is_valid());
-    gfx.camera.set_parameter(_id, camera_parameter::near_z, &near_z, sizeof(near_z));
-    gfx.camera.set_parameter(_id, camera_parameter::far_z, &far_z, sizeof(far_z));
+    camera_mutation_cache& cache{ *camera_cache.get_cache_ptr(_id) };
+    cache.flags |= camera_mutation_cache::range_flag;
+    cache.range = { near_z, far_z };
 }
 
 math::m4x4

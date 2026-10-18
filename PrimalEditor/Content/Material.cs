@@ -214,14 +214,14 @@ class DefaultMaterialInputs : ViewModelBase
 
 class NodeMaterial : ViewModelBase
 {
-    private readonly List<MaterialInput> _inputs;
+    private readonly List<MaterialInput> _inputs = [];
 
     public List<MaterialInput> GetInputs() => _inputs;
 }
 
 class CodeMaterial : ViewModelBase
 {
-    private readonly List<MaterialInput> _inputs;
+    private readonly List<MaterialInput> _inputs = [];
 
     public List<MaterialInput> GetInputs() => _inputs;
 }

@@ -33,6 +33,10 @@ public:
     [[nodiscard]] math::v3 front() const;
     [[nodiscard]] math::m3x3 local_frame() const;
 
+    void rotation(math::v4 rotation_quaternion) const;
+    void position(math::v3 position) const;
+    void scale(math::v3 scale) const;
+
     [[nodiscard]] DirectX::XMVECTOR calculate_local_position(math::v3 delta) const;
     [[nodiscard]] DirectX::XMVECTOR calculate_absolute_rotation(math::v3 rotation) const;
     [[nodiscard]] DirectX::XMVECTOR calculate_local_rotation(math::v3 delta) const;

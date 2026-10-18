@@ -50,6 +50,7 @@
     <ClInclude Include="Utilities\Threading.h" />
     <ClInclude Include="EditorAPI\EditorAPI.h" />
     <ClInclude Include="EngineAPI\Engine.h" />
+    <ClInclude Include="Utilities\MutationCache.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />

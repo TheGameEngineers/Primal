@@ -5,8 +5,10 @@ using PrimalEditor.Content;
 using PrimalEditor.DllWrappers;
 using PrimalEditor.GameDev;
 using PrimalEditor.GameProject;
+using PrimalEditor.Utilities;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,19 +33,39 @@ partial class WorldEditorView : UserControl
     /// </summary>
     private volatile bool _isRunning;
 
+    private volatile IdType _activeCameraId = ID.INVALID_ID;
+
     public WorldEditorView()
     {
         InitializeComponent();
+        Application.Current.Activated += OnRequestStop;
+        Application.Current.Deactivated += OnRequestStop;
+        Application.Current.MainWindow.StateChanged += OnRequestStop;
+
         Project.SceneUpdated += OnSceneUpdated;
         DataContextChanged += OnWorldEditorDataContextChanged;
         sv1.RenderSurfaceControl.IsHostReadyChanged += OnRenderSurfaceView_IsHostReadyChanged;
         sv1.RenderSurfaceControl.RenderFrame += OnRenderFrame;
+        sv1.RenderSurfaceControl.RequestStop += OnRequestStop;
+    }
+
+    private void OnRequestStop(object sender, EventArgs e)
+    {
+        if (DataContext is not null)
+        {
+            Focus();
+            playToggleButton.IsChecked = false;
+            OnPlay_ToggleButton_Click(playToggleButton, null);
+        }
     }
 
     // NOTE: OnRenderFrame is run on RenderSurfaceHost's render thread.
     //       Don't access any UI owned data in here.
-    private void OnRenderFrame(object sender, float dt)
+    private void OnRenderFrame(object sender, RenderFrameEventArgs e)
     {
+        // We want to run the scripts and update data once per frame.
+        if (sender != sv1.RenderSurfaceControl) return;
+
         if (_isPlaying || _isRunning)
         {
             var scriptUpdateLock = Project.LockScriptUpdates;
@@ -52,11 +74,16 @@ partial class WorldEditorView : UserControl
                 try
                 {
                     if (_isPlaying || _isRunning)
-                        EngineAPI.EntityAPI.UpdateScripts(dt);
+                    {
+                        e.CameraId = _activeCameraId;
+                        EngineAPI.UpdateScripts(e.DeltaTime);
+                    }
                 }
                 finally { scriptUpdateLock.Exit(); }
             }
         }
+
+        EngineAPI.UpdateEngineData();
     }
 
     private void OnRenderSurfaceView_IsHostReadyChanged(object sender, RoutedPropertyChangedEventArgs<bool> e)
@@ -99,6 +126,37 @@ partial class WorldEditorView : UserControl
         }
     }
 
+    private void OnPlay_ToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        lock (Project.LockScriptUpdates)
+        {
+            _isPlaying = (sender as ToggleButton).IsChecked == true;
+            if (_isPlaying)
+            {
+                if (!_isRunning) EngineAPI.BeginPlayAll();
+                if (DataContext is Project { ActiveScene: Scene scene })
+                {
+                    // TODO: properly assign a camera as the active camera of the scene.
+                    _activeCameraId = scene.GameEntities.OfType<PerspectiveCamera>().FirstOrDefault()?.CameraId ?? ID.INVALID_ID;
+                    if(!ID.IsValid(_activeCameraId))
+                    {
+                        Logger.Log(MessageType.Warning, "The scene doesn't contain a perspective camera. Using editor camera instead.");
+                    }
+                }
+                KeyboardNavigation.SetTabNavigation(this, KeyboardNavigationMode.None);
+                sv1.RenderSurfaceControl.FocusHost(true);
+            }
+            else
+            {
+                _activeCameraId = ID.INVALID_ID;
+                sv1.RenderSurfaceControl.FocusHost(false);
+                KeyboardNavigation.SetTabNavigation(this, KeyboardNavigationMode.Continue);
+
+                if (!_isRunning) MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
+            }
+        }
+    }
+
     private void OnRun_ToggleButton_Click(object sender, RoutedEventArgs e)
     {
         lock (Project.LockScriptUpdates)
@@ -106,7 +164,7 @@ partial class WorldEditorView : UserControl
             _isRunning = (sender as ToggleButton).IsChecked == true;
             if (_isRunning)
             {
-                EngineAPI.EntityAPI.BeginPlayAll();
+                EngineAPI.BeginPlayAll();
             }
             else
             {
