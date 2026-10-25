@@ -4,7 +4,6 @@
 #include "CommonHeaders.h"
 #include "Components/Script.h"
 #include "Graphics/Renderer.h"
-#include "Platform/PlatformTypes.h"
 #include "Platform/Platform.h"
 #include "Content/ContentToEngine.h"
 #include "ShaderCompilation.h"
@@ -116,8 +115,6 @@ struct game_entity_descriptor
     script_component    script;
     geometry_component  geometry;
 };
-
-utl::vector <transform::component_cache> transform_cache{};
 
 math::v4 to_quat(math::v3 angles, bool is_degrees)
 {
@@ -238,7 +235,7 @@ create_one_game_entity(math::v3 position, math::v3 rotation, geometry::init_info
 
 graphics::camera create_camera()
 {
-    game_entity::entity ntt{ create_one_game_entity({0, 1, 10}, {0, -math::pi, 0}, nullptr, nullptr) };
+    game_entity::entity ntt{ create_one_game_entity({ 0, 1, 10 },{ 0, -math::pi, 0 }, nullptr, nullptr) };
     return graphics::create_camera(graphics::perspective_camera_init_info{ ntt.get_id() });
 }
 
@@ -285,7 +282,7 @@ get_euler_angles_from_local_frame(const math::m3x3& m)
 math::v3
 get_local_pos(math::v3 pos, u32 id)
 {
-    transform::component xform{ transform::transform_id{id} };
+    transform::component xform{ transform::transform_id{ id } };
     DirectX::XMVECTOR position{ xform.calculate_local_position(pos) };
     math::v3 result{};
     DirectX::XMStoreFloat3(&result, position);
@@ -296,7 +293,7 @@ math::v4
 get_world_quat(math::v3 w, u32 id)
 {
     w = math::to_radians(w);
-    transform::component xform{ transform::transform_id{id} };
+    transform::component xform{ transform::transform_id{ id } };
     DirectX::XMVECTOR q{ xform.calculate_world_rotation(w) };
     math::v4 result{};
     DirectX::XMStoreFloat4(&result, q);
@@ -307,7 +304,7 @@ math::v4
 get_local_quat(math::v3 w, u32 id)
 {
     w = math::to_radians(w);
-    transform::component xform{ transform::transform_id{id} };
+    transform::component xform{ transform::transform_id{ id } };
     DirectX::XMVECTOR q{ xform.calculate_local_rotation(w) };
     math::v4 result{};
     DirectX::XMStoreFloat4(&result, q);
@@ -318,7 +315,7 @@ math::v4
 get_absolute_quat(math::v3 w, u32 id)
 {
     w = math::to_radians(w);
-    transform::component xform{ transform::transform_id{id} };
+    transform::component xform{ transform::transform_id{ id } };
     DirectX::XMVECTOR q{ xform.calculate_absolute_rotation(w) };
     math::v4 result{};
     DirectX::XMStoreFloat4(&result, q);
@@ -339,6 +336,8 @@ GetEngineVersion(int* major, int* minor, int* revision)
 EDITOR_INTERFACE engine_init_error::error_code
 InitializeEngine()
 {
+    if (!input::initialize()) return engine_init_error::unknown;
+
     while (!compile_shaders())
     {
         // Pop up a message box allowing the user to retry compilation.
@@ -393,6 +392,7 @@ ShutdownEngine()
 {
     graphics::remove_light_set(0);
     graphics::shutdown();
+    input::shutdown();
 }
 
 EDITOR_INTERFACE u32
@@ -527,7 +527,7 @@ AddShaderGroup(shader_group_data* data)
     for (u32 i{ 0 }; i < count; ++i)
     {
         // NOTE: byteCodeLength is a 64-bit value!
-        const u32 block_size{ sizeof(u64) + content::compiled_shader::hash_length + *(u32*)blob.position() };
+        const u32 block_size{ (u32)sizeof(u64) + content::compiled_shader::hash_length + *(u32*)blob.position() };
         shader_pointers[i] = blob.position();
         blob.skip(block_size);
     }
@@ -634,6 +634,11 @@ RenderFrame(u32 surface_id, id::id_type camera_id, u64 light_set)
         calculate_thresholds(entity_ids, thresholds, count, surface_id);
     }
 
+    if (id::is_valid(camera_id) && surface.camera.get_id() != camera_id)
+    {
+        graphics::camera{ graphics::camera_id{ camera_id } }.aspect_ratio((f32)surface.window.width() / surface.window.height());
+    }
+
     graphics::frame_info info{};
     info.render_item_ids = item_ids;
     info.render_item_count = count;
@@ -651,13 +656,9 @@ UpdateEditorCamera(u32 surface_id, f32 pos_x, f32 pos_y, f32 pos_z, f32 rot_x, f
     assert(surface_id < surfaces.size());
     const id::id_type entity_id{ surfaces[surface_id].camera.entity_id() };
     assert(id::is_valid(entity_id));
-    transform::component_cache cache{};
-    cache.position = { pos_x, pos_y, pos_z };
-    cache.rotation = to_quat({ rot_x, rot_y, rot_z }, false);
-    cache.flags = transform::component_flags::position | transform::component_flags::rotation;
-    cache.id = transform::transform_id{ entity_id };
-
-    transform::update(&cache, 1);
+    game_entity::entity entity{ game_entity::entity_id{ entity_id } };
+    entity.position({ pos_x, pos_y, pos_z });
+    entity.rotation(to_quat({ rot_x, rot_y, rot_z }, false));
 }
 
 EDITOR_INTERFACE id::id_type
@@ -679,7 +680,7 @@ CreateCamera(id::id_type entity_id, const u8 *const data, [[maybe_unused]] u32 d
 {
     std::lock_guard lock{ mutex };
     assert(id::is_valid(entity_id) && data && data_size);
-    math::v3 up{ game_entity::entity{ game_entity::entity_id{entity_id} }.up() };
+    math::v3 up{ game_entity::entity{ game_entity::entity_id{ entity_id } }.up() };
     utl::blob_stream_reader blob{ data };
     graphics::camera_init_info info{
         .entity_id = entity_id,
@@ -843,7 +844,7 @@ GetCameraInverseViewProjection(id::id_type* ids, math::m4x4* matrices, u32 count
 EDITOR_INTERFACE void
 SetCameraUp(id::id_type* ids, f32* x, f32* y, f32* z, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && x && y && z && count);
     for (u32 i{ 0 }; i < count; ++i)
     {
@@ -855,14 +856,14 @@ SetCameraUp(id::id_type* ids, f32* x, f32* y, f32* z, u32 count)
 EDITOR_INTERFACE void
 SetCameraFieldOfView(id::id_type* ids, f32* fovs, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && fovs && count);
     for (u32 i{ 0 }; i < count; ++i)
     {
         assert(id::is_valid(ids[i]));
         const f32 fov{ fovs[i] * (1.f / 180.f) };
         assert(fov > 0);
-        const graphics::camera camera{ graphics::camera_id{ids[i]} };
+        const graphics::camera camera{ graphics::camera_id{ ids[i] } };
         camera.field_of_view(fov);
     }
 }
@@ -870,7 +871,7 @@ SetCameraFieldOfView(id::id_type* ids, f32* fovs, u32 count)
 EDITOR_INTERFACE void
 SetCameraAspectRatio(id::id_type* ids, f32* aspect_ratios, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && aspect_ratios && count);
     for (u32 i{ 0 }; i < count; ++i)
     {
@@ -882,12 +883,12 @@ SetCameraAspectRatio(id::id_type* ids, f32* aspect_ratios, u32 count)
 EDITOR_INTERFACE void
 SetCameraOrthographicSize(id::id_type* ids, f32* sizes, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && sizes && count);
     for (u32 i{ 0 }; i < count; ++i)
     {
         assert(id::is_valid(ids[i]) && sizes[i] > 0);
-        const graphics::camera camera{ graphics::camera_id{ids[i]} };
+        const graphics::camera camera{ graphics::camera_id{ ids[i] } };
         camera.orthographic_size(sizes[i]);
     }
 }
@@ -895,7 +896,7 @@ SetCameraOrthographicSize(id::id_type* ids, f32* sizes, u32 count)
 EDITOR_INTERFACE void
 SetCameraRange(id::id_type* ids, f32* near_zs, f32* far_zs, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && near_zs && far_zs && count);
     for (u32 i{ 0 }; i < count; ++i)
     {
@@ -903,7 +904,7 @@ SetCameraRange(id::id_type* ids, f32* near_zs, f32* far_zs, u32 count)
         const f32 near_z{ near_zs[i] };
         const f32 far_z{ far_zs[i] };
         assert(near_z > 0 && near_z <= far_z);
-        const graphics::camera camera{ graphics::camera_id{ids[i]} };
+        const graphics::camera camera{ graphics::camera_id{ ids[i] } };
         camera.range(near_z, far_z);
     }
 }
@@ -1081,7 +1082,7 @@ GetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* 
 EDITOR_INTERFACE void
 SetLightIsEnabled(id::id_type* ids, u64* light_set_keys, u32* is_enabled, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && is_enabled && count);
 
     for (u32 i{ 0 }; i < count; ++i)
@@ -1095,7 +1096,7 @@ SetLightIsEnabled(id::id_type* ids, u64* light_set_keys, u32* is_enabled, u32 co
 EDITOR_INTERFACE void
 SetLightIntensity(id::id_type* ids, u64* light_set_keys, f32* intensities, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && intensities && count);
 
     for (u32 i{ 0 }; i < count; ++i)
@@ -1109,7 +1110,7 @@ SetLightIntensity(id::id_type* ids, u64* light_set_keys, f32* intensities, u32 c
 EDITOR_INTERFACE void
 SetLightRange(id::id_type* ids, u64* light_set_keys, f32* ranges, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && ranges && count);
 
     for (u32 i{ 0 }; i < count; ++i)
@@ -1123,7 +1124,7 @@ SetLightRange(id::id_type* ids, u64* light_set_keys, f32* ranges, u32 count)
 EDITOR_INTERFACE void
 SetLightConeAngles(id::id_type* ids, u64* light_set_keys, f32* umbras, f32* penumbras, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && umbras && penumbras && count);
 
     for (u32 i{ 0 }; i < count; ++i)
@@ -1137,7 +1138,7 @@ SetLightConeAngles(id::id_type* ids, u64* light_set_keys, f32* umbras, f32* penu
 EDITOR_INTERFACE void
 SetLightColor(id::id_type* ids, u64* light_set_keys, f32* r, f32* g, f32* b, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && r && g && b && count);
 
     for (u32 i{ 0 }; i < count; ++i)
@@ -1151,7 +1152,7 @@ SetLightColor(id::id_type* ids, u64* light_set_keys, f32* r, f32* g, f32* b, u32
 EDITOR_INTERFACE void
 SetLightAttenuation(id::id_type* ids, u64* light_set_keys, f32* a, f32* b, f32* c, u32 count)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     assert(ids && light_set_keys && a && b && c && count);
 
     for (u32 i{ 0 }; i < count; ++i)
@@ -1258,7 +1259,7 @@ GetPosition(id::id_type* ids, f32* x, f32* y, f32* z, u32 count)
 
     for (u32 i{ 0 }; i < count; ++i)
     {
-        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ids[i]} }.transform().get_id());
+        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
         // NOTE: transform id is the same as entity id
         const transform::transform_id id{ ids[i] };
         transform::component t{ id };
@@ -1276,7 +1277,7 @@ GetRotation(id::id_type* ids, f32* x, f32* y, f32* z, u32 count)
 
     for (u32 i{ 0 }; i < count; ++i)
     {
-        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ids[i]} }.transform().get_id());
+        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
         // NOTE: transform id is the same as entity id
         const transform::transform_id id{ ids[i] };
         transform::component t{ id };
@@ -1293,7 +1294,7 @@ GetScale(id::id_type* ids, f32* x, f32* y, f32* z, u32 count)
 
     for (u32 i{ 0 }; i < count; ++i)
     {
-        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ids[i]} }.transform().get_id());
+        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
         // NOTE: transform id is the same as entity id
         const transform::transform_id id{ ids[i] };
         transform::component t{ id };
@@ -1306,30 +1307,23 @@ EDITOR_INTERFACE void
 SetPosition(id::id_type* ids, f32* x, f32* y, f32* z, u32 count, b32 is_local)
 {
     assert(ids && count);
-    std::lock_guard lock{ mutex };
-
-    transform_cache.resize(count);
+    //std::lock_guard lock{ mutex };
 
     for (u32 i{ 0 }; i < count; ++i)
     {
         math::v3 v{ x[i], y[i], z[i] };
-        transform_cache[i].position = !is_local ? v : get_local_pos(v, ids[i]);
-        transform_cache[i].flags = transform::component_flags::position;
-        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ids[i]} }.transform().get_id());
         // NOTE: transform id is the same as entity id
-        transform_cache[i].id = transform::transform_id{ ids[i] };
-    }
-
-    transform::update(transform_cache.data(), count);
+        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
+        transform::component transform{ transform::transform_id{ ids[i] } };
+        transform.position(!is_local ? v : get_local_pos(v, ids[i]));
+    }    
 }
 
 EDITOR_INTERFACE void
 SetRotation(id::id_type* ids, f32* x, f32* y, f32* z, u32 count, u32 frame)
 {
     assert(ids && count);
-    std::lock_guard lock{ mutex };
-
-    transform_cache.resize(count);
+    //std::lock_guard lock{ mutex };
 
     using frame_fn_ptr = math::v4(*)(math::v3, u32);
     frame_fn_ptr frame_fn{ &get_absolute_quat };
@@ -1346,34 +1340,35 @@ SetRotation(id::id_type* ids, f32* x, f32* y, f32* z, u32 count, u32 frame)
     for (u32 i{ 0 }; i < count; ++i)
     {
         math::v3 v{ x[i], y[i], z[i] };
-        transform_cache[i].rotation = frame_fn(v, ids[i]);
-        transform_cache[i].flags = transform::component_flags::rotation;
-        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ids[i]} }.transform().get_id());
         // NOTE: transform id is the same as entity id
-        transform_cache[i].id = transform::transform_id{ ids[i] };
+        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
+        transform::component transform{ transform::transform_id{ ids[i] } };
+        transform.rotation(frame_fn(v, ids[i]));
     }
-
-    transform::update(transform_cache.data(), count);
 }
 
 EDITOR_INTERFACE void
 SetScale(id::id_type* ids, f32* x, f32* y, f32* z, u32 count, b32)
 {
     assert(ids && count);
-    std::lock_guard lock{ mutex };
-
-    transform_cache.resize(count);
+    //std::lock_guard lock{ mutex };
 
     for (u32 i{ 0 }; i < count; ++i)
     {
-        transform_cache[i].scale = { x[i], y[i], z[i] };
-        transform_cache[i].flags = transform::component_flags::scale;
-        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ids[i]} }.transform().get_id());
         // NOTE: transform id is the same as entity id
-        transform_cache[i].id = transform::transform_id{ ids[i] };
-    }
+        assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
+        transform::component transform{ transform::transform_id{ ids[i] } };
+        transform.scale({ x[i], y[i], z[i] });
+    }    
+}
 
-    transform::update(transform_cache.data(), count);
+EDITOR_INTERFACE void
+UpdateEngineData()
+{
+    std::lock_guard lock{ mutex };
+    transform::update();
+    graphics::update_lights();
+    graphics::update_cameras();
 }
 
 EDITOR_INTERFACE void
@@ -1400,7 +1395,7 @@ GetLocalFrame(id::id_type id, math::m3x3* frame)
 {
     assert(id::is_valid(id) && frame);
     std::lock_guard lock{ mutex };
-    assert(transform::transform_id{ id } == game_entity::entity{ game_entity::entity_id{id} }.transform().get_id());
+    assert(transform::transform_id{ id } == game_entity::entity{ game_entity::entity_id{ id } }.transform().get_id());
     // NOTE: transform id is the same as entity id
     const transform::transform_id transform_id{ id };
     transform::component t{ transform_id };
@@ -1408,42 +1403,11 @@ GetLocalFrame(id::id_type id, math::m3x3* frame)
 }
 
 EDITOR_INTERFACE void
-ScriptSetRotation(id::id_type entity_id, f32 x, f32 y, f32 z, f32 w)
+SetRotationQuat(id::id_type entity_id, f32 x, f32 y, f32 z, f32 w)
 {
-    std::lock_guard lock{ mutex };
+    //std::lock_guard lock{ mutex };
     math::v4 q{ x, y, z, w };
-    struct s : public script::entity_script {
-        explicit s(game_entity::entity entity, math::v4 rotation)
-            : script::entity_script{ entity } {
-            set_rotation(rotation);
-        }
-    } s{ game_entity::entity{ game_entity::entity_id{ entity_id } }, q };
-}
-
-EDITOR_INTERFACE void
-ScriptSetPosition(id::id_type entity_id, f32 x, f32 y, f32 z)
-{
-    std::lock_guard lock{ mutex };
-    math::v3 pos{ x, y, z };
-    struct s : public script::entity_script {
-        explicit s(game_entity::entity entity, math::v3 position)
-            : script::entity_script{ entity } {
-            set_position(position);
-        }
-    } s{ game_entity::entity{ game_entity::entity_id{ entity_id } }, pos };
-}
-
-EDITOR_INTERFACE void
-ScriptSetScale(id::id_type entity_id, f32 x, f32 y, f32 z)
-{
-    std::lock_guard lock{ mutex };
-    math::v3 scale{ x, y, z };
-    struct s : public script::entity_script {
-        explicit s(game_entity::entity entity, math::v3 scale)
-            : script::entity_script{ entity } {
-            set_scale(scale);
-        }
-    } s{ game_entity::entity{ game_entity::entity_id{ entity_id } }, scale };
+    game_entity::entity{ game_entity::entity_id{ entity_id } }.rotation(q);
 }
 
 EDITOR_INTERFACE u8
@@ -1493,6 +1457,18 @@ GetInputBinding(u64 binding, f32* value)
     assert(value);
     //std::lock_guard lock{ mutex };
     input::get(binding, (input::input_value&)*value);
+}
+
+EDITOR_INTERFACE void
+ShowMouse(b32 show)
+{
+    input::show_mouse(show);
+}
+
+EDITOR_INTERFACE void
+MouseBehavior(u32 type)
+{
+    input::mouse_behavior((input::mouse_behavior::type)type);
 }
 
 EDITOR_INTERFACE u32
@@ -1578,15 +1554,15 @@ GetEditorAPI()
         .SetRotation = SetRotation,
         .SetScale = SetScale,
         .GetLocalFrame = GetLocalFrame,
-        .ScriptSetRotation = ScriptSetRotation,
-        .ScriptSetPosition = ScriptSetPosition,
-        .ScriptSetScale = ScriptSetScale,
+        .SetRotationQuat = SetRotationQuat,
         .RegisterScript = RegisterScript,
         .AddScriptName = AddScriptName,
         // INPUT
         .AddInputCallback = AddInputCallback,
         .RemoveInputCallback = RemoveInputCallback,
         .GetInput = GetInput,
-        .GetInputBinding = GetInputBinding
+        .GetInputBinding = GetInputBinding,
+        .ShowMouse = ShowMouse,
+        .MouseBehavior = MouseBehavior,
     };
 }

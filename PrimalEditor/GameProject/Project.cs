@@ -308,7 +308,7 @@ class Project : ViewModelBase
                     entity.AddComponent(script);
                 }
 
-                EngineAPI.EntityAPI.BeginPlayAll();
+                EngineAPI.BeginPlayAll();
             }
             MSEntity.Refresh();
         });

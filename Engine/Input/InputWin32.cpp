@@ -5,6 +5,11 @@
 #include "InputWin32.h"
 #include "Input.h"
 
+#include <hidusage.h>
+#ifndef QWORD
+typedef u64 QWORD;
+#endif
+
 namespace primal::input {
 namespace {
 
@@ -14,8 +19,8 @@ constexpr u32 vk_mapping[256]{
     /* 0x02 */ input_code::mouse_right,
     /* 0x03 */ u32_invalid_id,
     /* 0x04 */ input_code::mouse_middle,
-    /* 0x05 */ u32_invalid_id,
-    /* 0x06 */ u32_invalid_id,
+    /* 0x05 */ input_code::mouse_4,
+    /* 0x06 */ input_code::mouse_5,
     /* 0x07 */ u32_invalid_id,
     /* 0x08 */ input_code::key_backspace,
     /* 0x09 */ input_code::key_tab,
@@ -294,7 +299,67 @@ struct modifier_flags {
     };
 };
 
-u8 modifier_keys_state{ 0 };
+u8                      modifier_keys_state{ 0 };
+utl::vector<u8>         raw_input_buffer(4096);
+HWND                    window_handle{ nullptr };
+mouse_behavior::type    mouse_behavior_type{};
+bool                    mouse_current_visibility{ true };
+bool                    mouse_is_visible{ true };
+bool                    window_has_focus{ false };
+
+void
+set_mouse_visibility(bool visible)
+{
+    if (mouse_is_visible != visible)
+    {
+        ShowCursor(visible ? TRUE : FALSE);
+        mouse_is_visible = visible;
+    }
+}
+
+void
+clip_cursor_to_window()
+{
+    if (!window_handle || IsIconic(window_handle))
+    {
+        ClipCursor(nullptr);
+        return;
+    }
+
+    RECT rect;
+    if (!GetClientRect(window_handle, &rect)) return;
+
+    POINT top_left{ rect.left, rect.top };
+    POINT bottom_right{ rect.right, rect.bottom };
+    if (!ClientToScreen(window_handle, &top_left) || !ClientToScreen(window_handle, &bottom_right)) return;
+
+    rect = { top_left.x, top_left.y, bottom_right.x, bottom_right.y };
+    ClipCursor(&rect);
+}
+
+void
+apply_mouse_behavior()
+{
+    if (!window_has_focus)
+    {
+        ClipCursor(nullptr);
+        set_mouse_visibility(true);
+        return;
+    }
+
+    show_mouse(mouse_current_visibility);
+
+    switch (mouse_behavior_type)
+    {
+    case mouse_behavior::free:
+    case mouse_behavior::center:
+        ClipCursor(nullptr);
+        break;
+    case mouse_behavior::clip:
+        clip_cursor_to_window();
+        break;
+    }
+}
 
 void
 set_modifier_input(u8 virtual_key, input_code::code code, modifier_flags::flags flags)
@@ -337,73 +402,166 @@ get_mouse_position(LPARAM lparam)
     return { (f32)((s16)(lparam & 0x0000ffff)), (f32)((s16)(lparam >> 16)) };
 }
 
+void
+process_input_buffer(u32 count)
+{
+    assert(count && count != u32_invalid_id);
+
+    RAWINPUT* ri{ (RAWINPUT*)raw_input_buffer.data() };
+
+    for (u32 i{ 0 }; i < count; ++i, ri = NEXTRAWINPUTBLOCK(ri))
+    {
+        const RAWINPUT& input{ *ri };
+
+        if (input.header.dwType == RIM_TYPEMOUSE)
+        {
+            const RAWMOUSE& mouse{ input.data.mouse };
+
+            // Mouse moved
+            if (!mouse.usFlags && (mouse.lLastX || mouse.lLastY))
+            {
+                math::v2 pos{ (f32)mouse.lLastX, (f32)mouse.lLastY };
+                set(input_source::mouse, input_code::mouse_position_x, { pos.x, 0.f, 0.f });
+                set(input_source::mouse, input_code::mouse_position_y, { pos.y, 0.f, 0.f });
+                set(input_source::mouse, input_code::mouse_position, { pos.x, pos.y, 0.f });
+            }
+
+            // Mouse buttons state changed
+            if (mouse.usButtonFlags)
+            {
+                const math::u32v2 pos{ mouse_position() };
+                const math::v3 pos_down{ (f32)pos.x, (f32)pos.y, 1.f };
+                const math::v3 pos_up{ (f32)pos.x, (f32)pos.y, 0.f };
+
+                if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+                    set(input_source::mouse, input_code::mouse_left, pos_down);
+                if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) set(input_source::mouse, input_code::mouse_left, pos_up);
+                if (mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) set(input_source::mouse, input_code::mouse_right, pos_down);
+                if (mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) set(input_source::mouse, input_code::mouse_right, pos_up);
+                if (mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) set(input_source::mouse, input_code::mouse_middle, pos_down);
+                if (mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) set(input_source::mouse, input_code::mouse_middle, pos_up);
+                if (mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) set(input_source::mouse, input_code::mouse_4, pos_down);
+                if (mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) set(input_source::mouse, input_code::mouse_4, pos_up);
+                if (mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) set(input_source::mouse, input_code::mouse_5, pos_down);
+                if (mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) set(input_source::mouse, input_code::mouse_5, pos_up);
+                if (mouse.usButtonFlags & RI_MOUSE_WHEEL) set(input_source::mouse, input_code::mouse_wheel, { (f32)((u16)mouse.usButtonData), 0.f, 0.f });
+            }
+        }
+        else if (input.header.dwType == RIM_TYPEKEYBOARD)
+        {
+            const RAWKEYBOARD& keyboard{ input.data.keyboard };
+            const f32 state{ keyboard.Flags & RI_KEY_BREAK ? 0.f : 1.f }; // 1.f means pressed
+            const input_code::code code{ vk_mapping[keyboard.VKey & 0xff] };
+            if (code != u32_invalid_id)
+            {
+                set(input_source::keyboard, code, { state, 0.f, 0.f });
+                set_modifier_inputs(code);
+            }
+        }
+        else if (input.header.dwType == RIM_TYPEHID)
+        {
+        }
+    }
+}
+
 } // anonymous namespace
 
-HRESULT
-process_input_message(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+bool
+initialize()
 {
-    switch (msg)
+    RAWINPUTDEVICE rid[2]{};
+
+    // Keyboard
+    rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+    rid[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+    //rid[0].dwFlags = RIDEV_NOLEGACY;
+
+    // Mouse
+    rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+    rid[1].usUsage = HID_USAGE_GENERIC_MOUSE;
+    //rid[1].dwFlags = RIDEV_NOLEGACY;
+
+    return RegisterRawInputDevices(&rid[0], _countof(rid), sizeof(RAWINPUTDEVICE));
+}
+
+void
+shutdown()
+{
+    ClipCursor(nullptr);
+}
+
+void
+process()
+{
+    for (;;)
     {
-    case WM_KEYDOWN:
-    case WM_SYSKEYDOWN:
-    {
-        assert(wparam <= 0xff);
-        const input_code::code code{ vk_mapping[wparam & 0xff] };
-        if (code != u32_invalid_id)
+        u32 buffer_size{ (u32)raw_input_buffer.size() };
+        const u32 count{ GetRawInputBuffer((RAWINPUT*)raw_input_buffer.data(), &buffer_size, sizeof(RAWINPUTHEADER)) };
+
+        if (!count) break;
+
+        // Buffer too small. Double buffer size until it fits or exceeded a threshold.
+        if (count == u32_invalid_id)
         {
-            set(input_source::keyboard, code, { 1.f, 0.f, 0.f });
-            set_modifier_inputs(code);
+            raw_input_buffer.resize(raw_input_buffer.size() * 2);
+            buffer_size = (u32)raw_input_buffer.size();
+            // Arbitrary buffer size fail threshold. Just give up when there's this much stale input data.
+            if (buffer_size > 1000'000) break;
+
+            continue;
         }
-    }
-    break;
-    case WM_KEYUP:
-    case WM_SYSKEYUP:
-    {
-        assert(wparam <= 0xff);
-        const input_code::code code{ vk_mapping[wparam & 0xff] };
-        if (code != u32_invalid_id)
-        {
-            set(input_source::keyboard, code, { 0.f, 0.f, 0.f });
-            set_modifier_inputs(code);
-        }
-    }
-    break;
-    case WM_MOUSEMOVE:
-    {
-        const math::v2 pos{ get_mouse_position(lparam) };
-        set(input_source::mouse, input_code::mouse_position_x, { pos.x, 0.f, 0.f });
-        set(input_source::mouse, input_code::mouse_position_y, { pos.y, 0.f, 0.f });
-        set(input_source::mouse, input_code::mouse_position, { pos.x, pos.y, 0.f });
-    }
-    break;
-    case WM_LBUTTONDOWN:
-    case WM_RBUTTONDOWN:
-    case WM_MBUTTONDOWN:
-    {
-        SetCapture(hwnd);
-        const input_code::code code{ msg == WM_LBUTTONDOWN ? input_code::mouse_left : msg == WM_RBUTTONDOWN ? input_code::mouse_right : input_code::mouse_middle };
-        const math::v2 pos{ get_mouse_position(lparam) };
-        set(input_source::mouse, code, { pos.x, pos.y, 1.f });
-    }
-    break;
-    case WM_LBUTTONUP:
-    case WM_RBUTTONUP:
-    case WM_MBUTTONUP:
-    {
-        ReleaseCapture();
-        const input_code::code code{ msg == WM_LBUTTONUP ? input_code::mouse_left : msg == WM_RBUTTONUP ? input_code::mouse_right : input_code::mouse_middle };
-        const math::v2 pos{ get_mouse_position(lparam) };
-        set(input_source::mouse, code, { pos.x, pos.y, 0.f });
-    }
-    break;
-    case WM_MOUSEWHEEL:
-    {
-        set(input_source::mouse, input_code::mouse_wheel, { (f32)(GET_WHEEL_DELTA_WPARAM(wparam)), 0.f, 0.f });
-    }
-    break;
+
+        process_input_buffer(count);
     }
 
-    return S_OK;
+    if (window_handle && window_has_focus && mouse_behavior_type == mouse_behavior::center)
+    {
+        RECT rect;
+        if (GetClientRect(window_handle, &rect))
+        {
+            POINT center{ rect.left + ((rect.right - rect.left) >> 1), rect.top + ((rect.bottom - rect.top) >> 1) };
+            if (ClientToScreen(window_handle, &center)) SetCursorPos(center.x, center.y);
+        }
+    }
+}
+
+#ifdef USE_WITH_EDITOR
+void process_raw_input(u8* data, u32 size)
+{
+    assert(data && size && size != u32_invalid_id && raw_input_buffer.size() >= size);
+    memcpy(raw_input_buffer.data(), data, size);
+    process_input_buffer(1);
+}
+#endif // USE_WITH_EDITOR
+
+math::u32v2
+mouse_position()
+{
+    POINT pos{};
+    return window_handle && GetCursorPos(&pos) && ScreenToClient(window_handle, &pos) 
+        ? math::u32v2{ (u32)pos.x, (u32)pos.y } : math::u32v2{};
+}
+
+void
+show_mouse(bool show)
+{
+    mouse_current_visibility = show;
+    set_mouse_visibility(show);
+}
+
+void
+mouse_behavior(mouse_behavior::type type)
+{
+    mouse_behavior_type = type;
+    apply_mouse_behavior();
+}
+
+void
+update_mouse_behavior(HWND hwnd, bool is_focused)
+{
+    window_handle = hwnd;
+    window_has_focus = is_focused;
+    apply_mouse_behavior();
 }
 }
 

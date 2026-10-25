@@ -1,6 +1,7 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "Transform.h"
+#include "Utilities/MutationCache.h"
 
 namespace primal::transform {
 namespace {
@@ -23,12 +24,30 @@ struct local_frame
 
     local_frame()
         : right{ 1.f, 0.f, 0.f }, up{ 0.f, 1.f, 0.f }, front{ 0.f, 0.f, 1.f }
-    {}
+    {
+    }
 };
 
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
+
+struct component_cache
+{
+    enum flags : u8 {
+        rotation_flag = 0x01,
+        position_flag = 0x02,
+        scale_flag = 0x04,
+
+        all_flag = rotation_flag | position_flag | scale_flag
+    };
+
+    math::v4        rotation;
+    math::v3        position;
+    math::v3        scale;
+    transform_id    id{ id::invalid_id };
+    u8              flags;
+};
 
 utl::vector<math::m4x4>     to_world;
 utl::vector<math::m4x4>     inv_world;
@@ -38,7 +57,9 @@ utl::vector<math::v3>       positions;
 utl::vector<math::v3>       scales;
 utl::vector<u8>             has_transform;
 utl::vector<u8>             changes_from_previous_frame;
-u8                          read_write_flag;
+u8                          read_write_flag{};
+
+utl::mutation_cache<component_cache, transform_id>  transform_cache{};
 
 void
 calculate_transform_matrices(id::id_type index)
@@ -91,7 +112,7 @@ set_rotation(transform_id id, const math::v4& rotation_quaternion)
     rotations[index] = rotation_quaternion;
     calculate_local_frame(rotation_quaternion, local_frames[index]);
     has_transform[index] = 0;
-    changes_from_previous_frame[index] |= component_flags::rotation;
+    changes_from_previous_frame[index] |= component_cache::rotation_flag;
 }
 
 void
@@ -100,7 +121,7 @@ set_position(transform_id id, const math::v3& position)
     const u32 index{ id::index(id) };
     positions[index] = position;
     has_transform[index] = 0;
-    changes_from_previous_frame[index] |= component_flags::position;
+    changes_from_previous_frame[index] |= component_cache::position_flag;
 }
 
 void
@@ -109,7 +130,7 @@ set_scale(transform_id id, const math::v3& scale)
     const u32 index{ id::index(id) };
     scales[index] = scale;
     has_transform[index] = 0;
-    changes_from_previous_frame[index] |= component_flags::scale;
+    changes_from_previous_frame[index] |= component_cache::scale_flag;
 }
 
 } // anonymous namespace
@@ -128,7 +149,7 @@ create(init_info info, game_entity::entity entity)
         positions[entity_index] = math::v3{ info.position };
         scales[entity_index] = math::v3{ info.scale };
         has_transform[entity_index] = 0;
-        changes_from_previous_frame[entity_index] = (u8)component_flags::all;
+        changes_from_previous_frame[entity_index] = component_cache::all_flag;
     }
     else
     {
@@ -141,7 +162,7 @@ create(init_info info, game_entity::entity entity)
         positions.emplace_back(info.position);
         scales.emplace_back(info.scale);
         has_transform.emplace_back((u8)0);
-        changes_from_previous_frame.emplace_back((u8)component_flags::all);
+        changes_from_previous_frame.emplace_back(component_cache::all_flag);
     }
 
     // NOTE: each entity has a transform component. Therefor, id's for transform components
@@ -184,9 +205,15 @@ get_updated_components_flags(const game_entity::entity_id *const ids, u32 count,
 }
 
 void
-update(const component_cache *const cache, u32 count)
+update()
 {
-    assert(cache && count);
+    component_cache* cache{ nullptr };
+    u32 count{};
+    transform_cache.get_cache_array(&cache, &count);
+
+    if (!count) return;
+
+    assert(cache);
 
     // NOTE: clearing "changes_from_previous_frame" happens once every frame when there will be no reads and the caches are
     //       about to be applied by calling this function (i.e. the rest of the current frame will only have writes).
@@ -201,21 +228,23 @@ update(const component_cache *const cache, u32 count)
         const component_cache& c{ cache[i] };
         assert(component{ c.id }.is_valid());
 
-        if (c.flags & component_flags::rotation)
+        if (c.flags & component_cache::rotation_flag)
         {
             set_rotation(c.id, c.rotation);
         }
 
-        if (c.flags & component_flags::position)
+        if (c.flags & component_cache::position_flag)
         {
             set_position(c.id, c.position);
         }
 
-        if (c.flags & component_flags::scale)
+        if (c.flags & component_cache::scale_flag)
         {
             set_scale(c.id, c.scale);
         }
     }
+
+    transform_cache.clear();
 }
 
 math::v4
@@ -265,6 +294,33 @@ component::local_frame() const
 {
     assert(is_valid());
     return local_frames[id::index(_id)].frame;
+}
+
+void
+component::rotation(math::v4 rotation_quaternion) const
+{
+    assert(is_valid());
+    component_cache& cache{ *transform_cache.get_cache_ptr(_id) };
+    cache.flags |= component_cache::rotation_flag;
+    cache.rotation = rotation_quaternion;
+}
+
+void
+component::position(math::v3 position) const
+{
+    assert(is_valid());
+    component_cache& cache{ *transform_cache.get_cache_ptr(_id) };
+    cache.flags |= component_cache::position_flag;
+    cache.position = position;
+}
+
+void
+component::scale(math::v3 scale) const
+{
+    assert(is_valid());
+    component_cache& cache{ *transform_cache.get_cache_ptr(_id) };
+    cache.flags |= component_cache::scale_flag;
+    cache.scale = scale;
 }
 
 DirectX::XMVECTOR

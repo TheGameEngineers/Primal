@@ -101,7 +101,7 @@ class Scene : ViewModelBase
                     Debug.Assert(ID.IsValid(id));
                     if (ID.IsValid(id))
                     {
-                        EngineAPI.EntityAPI.BeginPlay(id);
+                        EngineAPI.BeginPlay(id);
                     }
                 }
             }

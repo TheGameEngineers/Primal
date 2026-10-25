@@ -133,6 +133,9 @@ partial class RenderSurfaceHost : HwndHost
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool DestroyWindow(IntPtr hwnd);
 
+    [LibraryImport("user32.dll", EntryPoint = "SetFocus")]
+    public static partial IntPtr SetFocus(IntPtr hwnd);    
+
     public int SurfaceId { get; private set; } = ID.INVALID_ID;
 
     public static readonly RoutedEvent IsHostReadyChangedEvent =

@@ -54,9 +54,7 @@ struct editor_api final
     void (*SetRotation)(id::id_type*, f32*, f32*, f32*, u32, u32) { nullptr };
     void (*SetScale)(id::id_type*, f32*, f32*, f32*, u32, b32) { nullptr };
     void (*GetLocalFrame)(id::id_type, math::m3x3*) { nullptr };
-    void (*ScriptSetRotation)(id::id_type, f32, f32, f32, f32) { nullptr };
-    void (*ScriptSetPosition)(id::id_type, f32, f32, f32) { nullptr };
-    void (*ScriptSetScale)(id::id_type, f32, f32, f32) { nullptr };
+    void (*SetRotationQuat)(id::id_type, f32, f32, f32, f32) { nullptr };    
     u8(*RegisterScript)(size_t, uintptr_t) { nullptr };
     u8(*AddScriptName)(const char*) { nullptr };
     // INPUT
@@ -64,6 +62,8 @@ struct editor_api final
     void (*RemoveInputCallback)(void*) { nullptr };
     void (*GetInput)(u32, u32, f32*) { nullptr };
     void (*GetInputBinding)(u64, f32*) { nullptr };
+    void (*ShowMouse)(b32) { nullptr };
+    void (*MouseBehavior)(u32) { nullptr };
 
     void set(editor_api* api)
     {

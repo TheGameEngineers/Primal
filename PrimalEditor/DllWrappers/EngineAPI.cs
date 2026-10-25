@@ -486,6 +486,18 @@ namespace PrimalEditor.DllWrappers
         [LibraryImport(_engineDll)]
         public static partial void SetLightAttenuation([In] IdType[] ids, [In] ulong[] lightSetKeys, [In] float[] a, [In] float[] b, [In] float[] c, int count);
 
+        [LibraryImport(_engineDll)]
+        public static partial void UpdateEngineData();
+
+        [LibraryImport(_engineDll)]
+        public static partial void BeginPlay(IdType id);
+
+        [LibraryImport(_engineDll)]
+        public static partial void BeginPlayAll();
+
+        [LibraryImport(_engineDll)]
+        public static partial void UpdateScripts(float dt);
+
         internal static partial class EntityAPI
         {
             [DllImport(_engineDll)]
@@ -631,15 +643,6 @@ namespace PrimalEditor.DllWrappers
 
             [LibraryImport(_engineDll)]
             public static partial void SetScale([In] IdType[] ids, [In] float[] x, [In] float[] y, [In] float[] z, int count, int _);
-
-            [LibraryImport(_engineDll)]
-            public static partial void BeginPlay(IdType id);
-
-            [LibraryImport(_engineDll)]
-            public static partial void BeginPlayAll();
-
-            [LibraryImport(_engineDll)]
-            public static partial void UpdateScripts(float dt);
         }
     }
 }

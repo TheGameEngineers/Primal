@@ -43,6 +43,8 @@ struct input_code {
         mouse_right,
         mouse_middle,
         mouse_wheel,
+        mouse_4,
+        mouse_5,
 
         key_backspace,
         key_tab,
@@ -176,8 +178,20 @@ struct input_source {
     modifier_key::key   modifier{};
 };
 
+struct mouse_behavior {
+    enum type : u32 {
+        free = 0,
+        clip = 1,
+        center = 2,
+    };
+};
+
 void get(input_source::type type, input_code::code code, input_value& value);
 void get(u64 binding, input_value& value);
+
+math::u32v2 mouse_position();
+void show_mouse(bool show);
+void mouse_behavior(mouse_behavior::type type);
 
 namespace detail {
 

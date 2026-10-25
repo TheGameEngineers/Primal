@@ -92,6 +92,29 @@ component::local_frame() const
     return frame;
 }
 
+void
+component::rotation(math::v4 rotation_quaternion) const
+{
+    assert(is_valid());
+    editor::api.SetRotationQuat(get_id(), rotation_quaternion.x, rotation_quaternion.y, rotation_quaternion.z, rotation_quaternion.w);
+}
+
+void
+component::position(math::v3 position) const
+{
+    assert(is_valid());
+    id::id_type id{ get_id() };
+    editor::api.SetPosition(&id, &position.x, &position.y, &position.z, 1, 0);
+}
+
+void
+component::scale(math::v3 scale) const
+{
+    assert(is_valid());
+    id::id_type id{ get_id() };
+    editor::api.SetScale(&id, &scale.x, &scale.y, &scale.z, 1, 1);
+}
+
 DirectX::XMVECTOR
 component::calculate_local_position(math::v3 delta) const
 {
@@ -158,29 +181,7 @@ component::calculate_world_rotation(math::v3 delta) const
 
 } // namespace transform
 
-namespace script {
-void
-entity_script::set_rotation(const game_entity::entity *const entity, math::v4 rotation_quaternion)
-{
-    assert(entity);
-    editor::api.ScriptSetRotation((*entity).get_id(), rotation_quaternion.x, rotation_quaternion.y, rotation_quaternion.z, rotation_quaternion.w);
-}
-
-void
-entity_script::set_position(const game_entity::entity *const entity, math::v3 position)
-{
-    assert(entity);
-    editor::api.ScriptSetPosition((*entity).get_id(), position.x, position.y, position.z);
-}
-
-void
-entity_script::set_scale(const game_entity::entity *const entity, math::v3 scale)
-{
-    assert(entity);
-    editor::api.ScriptSetScale((*entity).get_id(), scale.x, scale.y, scale.z);
-}
-
-namespace detail {
+namespace script::detail {
 namespace {
 using script_registry = std::unordered_map<size_t, script_creator>;
 script_registry&
@@ -239,9 +240,7 @@ get_script_names()
     }
     return names.Detach();
 }
-
-} // namespace detail
-} // namespace script
+} // namespace script::detail
 
 namespace input {
 
@@ -255,6 +254,18 @@ void
 get(u64 binding, input_value& value)
 {
     editor::api.GetInputBinding(binding, (f32*)&value);
+}
+
+void
+show_mouse(bool show)
+{
+    editor::api.ShowMouse(show);
+}
+
+void
+mouse_behavior(mouse_behavior::type type)
+{
+    editor::api.MouseBehavior(type);
 }
 
 detail::input_system_base::input_system_base()

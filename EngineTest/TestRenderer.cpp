@@ -1,6 +1,5 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
-#include "Platform/PlatformTypes.h"
 #include "Platform/Platform.h"
 #include "Graphics/Renderer.h"
 #include "Content/ContentToEngine.h"
@@ -139,10 +138,12 @@ LRESULT win_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     if ((resized && GetKeyState(VK_LBUTTON) >= 0) || toggle_fullscreen)
     {
-        platform::window win{ platform::window_id{(id::id_type)GetWindowLongPtr(hwnd, GWLP_USERDATA)} };
+        //platform::window win{ platform::window_id{ ((id::id_type)GetWindowLongPtr(hwnd, GWLP_USERDATA)) - 1 } };
         for (u32 i{ 0 }; i < _countof(_surfaces); ++i)
         {
-            if (win.get_id() == _surfaces[i].surface.window.get_id())
+            platform::window win{ _surfaces[i].surface.window };
+
+            if (win.handle() == hwnd)
             {
                 if (toggle_fullscreen)
                 {
@@ -245,6 +246,8 @@ destroy_camera_surface(camera_surface& surface)
 bool
 test_initialize()
 {
+    if (!input::initialize()) return false;
+
     while (!compile_shaders())
     {
         // Pop up a message box allowing the user to retry compilation.
@@ -256,10 +259,10 @@ test_initialize()
 
     platform::window_init_info info[]
     {
-        {&win_proc, nullptr, L"Render window 1", 100 - 3000, 100 - 700, 400, 800},
-        {&win_proc, nullptr, L"Render window 2", 150 - 3000, 150 - 700, 800, 400},
-        {&win_proc, nullptr, L"Render window 3", 200 - 3000, 200 - 700, 400, 400},
-        {&win_proc, nullptr, L"Render window 4", 250 - 3000, 250 - 700, 800, 600},
+        { &win_proc, nullptr, L"Render window 1", 100 - 3000, 100 - 700, 400, 800 },
+        { &win_proc, nullptr, L"Render window 2", 150 - 3000, 150 - 700, 800, 400 },
+        { &win_proc, nullptr, L"Render window 3", 200 - 3000, 200 - 700, 400, 400 },
+        { &win_proc, nullptr, L"Render window 4", 250 - 3000, 250 - 700, 800, 600 },
     };
     static_assert(_countof(info) == _countof(_surfaces));
 
@@ -306,6 +309,7 @@ test_initialize()
     source.multiplier = 1.f;
     input::bind(source);
 
+    input::mouse_behavior(input::mouse_behavior::center);
 
     is_restarting = false;
     return true;
@@ -323,6 +327,7 @@ test_shutdown()
         destroy_camera_surface(_surfaces[i]);
 
     graphics::shutdown();
+    input::shutdown();
 }
 
 bool
@@ -341,7 +346,11 @@ engine_test::run()
 
     timer.begin();
     const f32 dt{ timer.dt_avg() };
+    input::process();
     script::update(dt);
+    transform::update();
+    graphics::update_lights();
+    graphics::update_cameras();
     //test_lights(dt);
     for (u32 i{ 0 }; i < _countof(_surfaces); ++i)
     {
