@@ -32,6 +32,7 @@ class Project : ViewModelBase
     public static string EditorPath { get; } = AppDomain.CurrentDomain.BaseDirectory;
     public static string Extension => ".primal";
     public static Lock LockScriptUpdates { get; private set; } = new();
+    public static bool IsRunningInEditor { get; set; }
 
     [DataMember]
     public string Name { get; private set; } = "New Project";
@@ -95,7 +96,7 @@ class Project : ViewModelBase
             }
         }
     }
-    
+
     public static Project Current { get; private set; }
 
     public static UndoRedo UndoRedo { get; } = new UndoRedo();
@@ -308,7 +309,7 @@ class Project : ViewModelBase
                     entity.AddComponent(script);
                 }
 
-                EngineAPI.BeginPlayAll();
+                if(IsRunningInEditor) EngineAPI.BeginPlayAll();
             }
             MSEntity.Refresh();
         });

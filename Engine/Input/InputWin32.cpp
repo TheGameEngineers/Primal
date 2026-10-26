@@ -406,7 +406,6 @@ void
 process_input_buffer(u32 count)
 {
     assert(count && count != u32_invalid_id);
-
     RAWINPUT* ri{ (RAWINPUT*)raw_input_buffer.data() };
 
     for (u32 i{ 0 }; i < count; ++i, ri = NEXTRAWINPUTBLOCK(ri))
@@ -433,8 +432,7 @@ process_input_buffer(u32 count)
                 const math::v3 pos_down{ (f32)pos.x, (f32)pos.y, 1.f };
                 const math::v3 pos_up{ (f32)pos.x, (f32)pos.y, 0.f };
 
-                if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
-                    set(input_source::mouse, input_code::mouse_left, pos_down);
+                if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) set(input_source::mouse, input_code::mouse_left, pos_down);
                 if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) set(input_source::mouse, input_code::mouse_left, pos_up);
                 if (mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) set(input_source::mouse, input_code::mouse_right, pos_down);
                 if (mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) set(input_source::mouse, input_code::mouse_right, pos_up);
@@ -526,6 +524,9 @@ process()
 }
 
 #ifdef USE_WITH_EDITOR
+// NOTE: We can't set a WM_INPUT filter for the editor like we did for the C++ message loop.
+//       Therefore, when the game is running in the editor, we need to handle WM_INPUT
+//       messages instead of reading the raw input buffer periodically.
 void process_raw_input(u8* data, u32 size)
 {
     assert(data && size && size != u32_invalid_id && raw_input_buffer.size() >= size);
@@ -538,7 +539,7 @@ math::u32v2
 mouse_position()
 {
     POINT pos{};
-    return window_handle && GetCursorPos(&pos) && ScreenToClient(window_handle, &pos) 
+    return window_handle && GetCursorPos(&pos) && ScreenToClient(window_handle, &pos)
         ? math::u32v2{ (u32)pos.x, (u32)pos.y } : math::u32v2{};
 }
 

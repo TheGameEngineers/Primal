@@ -17,6 +17,14 @@ using System.Windows.Input;
 
 namespace PrimalEditor.Editors;
 
+public static class WorldEditorCommands
+{
+    public static RoutedCommand RunCommand { get; } = new(nameof(RunCommand), typeof(WorldEditorView), [new KeyGesture(Key.F6, ModifierKeys.Shift)]);
+    public static RoutedCommand PlayCommand { get; } = new(nameof(PlayCommand), typeof(WorldEditorView), [new KeyGesture(Key.F6)]);
+    //public static RoutedCommand ZoomInCommand { get; } = new(nameof(ZoomInCommand), typeof(TextureEditorView), [new KeyGesture(Key.OemPlus, ModifierKeys.Control)]);
+
+}
+
 /// <summary>
 /// Interaction logic for WorldEditorView.xaml
 /// </summary>
@@ -46,16 +54,15 @@ partial class WorldEditorView : UserControl
         DataContextChanged += OnWorldEditorDataContextChanged;
         sv1.RenderSurfaceControl.IsHostReadyChanged += OnRenderSurfaceView_IsHostReadyChanged;
         sv1.RenderSurfaceControl.RenderFrame += OnRenderFrame;
-        sv1.RenderSurfaceControl.RequestStop += OnRequestStop;
     }
 
     private void OnRequestStop(object sender, EventArgs e)
     {
         if (DataContext is not null)
         {
-            Focus();
             playToggleButton.IsChecked = false;
             OnPlay_ToggleButton_Click(playToggleButton, null);
+            Focus();
         }
     }
 
@@ -138,7 +145,7 @@ partial class WorldEditorView : UserControl
                 {
                     // TODO: properly assign a camera as the active camera of the scene.
                     _activeCameraId = scene.GameEntities.OfType<PerspectiveCamera>().FirstOrDefault()?.CameraId ?? ID.INVALID_ID;
-                    if(!ID.IsValid(_activeCameraId))
+                    if (!ID.IsValid(_activeCameraId))
                     {
                         Logger.Log(MessageType.Warning, "The scene doesn't contain a perspective camera. Using editor camera instead.");
                     }
@@ -154,6 +161,8 @@ partial class WorldEditorView : UserControl
 
                 if (!_isRunning) MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
             }
+
+            Project.IsRunningInEditor = _isRunning || _isPlaying;
         }
     }
 
@@ -164,12 +173,20 @@ partial class WorldEditorView : UserControl
             _isRunning = (sender as ToggleButton).IsChecked == true;
             if (_isRunning)
             {
+                Debug.Assert(!_isPlaying);
                 EngineAPI.BeginPlayAll();
+                // Resetting the focus, will reset the mouse state by the engine.
+                // It's not pretty, but it works for now.
+                sv1.RenderSurfaceControl.FocusHost(true);
+                sv1.RenderSurfaceControl.FocusHost(false);
+                Focus();
             }
             else
             {
                 MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
             }
+
+            Project.IsRunningInEditor = _isRunning || _isPlaying;
         }
     }
 
@@ -262,5 +279,41 @@ partial class WorldEditorView : UserControl
         //sv2.RenderSurfaceControl.UseLightSet(key);
         //sv3.RenderSurfaceControl.UseLightSet(key);
         //sv4.RenderSurfaceControl.UseLightSet(key);
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        if (_isPlaying)
+        {
+            if (e.Key == Key.Escape)
+            {
+                OnRequestStop(this, e);
+            }
+            else
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        base.OnPreviewKeyDown(e);
+    }
+
+    private void OnPlayCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (!_isPlaying)
+        {
+            playToggleButton.IsChecked = true;
+            OnPlay_ToggleButton_Click(playToggleButton, e);
+        }
+    }
+
+    private void OnRunCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        if(!_isPlaying)
+        {
+            runToggleButton.IsChecked = !_isRunning;
+            OnRun_ToggleButton_Click(runToggleButton, e);
+        }
     }
 }

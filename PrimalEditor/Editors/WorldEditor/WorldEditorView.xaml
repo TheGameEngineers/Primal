@@ -48,6 +48,8 @@
         <CommandBinding Command="ApplicationCommands.New" Executed="OnNewProject"/>
         <CommandBinding Command="ApplicationCommands.Open" Executed="OnOpenProject"/>
         <CommandBinding Command="ApplicationCommands.Close" Executed="OnEditorClose"/>
+        <CommandBinding Command="{x:Static local:WorldEditorCommands.PlayCommand}" Executed="OnPlayCommand"/>
+        <CommandBinding Command="{x:Static local:WorldEditorCommands.RunCommand}" Executed="OnRunCommand"/>
     </UserControl.CommandBindings>
 
     <UserControl.InputBindings>
@@ -66,7 +68,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Menu Grid.Row="0" IsEnabled="{Binding IsChecked, ElementName=playToggleButton, Converter={StaticResource negateBoolConverter}}">
+        <Menu Grid.Row="0">
             <MenuItem Header="File">
                 <MenuItem Header="New Project..." Command="ApplicationCommands.New"/>
                 <MenuItem Header="Open Project..." Command="ApplicationCommands.Open"/>
@@ -81,7 +83,16 @@
             <MenuItem Header="Window"/>
         </Menu>
         <Border Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}">
-            <StackPanel Orientation="Horizontal" Margin="0,5">
+            <StackPanel Orientation="Horizontal" Margin="0,5" d:Visibility="Visible">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
                 <Button Command="{Binding UndoCommand}" Margin="8,0,5,0" ToolTip="Undo"
                         AutomationProperties.Name="Undo">
                     <Path Data="M 5,4 L 2,4 L 5,1 M 2,4 L 5,7 M 5,4 C 11,1 15,5 14,10 C 13,14 8,16 4,13"
@@ -101,6 +112,49 @@
                     <ComboBoxItem Content="Debug"/>
                     <ComboBoxItem Content="Release"/>
                 </ComboBox>
+                <ToggleButton Width="32" Height="24" Padding="0,6" Background="Transparent" BorderBrush="Transparent"
+                              Click="OnRun_ToggleButton_Click" Focusable="False" ToolTip="Run scripts (Shift+F6)"
+                              Margin="5,0" x:Name="runToggleButton">
+                    <ToggleButton.Content>
+                        <Path Data="M 0,0.167 Q 0,0 0.141,0.088 L 0.659,0.412 Q 0.8,0.5 0.659,0.588 L 0.141,0.912 Q 0,1 0,0.833 Z"
+                              Stretch="Uniform" Margin="2,0,0,0">
+                            <Path.Style>
+                                <Style TargetType="{x:Type Path}">
+                                    <Setter Property="Fill" Value="{StaticResource Editor.OrangeBrush}"/>
+                                    <Setter Property="Opacity" Value="0.7"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}" Value="True">
+                                            <Setter Property="Fill" Value="White"/>
+                                            <Setter Property="Opacity" Value="1"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </ToggleButton.Content>
+                </ToggleButton>
+                <ToggleButton Width="32" Height="24" Padding="0" Background="Transparent" BorderBrush="Transparent"
+                              Click="OnPlay_ToggleButton_Click" Focusable="False" x:Name="playToggleButton"
+                              ToolTip="Play in viewport (F6)">
+                    <ToggleButton.Content>
+                        <Grid>
+                            <Rectangle Width="26" Height="14" RadiusX="7" RadiusY="7">
+                                <Rectangle.Style>
+                                    <Style TargetType="{x:Type Rectangle}">
+                                        <Setter Property="Fill" Value="{StaticResource RadioButton.Static.Glyph}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}" Value="True">
+                                                <Setter Property="Fill" Value="White"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Rectangle.Style>
+                            </Rectangle>
+                            <Path Data="M7,4 7,10 M4,7 10,7 M19,4 19,5 M19,9 19,10 M16,7 17,7 M21,7 22,7"
+                                  Stroke="{StaticResource Editor.Window.GrayBrush1}" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeThickness="2"/>
+                        </Grid>
+                    </ToggleButton.Content>
+                </ToggleButton>
                 <Separator Style="{StaticResource verticalSeparatorStyle}"/>
                 <Button Content="Primitive mesh" Click="OnCreatePrimitiveMesh_Button_Click"/>
                 <Separator Style="{StaticResource verticalSeparatorStyle}"/>
@@ -108,57 +162,6 @@
                 <ComboBox ItemsSource="{Binding Source={x:Static components:LightSet.LightSets}}" MinWidth="96" MaxWidth="200"
                           x:Name="lightSetComboBox" SelectionChanged="OnLightSet_ComboBox_SelectionChanged" VerticalAlignment="Center"/>
                 <Separator Style="{StaticResource verticalSeparatorStyle}"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" d:Visibility="Visible">
-                    <StackPanel.Style>
-                        <Style TargetType="{x:Type StackPanel}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding}" Value="{x:Null}">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <ToggleButton Width="32" Height="24" Padding="0,6" Background="Transparent" BorderBrush="Transparent"
-                                  Click="OnRun_ToggleButton_Click" Focusable="False">
-                        <ToggleButton.Content>
-                            <Path Data="M 0,0.167 Q 0,0 0.141,0.088 L 0.659,0.412 Q 0.8,0.5 0.659,0.588 L 0.141,0.912 Q 0,1 0,0.833 Z"
-                                  Stretch="Uniform" Margin="2,0,0,0">
-                                <Path.Style>
-                                    <Style TargetType="{x:Type Path}">
-                                        <Setter Property="Fill" Value="{StaticResource Editor.FontBrush}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}" Value="True">
-                                                <Setter Property="Fill" Value="{StaticResource Editor.GreenBrush}"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Path.Style>
-                            </Path>
-                        </ToggleButton.Content>
-                    </ToggleButton>
-                    <ToggleButton Width="32" Height="24" Padding="0" Background="Transparent" BorderBrush="Transparent"
-                                  Click="OnPlay_ToggleButton_Click" Focusable="False" Margin="5,0,0,0" x:Name="playToggleButton">
-                        <ToggleButton.Content>
-                            <Grid>
-                                <Rectangle Width="26" Height="14" RadiusX="7" RadiusY="7">
-                                    <Rectangle.Style>
-                                        <Style TargetType="{x:Type Rectangle}">
-                                            <Setter Property="Fill" Value="{StaticResource Editor.FontBrush}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}" Value="True">
-                                                    <Setter Property="Fill" Value="{StaticResource Editor.GreenBrush}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Rectangle.Style>
-                                </Rectangle>
-                                <Path Data="M7,4 7,10 M4,7 10,7 M19,4 19,5 M19,9 19,10 M16,7 17,7 M21,7 22,7"
-                                      Stroke="{StaticResource Editor.Window.GrayBrush3}"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeThickness="2"/>
-                            </Grid>
-                        </ToggleButton.Content>
-                    </ToggleButton>
-                </StackPanel>
             </StackPanel>
         </Border>
         <Grid Grid.Row="2">

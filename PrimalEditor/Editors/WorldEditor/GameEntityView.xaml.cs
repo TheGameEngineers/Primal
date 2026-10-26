@@ -184,6 +184,7 @@ partial class GameEntityView : UserControl
         var scene = changedEntities[0].Entity.ParentScene;
         var enableList = scene.DisableAndUpdate([.. changedEntities.Select(x => x.Entity)]);
         changedEntities.ForEach(x => action(x.Entity, x.Component));
+        MSEntity.RestoreEntityStates(changedEntities.Select(x => x.Entity));
         scene.EnableAndUpdate(enableList);
         MSEntity.Refresh();
     }

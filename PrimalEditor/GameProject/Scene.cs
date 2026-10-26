@@ -99,7 +99,7 @@ class Scene : ViewModelBase
                 {
                     var id = EngineAPI.EntityAPI.GetComponentId(entity.EntityId, ComponentType.Script);
                     Debug.Assert(ID.IsValid(id));
-                    if (ID.IsValid(id))
+                    if (Project.IsRunningInEditor && ID.IsValid(id))
                     {
                         EngineAPI.BeginPlay(id);
                     }
