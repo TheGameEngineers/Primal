@@ -12,6 +12,7 @@ struct window_info {
     enum flags : u8 {
         fullscreen = 0x01,
         closed = 0x02,
+        focused = 0x04,
     };
 
     HWND            hwnd{ nullptr };
@@ -26,6 +27,7 @@ struct window_info {
 
     bool is_fullscreen() const { return flags & fullscreen; }
     bool is_closed() const { return flags & closed; }
+    bool is_focused() const { return flags & focused; }
 };
 
 utl::free_list<window_info> windows;
@@ -70,6 +72,14 @@ get_from_handle(window_handle handle)
     return *info;
 }
 
+void
+update_mouse_behavior(window_handle hwnd, bool is_focused)
+{
+    window_info& info{ get_from_handle(hwnd) };
+    info.flags = is_focused ? info.flags | window_info::focused : info.flags & ~window_info::focused;
+    input::update_mouse_behavior(hwnd, is_focused);
+}
+
 bool resized{ false };
 bool moved{ false };
 
@@ -99,6 +109,9 @@ CALLBACK internal_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         get_from_handle(hwnd).flags |= window_info::closed;
         break;
 #ifdef USE_WITH_EDITOR
+        // NOTE: We can't set a WM_INPUT filter for the editor like we did for the C++ message loop.
+        //       Therefore, when the game is running in the editor, we need to handle WM_INPUT
+        //       messages instead of reading the raw input buffer periodically.
     case WM_INPUT:
     {
         constexpr u32 buffer_size{ 64 * sizeof(RAWINPUT) };
@@ -113,13 +126,13 @@ CALLBACK internal_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     break;
 #endif // USE_WITH_EDITOR
     case WM_SETFOCUS:
-        input::update_mouse_behavior(hwnd, true);
+        update_mouse_behavior(hwnd, true);
         break;
     case WM_ACTIVATE:
-        input::update_mouse_behavior(hwnd, LOWORD(wparam) != WA_INACTIVE);
-        break;    
+        update_mouse_behavior(hwnd, LOWORD(wparam) != WA_INACTIVE);
+        break;
     case WM_KILLFOCUS:
-        input::update_mouse_behavior(hwnd, false);
+        update_mouse_behavior(hwnd, false);
         break;
     case WM_SIZE:
         resized = (wparam != SIZE_MINIMIZED);
@@ -158,7 +171,6 @@ CALLBACK internal_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             if (GetClientRect(hwnd, &area))
             {
                 (info.is_fullscreen() ? info.fullscreen_area : info.client_area) = area;
-                input::update_mouse_behavior(hwnd, true);
                 resized = false;
             }
         }
@@ -174,10 +186,11 @@ CALLBACK internal_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                     MapWindowPoints(nullptr, GetParent(hwnd), &top_left, 1);
                 }
                 info.top_left = top_left;
-                input::update_mouse_behavior(hwnd, true);
                 moved = false;
             }
         }
+
+        input::update_mouse_behavior(hwnd, info.is_focused());
     }
 
     if (msg == WM_SYSCOMMAND && (wparam & 0xfff0) == SC_KEYMENU)
@@ -293,7 +306,7 @@ void
 set_window_fullscreen(window_id id, bool is_fullscreen)
 {
     window_info& info{ get_from_id(id) };
-    
+
     if (info.is_fullscreen() == is_fullscreen) return;
 
     if (is_fullscreen)

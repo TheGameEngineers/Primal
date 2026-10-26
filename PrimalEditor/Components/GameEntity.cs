@@ -104,7 +104,7 @@ class GameEntity : ViewModelBase
             {
                 var id = EngineAPI.EntityAPI.GetComponentId(component.Owner.EntityId, ComponentType.Script);
                 Debug.Assert(ID.IsValid(id));
-                if (!lockAlreadyHeld && ID.IsValid(id))
+                if (Project.IsRunningInEditor && !lockAlreadyHeld && ID.IsValid(id))
                 {
                     EngineAPI.BeginPlay(id);
                 }

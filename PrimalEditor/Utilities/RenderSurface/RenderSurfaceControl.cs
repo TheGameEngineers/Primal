@@ -88,7 +88,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     }
 
     private readonly FrameTimer _frameTimer = new();
-    private readonly EditorCamera _camera = new();
+    private EditorCamera _camera;
     private RenderSurfaceHost _host = null;
     private Point _clickPosition = new(0, 0);
     private bool _capturedLeft;
@@ -100,7 +100,6 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public event EventHandler<RenderSurfaceFrameStatsArgs> FrameStatsUpdated;
     public event EventHandler<RenderFrameEventArgs> RenderFrame;
-    public event EventHandler RequestStop;
     public event RoutedPropertyChangedEventHandler<bool> IsHostReadyChanged;
 
     public bool IsXZLocked
@@ -183,6 +182,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     {
         if (e.NewValue != null && _host == null)
         {
+            _camera = new();
             _host = new RenderSurfaceHost(ActualWidth, ActualHeight, new RenderFrameCallback(OnRenderFrame));
             _host.IsHostReadyChanged += OnRenderHost_IsHostReadyChanged;
             _host.MessageHook += new HwndSourceHook(HostMsgFilter);
@@ -328,17 +328,9 @@ class RenderSurfaceControl : ContentControl, IDisposable
     }
 
     private IntPtr HostMsgFilter(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
+    {        
         if (_isPlaying)
         {
-            if ((Win32Msg)msg == Win32Msg.WM_KEYDOWN)
-            {
-                var key = (VKey)(wParam.ToInt64() & 0xff);
-                if (key == VKey.Escape)
-                {
-                    RequestStop?.Invoke(this, EventArgs.Empty);
-                }               
-            }
             return IntPtr.Zero;
         }
 
