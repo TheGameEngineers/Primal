@@ -21,8 +21,8 @@ public static class WorldEditorCommands
 {
     public static RoutedCommand RunCommand { get; } = new(nameof(RunCommand), typeof(WorldEditorView), [new KeyGesture(Key.F6, ModifierKeys.Shift)]);
     public static RoutedCommand PlayCommand { get; } = new(nameof(PlayCommand), typeof(WorldEditorView), [new KeyGesture(Key.F6)]);
-    //public static RoutedCommand ZoomInCommand { get; } = new(nameof(ZoomInCommand), typeof(TextureEditorView), [new KeyGesture(Key.OemPlus, ModifierKeys.Control)]);
-
+    public static RoutedCommand PauseCommand { get; } = new(nameof(PauseCommand), typeof(WorldEditorView), [new KeyGesture(Key.F8)]);
+    public static RoutedCommand ToggleMaximizeCommand { get; } = new(nameof(ToggleMaximizeCommand), typeof(WorldEditorView), [new KeyGesture(Key.Enter, ModifierKeys.Alt)]);
 }
 
 /// <summary>
@@ -40,6 +40,7 @@ partial class WorldEditorView : UserControl
     /// Gets or sets a value indicating whether the game scripts are updated.
     /// </summary>
     private volatile bool _isRunning;
+    private volatile bool _isPaused;
 
     private volatile IdType _activeCameraId = ID.INVALID_ID;
 
@@ -80,7 +81,7 @@ partial class WorldEditorView : UserControl
             {
                 try
                 {
-                    if (_isPlaying || _isRunning)
+                    if ((_isPlaying || _isRunning) && !_isPaused)
                     {
                         e.CameraId = _activeCameraId;
                         EngineAPI.UpdateScripts(e.DeltaTime);
@@ -152,6 +153,8 @@ partial class WorldEditorView : UserControl
                 }
                 KeyboardNavigation.SetTabNavigation(this, KeyboardNavigationMode.None);
                 sv1.RenderSurfaceControl.FocusHost(true);
+                pauseToggleButton.IsChecked = false;
+                OnPause_ToggleButton_Click(pauseToggleButton, e);
             }
             else
             {
@@ -183,11 +186,18 @@ partial class WorldEditorView : UserControl
             }
             else
             {
+                pauseToggleButton.IsChecked = false;
+                OnPause_ToggleButton_Click(pauseToggleButton, e);
                 MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
             }
 
             Project.IsRunningInEditor = _isRunning || _isPlaying;
         }
+    }
+
+    private void OnPause_ToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        _isPaused = (sender as ToggleButton).IsChecked == true;
     }
 
     private void OnNewScript_Button_Click(object sender, RoutedEventArgs e)
@@ -310,10 +320,24 @@ partial class WorldEditorView : UserControl
 
     private void OnRunCommand(object sender, ExecutedRoutedEventArgs e)
     {
-        if(!_isPlaying)
+        Debug.Assert(!_isPlaying);
+        runToggleButton.IsChecked = !_isRunning;
+        OnRun_ToggleButton_Click(runToggleButton, e);
+    }
+
+    private void OnPauseCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        if(_isRunning)
         {
-            runToggleButton.IsChecked = !_isRunning;
-            OnRun_ToggleButton_Click(runToggleButton, e);
+            pauseToggleButton.IsChecked = !_isPaused;
+            OnPause_ToggleButton_Click(pauseToggleButton, e);
         }
+    }
+
+    private void OnToggleMaximizeCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        Application.Current.MainWindow.WindowState = Application.Current.MainWindow.WindowState == WindowState.Normal ?
+            WindowState.Maximized : WindowState.Normal;
+        e.Handled = true;
     }
 }

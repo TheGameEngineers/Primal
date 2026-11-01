@@ -144,7 +144,7 @@ private:
             var path = Path.GetFullPath(Path.Combine(Project.Current.Path, scriptPath.Text.Trim()));
             var solution = Project.Current.Solution;
             var projectName = Project.Current.Name;
-            await Task.Run(() => CreateScript(name, path, solution, projectName));
+            await CreateScriptAsync(name, path, solution, projectName);
         }
         catch (Exception ex)
         {
@@ -164,7 +164,7 @@ private:
         }
     }
 
-    private static void CreateScript(string name, string path, string solution, string projectName)
+    private static async Task<bool> CreateScriptAsync(string name, string path, string solution, string projectName)
     {
         Directory.CreateDirectory(path);
 
@@ -182,7 +182,7 @@ private:
 
         string[] files = [cpp, h];
 
-        VisualStudio.AddFilesToSolution(solution, projectName, files);
+        return await VisualStudio.AddFilesToSolutionAsync(solution, projectName, files);
     }
 
     public NewScriptDialog()
@@ -190,5 +190,6 @@ private:
         InitializeComponent();
         Owner = Application.Current.MainWindow;
         scriptPath.Text = @"GameCode\";
+        Loaded += (_, _) => scriptName.Focus();
     }
 }

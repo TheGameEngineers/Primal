@@ -219,6 +219,15 @@
                             <Setter TargetName="border" Property="Background" Value="{StaticResource Button.Disabled.BackgroundBrush}"/>
                             <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Button.Disabled.BorderBrush}"/>
                         </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsEnabled" Value="False"/>
+                                <Condition Property="Background" Value="Transparent"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="{StaticResource Editor.Disabled.FontBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Button.Disabled.BorderBrush}"/>
+                        </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -229,6 +238,103 @@
 
     <Style x:Key="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}" TargetType="{x:Type ToggleButton}"/>
 
+    <Style x:Key="{x:Type Expander}" TargetType="{x:Type Expander}">
+        <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Expander}">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3" SnapsToDevicePixels="True">
+                        <DockPanel>
+                            <ToggleButton
+                                x:Name="HeaderSite"
+                                MinWidth="0"
+                                MinHeight="0"
+                                Margin="1"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Content="{TemplateBinding Header}"
+                                ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                DockPanel.Dock="Top"
+                                FontFamily="{TemplateBinding FontFamily}"
+                                FontSize="{TemplateBinding FontSize}"
+                                FontStretch="{TemplateBinding FontStretch}"
+                                FontStyle="{TemplateBinding FontStyle}"
+                                FontWeight="{TemplateBinding FontWeight}"
+                                Foreground="{TemplateBinding Foreground}"
+                                IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.FocusVisualStyle>
+                                    <Style>
+                                        <Setter Property="Control.Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <Border>
+                                                        <Rectangle SnapsToDevicePixels="True" Stroke="White" StrokeDashArray="1 2" StrokeThickness="1" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ToggleButton.FocusVisualStyle>
+                                <ToggleButton.Style>
+                                    <Style TargetType="{x:Type ToggleButton}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                                    <Border Padding="{TemplateBinding Padding}">
+                                                        <Grid Background="Transparent" SnapsToDevicePixels="False">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="19" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Path x:Name="arrow" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                  Data="M1,1.5L4.5,5 8,1.5" SnapsToDevicePixels="False" StrokeEndLineCap="Round"
+                                                                  StrokeStartLineCap="Round" StrokeThickness="2" Stroke="#ffa8a4e0"/>
+                                                            <ContentPresenter Grid.Column="1" Margin="4,0,0,0" HorizontalAlignment="Stretch"
+                                                                              VerticalAlignment="Center" Content="{TemplateBinding Content}"
+                                                                              ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                              RecognizesAccessKey="True" SnapsToDevicePixels="True"/>
+                                                        </Grid>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsChecked" Value="False">
+                                                            <Setter TargetName="arrow" Property="LayoutTransform">
+                                                                <Setter.Value>
+                                                                    <RotateTransform Angle="270"/>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </Trigger>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="arrow" Property="Stroke" Value="White" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ToggleButton.Style>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ExpandSite" Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Content="{TemplateBinding Content}"
+                                              ContentStringFormat="{TemplateBinding ContentStringFormat}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              DockPanel.Dock="Bottom" Focusable="False" Visibility="Collapsed"/>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
     <Style TargetType="{x:Type ListBoxItem}" x:Key="ListBoxItemStyle">
         <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
         <Setter Property="Background" Value="Transparent" />
@@ -1057,8 +1163,7 @@
                                 <Button x:Name="btnClose" Click="OnClose_Button_Click">
                                     <Button.Content>
                                         <Grid>
-                                            <Path Data="M1,1.5L 8,8.5" Margin="0"/>
-                                            <Path Data="M1,8.5L 8,1.5" Margin="0"/>
+                                            <Path Data="M1,1.5L 8,8.5 M1,8.5L 8,1.5"/>
                                         </Grid>
                                     </Button.Content>
                                 </Button>
@@ -1134,8 +1239,7 @@
                                 <Button x:Name="btnClose" Click="OnClose_Button_Click">
                                     <Button.Content>
                                         <Grid>
-                                            <Path Data="M1,1.5L 8,8.5" Margin="0"/>
-                                            <Path Data="M1,8.5L 8,1.5" Margin="0"/>
+                                            <Path Data="M1,1.5L 8,8.5 M1,8.5L 8,1.5"/>
                                         </Grid>
                                     </Button.Content>
                                 </Button>
@@ -1437,11 +1541,6 @@
                     <Expander IsExpanded="True" x:Name="expander" BorderThickness="0" Margin="0,0,0,1"
                               Background="{StaticResource Editor.Window.GrayBrush3}"
                               primal:ExpanderStateHelper.StateKey="{TemplateBinding Header}">
-                        <Expander.Style>
-                            <Style TargetType="{x:Type Expander}">
-                                <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
-                            </Style>
-                        </Expander.Style>
                         <Expander.Header>
                             <TextBlock FontWeight="Bold" Text="{TemplateBinding Header}"/>
                         </Expander.Header>

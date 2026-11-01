@@ -248,66 +248,41 @@ void remove_camera(graphics::camera& camera)
 }
 
 math::v3
-get_euler_angles_from_local_frame(const math::m3x3& m)
-{
-    float pitch{ 0.f }, yaw{ 0.f }, roll{ 0.f };
-    // Assuming front is Z, up is Y and right is X
-    if (m._32 < 1.f)
-    {
-        if (m._32 > -1.f)
-        {
-            pitch = asinf(-m._32);
-            yaw = atan2f(m._31, m._33);
-            roll = atan2f(m._12, m._22);
-        }
-        else
-        {
-            // m._32 == -1
-            pitch = math::half_pi;
-            yaw = -atan2f(-m._13, m._11);
-            roll = 0.f;
-        }
-    }
-    else
-    {
-        // m._32 == +1
-        pitch = -math::half_pi;
-        yaw = atan2f(-m._13, m._11);
-        roll = 0.f;
-    }
-
-    return { pitch * math::to_deg, yaw * math::to_deg, roll * math::to_deg };
-}
-
-math::v3
 get_local_pos(math::v3 pos, u32 id)
 {
+    using namespace DirectX;
     transform::component xform{ transform::transform_id{ id } };
-    DirectX::XMVECTOR position{ xform.calculate_local_position(pos) };
+    math::m3x3 frame{ xform.local_frame() };
+    math::v3 world_position{ xform.position() };
+    XMVECTOR position{ xform.calculate_local_position(XMLoadFloat3x3(&frame), XMLoadFloat3(&world_position), pos) };
     math::v3 result{};
-    DirectX::XMStoreFloat3(&result, position);
+    XMStoreFloat3(&result, position);
     return result;
 }
 
 math::v4
 get_world_quat(math::v3 w, u32 id)
 {
+    using namespace DirectX;
     w = math::to_radians(w);
     transform::component xform{ transform::transform_id{ id } };
-    DirectX::XMVECTOR q{ xform.calculate_world_rotation(w) };
+    math::v4 rotation{ xform.rotation() };
+    XMVECTOR q{ xform.calculate_world_rotation(XMLoadFloat4(&rotation), w) };
     math::v4 result{};
-    DirectX::XMStoreFloat4(&result, q);
+    XMStoreFloat4(&result, q);
     return result;
 }
 
 math::v4
 get_local_quat(math::v3 w, u32 id)
 {
+    using namespace DirectX;
     w = math::to_radians(w);
     transform::component xform{ transform::transform_id{ id } };
-    DirectX::XMVECTOR q{ xform.calculate_local_rotation(w) };
+    math::v4 rotation{ xform.rotation() };
+    XMVECTOR q{ xform.calculate_local_rotation(XMLoadFloat4(&rotation), w) };
     math::v4 result{};
-    DirectX::XMStoreFloat4(&result, q);
+    XMStoreFloat4(&result, q);
     return result;
 }
 
@@ -1281,8 +1256,8 @@ GetRotation(id::id_type* ids, f32* x, f32* y, f32* z, u32 count)
         // NOTE: transform id is the same as entity id
         const transform::transform_id id{ ids[i] };
         transform::component t{ id };
-        math::v3 euler{ get_euler_angles_from_local_frame(t.local_frame()) };
-        x[i] = euler.x; y[i] = euler.y; z[i] = euler.z;
+        math::v3 euler{ t.get_euler_angles_from_local_frame(t.local_frame()) };
+        x[i] = euler.x * math::to_deg; y[i] = euler.y * math::to_deg; z[i] = euler.z * math::to_deg;
     }
 }
 
@@ -1316,7 +1291,7 @@ SetPosition(id::id_type* ids, f32* x, f32* y, f32* z, u32 count, b32 is_local)
         assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
         transform::component transform{ transform::transform_id{ ids[i] } };
         transform.position(!is_local ? v : get_local_pos(v, ids[i]));
-    }    
+    }
 }
 
 EDITOR_INTERFACE void
@@ -1359,7 +1334,7 @@ SetScale(id::id_type* ids, f32* x, f32* y, f32* z, u32 count, b32)
         assert(transform::transform_id{ ids[i] } == game_entity::entity{ game_entity::entity_id{ ids[i] } }.transform().get_id());
         transform::component transform{ transform::transform_id{ ids[i] } };
         transform.scale({ x[i], y[i], z[i] });
-    }    
+    }
 }
 
 EDITOR_INTERFACE void

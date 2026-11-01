@@ -14,95 +14,95 @@
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
     </UserControl.Resources>
-    <Border BorderThickness="1" d:BorderBrush="#ffbc9cc6">
-        <Border.Style>
-            <Style TargetType="{x:Type Border}">
-                <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush3}"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsFocused, ElementName=renderSurface}" Value="True">
-                        <Setter Property="BorderBrush" Value="#ffbc9cc6"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </Border.Style>
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
 
-            <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" MaxHeight="200">
-                <Border.Background>
-                    <VisualBrush Visual="{StaticResource PrimalLogoShape}" Stretch="Uniform" Opacity="0.07"/>
-                </Border.Background>
-            </Border>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
 
-            <local:RenderSurfaceControl x:Name="renderSurface" Grid.Row="1" x:FieldModifier="private"/>
+        <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" MaxHeight="200">
+            <Border.Background>
+                <VisualBrush Visual="{StaticResource PrimalLogoShape}" Stretch="Uniform" Opacity="0.07"/>
+            </Border.Background>
+        </Border>
 
-            <Border Background="{StaticResource Editor.Window.GrayBrush3}" BorderThickness="0,0,0,2" Grid.Row="0"
-                    BorderBrush="{StaticResource Editor.Window.GrayBrush2}" Height="32">
-                <Grid Margin="10,1">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="frameTime" Text="DT: -- ms" Foreground="#ffa8a4e0"/>
-                        <TextBlock x:Name="frameRate" Text="FPS: -- Hz" Margin="20,0" Foreground="#ffa8a4e0"/>
-                    </StackPanel>
-                    <ToggleButton Padding="0" x:Name="cameraSettingsButton" HorizontalAlignment="Right" Height="24"
-                                  Background="Transparent" BorderBrush="Transparent"
-                                  IsChecked="{Binding IsOpen, ElementName=cameraSettingsPopup, Mode=OneWay}"
-                                  Click="OnCameraSettings_Button_Click" Focusable="False" VerticalAlignment="Center">
-                        <ToggleButton.Style>
-                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}">
-                                <Setter Property="Opacity" Value="0.7"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Opacity" Value="1"/>
-                                    </Trigger>
-                                    <Trigger Property="IsChecked" Value="True">
-                                        <Setter Property="Opacity" Value="1"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ToggleButton.Style>
-                        <ToggleButton.Content>
-                            <Image Source="pack://application:,,,/Resources/RenderSurface/CameraSettings.png"/>
-                        </ToggleButton.Content>
-                    </ToggleButton>
-                </Grid>
-            </Border>
+        <Border Background="{StaticResource Editor.Window.GrayBrush3}" BorderThickness="0,0,0,2" Grid.Row="0"
+                BorderBrush="{StaticResource Editor.Window.GrayBrush2}" Height="32">
+            <Grid Margin="10,1">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="frameTime" Text="DT: -- ms" Foreground="#ffa8a4e0"/>
+                    <TextBlock x:Name="frameRate" Text="FPS: -- Hz" Margin="20,0" Foreground="#ffa8a4e0"/>
+                </StackPanel>
+                <ToggleButton Padding="0" x:Name="cameraSettingsButton" HorizontalAlignment="Right" Height="24"
+                              Background="Transparent" BorderBrush="Transparent"
+                              IsChecked="{Binding IsOpen, ElementName=cameraSettingsPopup, Mode=OneWay}"
+                              Click="OnCameraSettings_Button_Click" Focusable="False" VerticalAlignment="Center">
+                    <ToggleButton.Style>
+                        <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PrimalButtonStyle}">
+                            <Setter Property="Opacity" Value="0.7"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                    <ToggleButton.Content>
+                        <Image Source="pack://application:,,,/Resources/RenderSurface/CameraSettings.png"/>
+                    </ToggleButton.Content>
+                </ToggleButton>
+            </Grid>
+        </Border>
 
-            <Popup AllowsTransparency="True" x:Name="cameraSettingsPopup" PopupAnimation="Fade"
-                   DataContext="{Binding ElementName=renderSurface}"
-                   PlacementTarget="{Binding ElementName=cameraSettingsButton}" Placement="Bottom" StaysOpen="False"
-                   HorizontalOffset="-224" VerticalOffset="5">
-                <Border CornerRadius="5" ClipToBounds="True" Width="250"
+        <Popup AllowsTransparency="True" x:Name="cameraSettingsPopup" PopupAnimation="Fade"
+               DataContext="{Binding ElementName=renderSurface}"
+               PlacementTarget="{Binding ElementName=cameraSettingsButton}" Placement="Bottom" StaysOpen="False"
+               HorizontalOffset="-224" VerticalOffset="5">
+            <Border CornerRadius="5" ClipToBounds="True" Width="250"
                         BorderBrush="{StaticResource Editor.Window.GrayBrush5}" BorderThickness="1">
-                    <Border.Background>
-                        <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor3}" Opacity="0.8"/>
-                    </Border.Background>
-                    <StackPanel Margin="10">
-                        <TextBlock Text="Camera Settings" HorizontalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold"/>
-                        <CheckBox Content="Lock Camera" IsChecked="{Binding IsXZLocked}" Foreground="{StaticResource Editor.FontBrush}"/>
-                        <DockPanel Margin="0,5">
-                            <TextBlock Text="Camera Speed" Width="90" Margin="0,5"/>
-                            <Slider Style="{StaticResource HorizontalSliderStyle}" Minimum="1" Maximum="10" VerticalAlignment="Center"
-                                    Value="{Binding CameraSpeed}" TickFrequency="1" TickPlacement="BottomRight"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Camera FoV" Width="90" Margin="0,5"/>
-                            <Slider Style="{StaticResource HorizontalSliderStyle}" Minimum="0.01" Maximum="180"
-                                    Value="{Binding CameraFov}" VerticalAlignment="Center" />
-                        </DockPanel>
-                        <DockPanel Margin="0,5">
-                            <TextBlock Text="Camera NearZ" Width="90" Margin="0,5"/>
-                            <controls:ScalarBox Value="{Binding CameraNearZ}" Minimum="0.001" Maximum="{Binding CameraFarZ}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Camera FarZ" Width="90" Margin="0,5"/>
-                            <controls:ScalarBox Value="{Binding CameraFarZ}" Minimum="{Binding CameraNearZ}"/>
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-            </Popup>
-        </Grid>
-    </Border>
+                <Border.Background>
+                    <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor3}" Opacity="0.8"/>
+                </Border.Background>
+                <StackPanel Margin="10">
+                    <TextBlock Text="Camera Settings" HorizontalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold"/>
+                    <CheckBox Content="Lock Camera" IsChecked="{Binding IsXZLocked}" Foreground="{StaticResource Editor.FontBrush}"/>
+                    <DockPanel Margin="0,5">
+                        <TextBlock Text="Camera Speed" Width="90" Margin="0,5"/>
+                        <Slider Style="{StaticResource HorizontalSliderStyle}" Minimum="1" Maximum="10" VerticalAlignment="Center"
+                                Value="{Binding CameraSpeed}" TickFrequency="1" TickPlacement="BottomRight"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="Camera FoV" Width="90" Margin="0,5"/>
+                        <Slider Style="{StaticResource HorizontalSliderStyle}" Minimum="0.01" Maximum="180"
+                                Value="{Binding CameraFov}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel Margin="0,5">
+                        <TextBlock Text="Camera NearZ" Width="90" Margin="0,5"/>
+                        <controls:ScalarBox Value="{Binding CameraNearZ}" Minimum="0.001" Maximum="{Binding CameraFarZ}"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="Camera FarZ" Width="90" Margin="0,5"/>
+                        <controls:ScalarBox Value="{Binding CameraFarZ}" Minimum="{Binding CameraNearZ}"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </Popup>
+        <Border BorderThickness="1" d:BorderBrush="#ffbc9cc6" Grid.Row="1">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush3}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFocused, ElementName=renderSurface}" Value="True">
+                            <Setter Property="BorderBrush" Value="#ffbc9cc6"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <local:RenderSurfaceControl x:Name="renderSurface" x:FieldModifier="private"/>
+        </Border>
+    </Grid>
 </UserControl>

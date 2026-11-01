@@ -44,6 +44,11 @@
     <Resource Include="Resources\RenderSurface\CameraSettings.png" />
     <Resource Include="Resources\TextureEditor\ChannelSelectShader.cso" />
     <Resource Include="Resources\TextureEditor\Checker64.png" />
+    <Resource Include="Resources\WorldEditor\BuildDll.png" />
+    <Resource Include="Resources\WorldEditor\Launch.png" />
+    <Resource Include="Resources\WorldEditor\LaunchDebug.png" />
+    <Resource Include="Resources\WorldEditor\NewScript.png" />
+    <Resource Include="Resources\WorldEditor\PrimitiveMesh.png" />
   </ItemGroup>
   
   <ItemGroup>
