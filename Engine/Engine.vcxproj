@@ -62,6 +62,7 @@
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\PlatformTypes.h" />
     <ClInclude Include="Platform\Window.h" />
+    <ClInclude Include="Profiling\UdpLog.h" />
     <ClInclude Include="Utilities\FreeList.h" />
     <ClInclude Include="Utilities\IOStream.h" />
     <ClInclude Include="Utilities\Math.h" />
@@ -99,6 +100,7 @@
     <ClCompile Include="Input\InputWin32.cpp" />
     <ClCompile Include="Platform\PlatformWin32.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
+    <ClCompile Include="Profiling\UdpLog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="engine.natvis" />

@@ -51,6 +51,7 @@
     <ClInclude Include="EditorAPI\EditorAPI.h" />
     <ClInclude Include="EngineAPI\Engine.h" />
     <ClInclude Include="Utilities\MutationCache.h" />
+    <ClInclude Include="Profiling\UdpLog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -80,6 +81,7 @@
     <ClCompile Include="Graphics\Direct3D12\D3D12LightCulling.cpp" />
     <ClCompile Include="Components\Geometry.cpp" />
     <ClCompile Include="EditorAPI\EditorAPI.cpp" />
+    <ClCompile Include="Profiling\UdpLog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="engine.natvis" />

@@ -8,6 +8,7 @@
 #include "Platform/Platform.h"
 #include "Graphics/Renderer.h"
 #include "Input/Input.h"
+#include "Profiling/UdpLog.h"
 
 using namespace primal;
 namespace {
@@ -97,6 +98,7 @@ calculate_thresholds(const game_entity::entity_id *const entity_ids,
 bool
 engine_initialize()
 {
+    if(!profiling::udp_log::initialize()) return false;
     if (!input::initialize()) return false;
 
     // TODO: implement and get engine and game settings. For now use D3D12
@@ -207,5 +209,6 @@ engine_shutdown()
     content::unload_game();
     graphics::shutdown();
     input::shutdown();
+    profiling::udp_log::shutdown();
 }
 #endif // !defined(SHIPPING)

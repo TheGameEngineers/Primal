@@ -1,20 +1,20 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
-#include "Common.h"
 #include "CommonHeaders.h"
-#include "Components/Script.h"
-#include "Graphics/Renderer.h"
-#include "Platform/Platform.h"
-#include "Content/ContentToEngine.h"
-#include "ShaderCompilation.h"
-#include "../ContentTools/ToolsCommon.h"
-#include "Utilities/IOStream.h"
 #include "Components/Entity.h"
 #include "Components/Geometry.h"
+#include "Components/Script.h"
 #include "Components/Transform.h"
-#include "Utilities/Threading.h"
-#include "../Engine/EditorAPI/EditorAPI.h"
+#include "Content/ContentToEngine.h"
+#include "EditorAPI/EditorAPI.h"
+#include "Graphics/Renderer.h"
 #include "Input/Input.h"
+#include "Platform/Platform.h"
+#include "Profiling/UdpLog.h"
+#include "ShaderCompilation.h"
+#include "Utilities/IOStream.h"
+#include "Utilities/Threading.h"
+#include "../ContentTools/ToolsCommon.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -311,6 +311,7 @@ GetEngineVersion(int* major, int* minor, int* revision)
 EDITOR_INTERFACE engine_init_error::error_code
 InitializeEngine()
 {
+    if (!profiling::udp_log::initialize()) return engine_init_error::unknown;
     if (!input::initialize()) return engine_init_error::unknown;
 
     while (!compile_shaders())
@@ -359,6 +360,7 @@ InitializeEngine()
     source.multiplier = 1.f;
     input::bind(source);
 
+    SEND_UDP_LOG(profiling::udp_log::message_type::info, "Engine initialized successfully.");
     return engine_init_error::succeeded;
 }
 
@@ -368,6 +370,7 @@ ShutdownEngine()
     graphics::remove_light_set(0);
     graphics::shutdown();
     input::shutdown();
+    profiling::udp_log::shutdown();
 }
 
 EDITOR_INTERFACE u32
@@ -1478,7 +1481,12 @@ GetLightEntityId(id::id_type id, u64 light_set_key)
     return graphics::light{ graphics::light_id{ id }, light_set_key }.entity_id();
 }
 
-#include "../Engine/EditorAPI/EditorAPI.h"
+EDITOR_INTERFACE void
+SendUdpLog(u32 type, const char* msg, const char* file, u32 line)
+{
+    assert(type <= profiling::udp_log::message_type::error && msg && file);
+    profiling::udp_log::send(type, msg, file, line);
+}
 
 editor::editor_api
 GetEditorAPI()
@@ -1539,5 +1547,7 @@ GetEditorAPI()
         .GetInputBinding = GetInputBinding,
         .ShowMouse = ShowMouse,
         .MouseBehavior = MouseBehavior,
+        // UDP LOG
+        .SendUdpLog = SendUdpLog,
     };
 }

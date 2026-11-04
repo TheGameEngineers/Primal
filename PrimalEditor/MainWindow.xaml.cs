@@ -44,6 +44,12 @@ partial class MainWindow : Window
             Application.Current.Shutdown();
         }
 
+        // Initialize the content tools.
+        if(ContentToolsAPI.InitializeContentTools() == 0)
+        {
+            Logger.Log(MessageType.Warning, "Failed to initialize content tools.");
+        }
+
         // Initialize the engine.
         var initResult = EngineAPI.InitializeEngine();
         if (initResult == EngineAPIStructs.EngineInitError.Succeeded)
@@ -75,6 +81,7 @@ partial class MainWindow : Window
         Project.Current?.Unload();
         ContentToolsAPI.ShutDownContentTools();
         EngineAPI.ShutdownEngine();
+        Logger.Shutdown();
     }
 
     private void OnMainWindowClosing(object sender, CancelEventArgs e)

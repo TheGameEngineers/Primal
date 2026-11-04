@@ -82,7 +82,7 @@ get_geometry_hierarchy_buffer_size(const void *const data)
     assert(lod_count);
     blob.skip(sizeof(f32) * lod_count); // skip thresholds
     // add size of  lod_count, thresholds and lod offsets to the size of hierarchy.
-    u32 size{ sizeof(u32) + (sizeof(f32) + sizeof(lod_offset)) * lod_count };
+    u32 size{ (u32)(sizeof(u32) + (sizeof(f32) + sizeof(lod_offset)) * lod_count) };
 
     u32 mesh_count{ 0 };
     for (u32 lod_idx{ 0 }; lod_idx < lod_count; ++lod_idx)

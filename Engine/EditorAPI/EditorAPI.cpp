@@ -575,5 +575,14 @@ light::entity_id() const
 
 } // namespace graphics
 
+namespace profiling::udp_log {
+void
+send(u32 type, const char* msg, const char* file, u32 line)
+{
+    assert(msg && file);
+    editor::api.SendUdpLog(type, msg, file, line);
+}
+} // namespace profiling::udp_log
+
 } // namespace primal
 #endif // GAME_CODE_DLL

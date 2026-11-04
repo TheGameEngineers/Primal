@@ -338,6 +338,9 @@ namespace PrimalEditor.DllWrappers
         private delegate void ProgressCallback(int value, int maxValue);
 
         [LibraryImport(_toolsDLL)]
+        public static partial int InitializeContentTools();
+
+        [LibraryImport(_toolsDLL)]
         public static partial void ShutDownContentTools();
 
         #region Texture       

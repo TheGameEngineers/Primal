@@ -22,8 +22,8 @@ struct editor_api final
     void (*GetCameraInverseProjection)(id::id_type*, math::m4x4*, u32) { nullptr };
     void (*GetCameraViewProjection)(id::id_type*, math::m4x4*, u32) { nullptr };
     void (*GetCameraInverseViewProjection)(id::id_type*, math::m4x4*, u32) { nullptr };
-    u32 (*GetCameraProjectionType)(id::id_type) { nullptr };
-    id::id_type (*GetCameraEntityId)(id::id_type) { nullptr };
+    u32(*GetCameraProjectionType)(id::id_type) { nullptr };
+    id::id_type(*GetCameraEntityId)(id::id_type) { nullptr };
     void (*SetCameraUp)(id::id_type*, f32*, f32*, f32*, u32) { nullptr };
     void (*SetCameraFieldOfView)(id::id_type*, f32*, u32) { nullptr };
     void (*SetCameraAspectRatio)(id::id_type*, f32*, u32) { nullptr };
@@ -54,7 +54,7 @@ struct editor_api final
     void (*SetRotation)(id::id_type*, f32*, f32*, f32*, u32, u32) { nullptr };
     void (*SetScale)(id::id_type*, f32*, f32*, f32*, u32, b32) { nullptr };
     void (*GetLocalFrame)(id::id_type, math::m3x3*) { nullptr };
-    void (*SetRotationQuat)(id::id_type, f32, f32, f32, f32) { nullptr };    
+    void (*SetRotationQuat)(id::id_type, f32, f32, f32, f32) { nullptr };
     u8(*RegisterScript)(size_t, uintptr_t) { nullptr };
     u8(*AddScriptName)(const char*) { nullptr };
     // INPUT
@@ -64,6 +64,8 @@ struct editor_api final
     void (*GetInputBinding)(u64, f32*) { nullptr };
     void (*ShowMouse)(b32) { nullptr };
     void (*MouseBehavior)(u32) { nullptr };
+    // UDP LOG
+    void (*SendUdpLog)(u32, const char*, const char*, u32) { nullptr };
 
     void set(editor_api* api)
     {

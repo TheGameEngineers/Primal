@@ -19,10 +19,11 @@ public:
 
     // This template function is intended to read primitive types (e.g. int, float, bool)
     template<typename T>
-    [[nodiscard]] constexpr T read()
+    [[nodiscard]] T read()
     {
-        static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitve type.");
-        T value{ *((T*)_position) };
+        static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitive type.");
+        T value;
+        memcpy(&value, _position, sizeof(T));
         _position += sizeof(T);
         return value;
     }
@@ -61,11 +62,11 @@ public:
 
     // This template function is intended to write primitive types (e.g. int, float, bool)
     template<typename T>
-    constexpr void write(T value)
+    void write(T value)
     {
-        static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitve type.");
+        static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitive type.");
         assert(&_position[sizeof(T)] <= &_buffer[_buffer_size]);
-        *((T*)_position) = value;
+        memcpy(_position, &value, sizeof(T));
         _position += sizeof(T);
     }
 

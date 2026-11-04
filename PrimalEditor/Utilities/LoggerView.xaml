@@ -65,21 +65,34 @@
                                     </Style.Triggers>
                                 </Style>
                             </DockPanel.Style>
-                            <TextBlock Text="{Binding Time, StringFormat=hh:mm:ss}" Margin="5,0">
-                                <TextBlock.Style>
-                                    <Style TargetType="{x:Type TextBlock}">
-                                        <Setter Property="Foreground" Value="LightGreen"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Warning}">
-                                                <Setter Property="Foreground" Value="#ffffbb22"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Error}">
-                                                <Setter Property="Foreground" Value="#ffff4455"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Time, StringFormat=hh:mm:ss}" Margin="5,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Foreground" Value="LightGreen"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Warning}">
+                                                    <Setter Property="Foreground" Value="#ffffbb22"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Error}">
+                                                    <Setter Property="Foreground" Value="#ffff4455"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding ProcessName, StringFormat='[{0}] '}" Foreground="Moccasin" Opacity="0.7">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ProcessName}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                             <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Style="{StaticResource LightTextBlockStyle}"/>
                         </DockPanel>
                     </DataTemplate>

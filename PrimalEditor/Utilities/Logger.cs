@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -17,7 +18,7 @@ enum MessageType
     Error = 0x04,
 }
 
-class LogMessage(MessageType type, string msg, string file, string caller, int line)
+class LogMessage(MessageType type, string msg, int processId, string file, string caller, int line)
 {
     public DateTime Time { get; } = DateTime.Now;
     public MessageType MessageType { get; } = type;
@@ -25,6 +26,13 @@ class LogMessage(MessageType type, string msg, string file, string caller, int l
     public string File { get; } = Path.GetFileName(file);
     public string Caller { get; } = caller;
     public int Line { get; } = line;
+    public string ProcessName { get; } = GetProcessName(processId);
+
+    private static string GetProcessName(int processId)
+    {
+        return processId > 0 ? Process.GetProcessById(processId).ProcessName : string.Empty;
+    }
+
     public string MetaData => $"{File}: {Caller} ({Line})";
 }
 
@@ -37,11 +45,13 @@ static class Logger
     public static CollectionViewSource FilteredMessages
     { get; } = new CollectionViewSource() { Source = Messages };
 
-    public static void Log(MessageType type, string msg,
+    private static readonly UdpLogReceiver _udpReceiver = new();
+
+    public static void Log(MessageType type, string msg, int processId = 0,
         [CallerFilePath] string file = "", [CallerMemberName] string caller = "",
         [CallerLineNumber] int line = 0)
     {
-        Application.Current.Dispatcher?.BeginInvoke(() => _messages.Add(new(type, msg, file, caller, line)));
+        Application.Current.Dispatcher?.BeginInvoke(() => _messages.Add(new(type, msg, processId, file, caller, line)));
     }
 
     public static void Clear()
@@ -53,6 +63,11 @@ static class Logger
     {
         _messageFilter = mask;
         FilteredMessages.View.Refresh();
+    }
+
+    public static void Shutdown()
+    {
+        _udpReceiver.Stop();
     }
 
     static Logger()
