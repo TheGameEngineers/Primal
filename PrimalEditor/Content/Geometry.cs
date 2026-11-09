@@ -440,6 +440,9 @@ class Geometry : Asset
         mesh.Elements = reader.ReadBytes(elementsBufferSize);
         mesh.Indices = reader.ReadBytes(indexBufferSize);
 
+        ReadSkeletonData(reader);
+        ReadAnimationData(reader);
+
         MeshLOD lod;
         if (ID.IsValid(lodId) && lodIds.Contains(lodId))
         {
@@ -454,6 +457,20 @@ class Geometry : Asset
         }
 
         lod.Meshes.Add(mesh);
+    }
+
+    private static void ReadSkeletonData(BinaryReader reader)
+    {
+        // TODO: skip joint info for now
+        var jointInfoBufferSize = reader.ReadInt32();
+        reader.BaseStream.Position += jointInfoBufferSize;
+    }
+
+    private static void ReadAnimationData(BinaryReader reader)
+    {
+        // TODO: skip animation clips for now
+        var animationsBufferSize = reader.ReadInt32();
+        reader.BaseStream.Position += animationsBufferSize;
     }
 
     public override bool Import(string file)

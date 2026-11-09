@@ -8,8 +8,8 @@ namespace primal::tools {
 struct vertex
 {
     math::v4    tangent{};
-    math::v4    joint_weights{};
-    math::u32v4 joint_indices{ u32_invalid_id, u32_invalid_id , u32_invalid_id , u32_invalid_id };
+    math::v4    joint_weights{ 0.f, 0.f, 0.f, 0.f };
+    math::u32v4 joint_indices{ 0, 0, 0, 0 };
     math::v3    position{};
     math::v3    normal{};
     math::v2    uv{};
@@ -19,6 +19,10 @@ struct vertex
 
 namespace elements {
 
+// NOTE: we don't accept meshes that have UVs but no normals. Therefore, there's no
+//       enum value for static_texture in elements_type::type enum.
+// NOTE: color is always packed for static_normal, static_normal_texture and
+//       static_color. That's why there are no additional enum values for it.
 struct elements_type {
     enum type : u32 {
         position_only = 0x00,
@@ -103,7 +107,7 @@ struct skeletal_normal_texture
 struct skeletal_normal_texture_color
 {
     u8          joint_weights[3];   // normalized joint weights for up to 4 joints.
-    u8          t_sign;             // bit 0: tangent handedness * (tangent.z sign), bit 1: normal.z sign (0 means -1, 1 means +1).
+    u8          t_sign;             // bit 0: tangent handedness, bit 1: tangent.z sign, bit 2: normal.z sign (0 means -1, 1 means +1).
     u16         joint_indices[4];
     u16         normal[2];
     u16         tangent[2];
@@ -116,6 +120,8 @@ struct skeletal_normal_texture_color
 
 struct mesh
 {
+    constexpr static u32 max_joints_per_vertex{ 4 };
+
     // Initial data
     utl::vector<math::v3>               positions;
     utl::vector<math::v3>               normals;
@@ -125,17 +131,29 @@ struct mesh
     utl::vector<u32>                    material_indices;
     utl::vector<u32>                    material_used;
 
+    bool                                is_skeletal_mesh{ false };
+    utl::vector<math::u32v4>            joint_indices;
+    utl::vector<math::v4>               joint_weights;
+
     utl::vector<u32>                    raw_indices;
 
     // Intermediate data
     utl::vector<vertex>                 vertices;
     utl::vector<u32>                    indices;
 
+    utl::vector<math::m4x4>             inverse_bind_pose;
+    utl::vector<std::string>            joint_names;
+    utl::vector<u32>                    joint_hierarchy;
+    utl::vector<u64>                    joint_ids;
+
     // Output data
     std::string                         name;
     elements::elements_type::type       elements_type;
     utl::vector<u8>                     position_buffer;
     utl::vector<u8>                     element_buffer;
+
+    utl::vector<u8>                     joint_info_buffer;
+    utl::vector<u8>                     animations_buffer;
 
     f32                                 lod_threshold{ -1.f };
     u32                                 lod_id{ u32_invalid_id };

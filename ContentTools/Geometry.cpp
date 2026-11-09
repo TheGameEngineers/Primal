@@ -127,7 +127,7 @@ calculate_tangents(mesh& m)
         const XMVECTOR dp2{ p2 - p0 };
 
         f32 det{ duv1.x * duv2.y - duv1.y * duv2.x };
-        if (abs(det) < math::epsilon) det = math::epsilon;
+        if (abs(det) < math::epsilon) det = (det < 0.f ? -1.f : 1.f) * math::epsilon;
 
         const f32 inv_det{ 1.f / det };
         const XMVECTOR t{ (dp1 * duv2.y - dp2 * duv1.y) * inv_det };
@@ -210,6 +210,13 @@ process_normals(mesh& m, f32 smoothing_angle)
             m.indices[refs[j]] = (u32)m.vertices.size();
             vertex& v{ m.vertices.emplace_back() };
             v.position = m.positions[m.raw_indices[refs[j]]];
+
+            if (m.is_skeletal_mesh)
+            {
+                const u32 raw_index{ m.raw_indices[refs[j]] };
+                v.joint_indices = m.joint_indices[raw_index];
+                v.joint_weights = m.joint_weights[raw_index];
+            }
 
             XMVECTOR n1{ XMLoadFloat3(&m.normals[refs[j]]) };
             if (!is_hard_edge)
@@ -314,7 +321,7 @@ process_tangents(mesh& m)
         u32 num_refs{ (u32)refs.size() };
         for (u32 j{ 0 }; j < num_refs; ++j)
         {
-            
+
             const math::v4& tj{ m.tangents[refs[j]] };
             vertex& v{ old_vertices[old_indices[refs[j]]] };
             v.tangent = tj;
@@ -322,7 +329,7 @@ process_tangents(mesh& m)
             m.vertices.emplace_back(v);
 
             XMVECTOR xm_tj{ XMLoadFloat4(&tj) };
-            XMVECTOR xm_epsilon{XMVectorReplicate(math::epsilon)};
+            XMVECTOR xm_epsilon{ XMVectorReplicate(math::epsilon) };
             for (u32 k{ j + 1 }; k < num_refs; ++k)
             {
                 XMVECTOR xm_tangent{ XMLoadFloat4(&m.tangents[refs[k]]) };
@@ -338,12 +345,13 @@ process_tangents(mesh& m)
     }
 }
 
-u64
+constexpr u64
 get_vertex_elements_size(elements::elements_type::type elements_type)
 {
     using namespace elements;
     switch (elements_type)
     {
+    case elements_type::position_only:                  return 0;
     case elements_type::static_normal:                  return sizeof(static_normal);
     case elements_type::static_normal_texture:          return sizeof(static_normal_texture);
     case elements_type::static_color:                   return sizeof(static_color);
@@ -390,7 +398,10 @@ pack_vertices(mesh& m)
             normals[i] = { (u16)math::pack_float<16>(v.normal.x, -1.f, 1.f), (u16)math::pack_float<16>(v.normal.y, -1.f, 1.f) };
         }
 
-        if (m.elements_type & elements::elements_type::static_normal_texture)
+        // NOTE: we don't accept meshes that have UVs but no normals. Therefore, there's no
+        //       enum value for static_texture in elements_type::type enum.
+        constexpr u32 elements_type_static_texture{ 0x02 };
+        if (m.elements_type & elements_type_static_texture)
         {
             // full T-space
             for (u32 i{ 0 }; i < num_vertices; ++i)
@@ -428,7 +439,7 @@ pack_vertices(mesh& m)
         for (u32 i{ 0 }; i < num_vertices; ++i)
         {
             vertex& v{ m.vertices[i] };
-            element_buffer[i] = { {v.red, v.green, v.blue}, {} };
+            element_buffer[i] = { { v.red, v.green, v.blue },{} };
         }
     }
     break;
@@ -438,7 +449,7 @@ pack_vertices(mesh& m)
         for (u32 i{ 0 }; i < num_vertices; ++i)
         {
             vertex& v{ m.vertices[i] };
-            element_buffer[i] = { {v.red, v.green, v.blue}, t_signs[i], {normals[i].x, normals[i].y} };
+            element_buffer[i] = { { v.red, v.green, v.blue }, t_signs[i],{ normals[i].x, normals[i].y } };
         }
     }
     break;
@@ -448,9 +459,9 @@ pack_vertices(mesh& m)
         for (u32 i{ 0 }; i < num_vertices; ++i)
         {
             vertex& v{ m.vertices[i] };
-            element_buffer[i] = { {v.red, v.green, v.blue}, t_signs[i],
-                                 {normals[i].x, normals[i].y}, {tangents[i].x, tangents[i].y},
-                                 v.uv };
+            element_buffer[i] = { { v.red, v.green, v.blue }, t_signs[i],
+                                 { normals[i].x, normals[i].y },{ tangents[i].x, tangents[i].y },
+                                     v.uv };
         }
     }
     break;
@@ -461,8 +472,8 @@ pack_vertices(mesh& m)
         {
             vertex& v{ m.vertices[i] };
             const u16 indices[4]{ (u16)v.joint_indices.x, (u16)v.joint_indices.y , (u16)v.joint_indices.z , (u16)v.joint_indices.w };
-            element_buffer[i] = { {joint_weights[i].x, joint_weights[i].y, joint_weights[i].z}, {},
-                                 {indices[0], indices[1], indices[2], indices[3]} };
+            element_buffer[i] = { { joint_weights[i].x, joint_weights[i].y, joint_weights[i].z },{},
+                                 { indices[0], indices[1], indices[2], indices[3] } };
         }
     }
     break;
@@ -473,9 +484,9 @@ pack_vertices(mesh& m)
         {
             vertex& v{ m.vertices[i] };
             const u16 indices[4]{ (u16)v.joint_indices.x, (u16)v.joint_indices.y , (u16)v.joint_indices.z , (u16)v.joint_indices.w };
-            element_buffer[i] = { {joint_weights[i].x, joint_weights[i].y, joint_weights[i].z}, {},
-                                 {indices[0], indices[1], indices[2], indices[3]},
-                                 {v.red, v.green, v.blue}, {} };
+            element_buffer[i] = { { joint_weights[i].x, joint_weights[i].y, joint_weights[i].z },{},
+                                 { indices[0], indices[1], indices[2], indices[3] },
+                                 { v.red, v.green, v.blue },{} };
         }
     }
     break;
@@ -486,9 +497,9 @@ pack_vertices(mesh& m)
         {
             vertex& v{ m.vertices[i] };
             const u16 indices[4]{ (u16)v.joint_indices.x, (u16)v.joint_indices.y , (u16)v.joint_indices.z , (u16)v.joint_indices.w };
-            element_buffer[i] = { {joint_weights[i].x, joint_weights[i].y, joint_weights[i].z}, t_signs[i],
-                                 {indices[0], indices[1], indices[2], indices[3]},
-                                 {normals[i].x, normals[i].y} };
+            element_buffer[i] = { { joint_weights[i].x, joint_weights[i].y, joint_weights[i].z }, t_signs[i],
+                                 { indices[0], indices[1], indices[2], indices[3] },
+                                 { normals[i].x, normals[i].y } };
         }
     }
     break;
@@ -499,9 +510,9 @@ pack_vertices(mesh& m)
         {
             vertex& v{ m.vertices[i] };
             const u16 indices[4]{ (u16)v.joint_indices.x, (u16)v.joint_indices.y , (u16)v.joint_indices.z , (u16)v.joint_indices.w };
-            element_buffer[i] = { {joint_weights[i].x, joint_weights[i].y, joint_weights[i].z}, t_signs[i],
-                                 {indices[0], indices[1], indices[2], indices[3]},
-                                 {normals[i].x, normals[i].y}, {v.red, v.green, v.blue}, {} };
+            element_buffer[i] = { { joint_weights[i].x, joint_weights[i].y, joint_weights[i].z }, t_signs[i],
+                                 { indices[0], indices[1], indices[2], indices[3] },
+                                 { normals[i].x, normals[i].y },{ v.red, v.green, v.blue },{} };
         }
     }
     break;
@@ -512,9 +523,9 @@ pack_vertices(mesh& m)
         {
             vertex& v{ m.vertices[i] };
             const u16 indices[4]{ (u16)v.joint_indices.x, (u16)v.joint_indices.y , (u16)v.joint_indices.z , (u16)v.joint_indices.w };
-            element_buffer[i] = { {joint_weights[i].x, joint_weights[i].y, joint_weights[i].z}, t_signs[i],
-                                 {indices[0], indices[1], indices[2], indices[3]},
-                                 {normals[i].x, normals[i].y}, {tangents[i].x, tangents[i].y}, v.uv };
+            element_buffer[i] = { { joint_weights[i].x, joint_weights[i].y, joint_weights[i].z }, t_signs[i],
+                                 { indices[0], indices[1], indices[2], indices[3] },
+                                 { normals[i].x, normals[i].y },{ tangents[i].x, tangents[i].y }, v.uv };
         }
     }
     break;
@@ -525,14 +536,75 @@ pack_vertices(mesh& m)
         {
             vertex& v{ m.vertices[i] };
             const u16 indices[4]{ (u16)v.joint_indices.x, (u16)v.joint_indices.y , (u16)v.joint_indices.z , (u16)v.joint_indices.w };
-            element_buffer[i] = { {joint_weights[i].x, joint_weights[i].y, joint_weights[i].z}, t_signs[i],
-                                 {indices[0], indices[1], indices[2], indices[3]},
-                                 {normals[i].x, normals[i].y}, {tangents[i].x, tangents[i].y}, v.uv,
-                                 {v.red, v.green, v.blue}, {} };
+            element_buffer[i] = { { joint_weights[i].x, joint_weights[i].y, joint_weights[i].z }, t_signs[i],
+                                 { indices[0], indices[1], indices[2], indices[3] },
+                                 { normals[i].x, normals[i].y },{ tangents[i].x, tangents[i].y }, v.uv,
+                                 { v.red, v.green, v.blue },{} };
         }
     }
     break;
     }
+}
+
+void
+pack_joint_data(mesh& m)
+{
+    if (!m.is_skeletal_mesh || !m.joint_hierarchy.size()) return;
+
+    const u32 num_joints{ (u32)m.joint_hierarchy.size() };
+    assert(num_joints == m.joint_names.size() &&
+        num_joints == m.inverse_bind_pose.size());
+    // 0xFFFF is "no parent", so a stored joint index has to stay below it.
+    assert(num_joints <= 0xffff);
+    assert(m.joint_hierarchy[0] == u32_invalid_id);
+
+    u32 names_size{ 0 };
+    for (const auto& name : m.joint_names)
+        names_size += (u32)sizeof(u32) + (u32)name.size();
+
+    // NOTE: we support up to 64k joints. So we'll use 16-bit values.
+    const u32 hierarchy_size{ num_joints * (u32)sizeof(u16) };
+    const u32 bind_pose_size{ num_joints * (u32)sizeof(math::m4x4) };
+    const u32 total_size{ (u32)sizeof(u32) +  // number of joints
+        names_size + hierarchy_size + bind_pose_size };
+
+    m.joint_info_buffer.clear();
+    m.joint_info_buffer.resize(total_size);
+    utl::blob_stream_writer blob{ m.joint_info_buffer.data(), total_size };
+
+    // Number of joints;    
+    blob.write<u32>(num_joints);
+    // Joint names
+    for (const auto& name : m.joint_names)
+    {
+        blob.write<u32>((u32)name.size());
+        blob.write(name.c_str(), name.size());
+    }
+    // Joint hierarchy
+    // Parents are already hierarchy indices. Every invalid parent is a root.
+    utl::vector<u16> hierarchy(num_joints);
+    for (u32 i{ 0 }; i < num_joints; ++i)
+    {
+        const u32 parent{ m.joint_hierarchy[i] };
+        if (parent == u32_invalid_id)
+        {
+            hierarchy[i] = u16_invalid_id;
+            continue;
+        }
+
+        assert(parent < num_joints);
+        hierarchy[i] = (u16)parent;
+    }
+
+    blob.write((const u8*)hierarchy.data(), num_joints * sizeof(u16));
+    // Inverse bind poses
+    blob.write((const u8*)m.inverse_bind_pose.data(), num_joints * sizeof(math::m4x4));
+}
+
+void
+pack_animation_data(mesh&)
+{
+    // TODO: incomplete
 }
 
 elements::elements_type::type
@@ -543,21 +615,19 @@ determine_elements_type(const mesh& m)
 
     if (m.normals.size())
     {
-        if (m.uv_sets.size() && m.uv_sets[0].size())
-        {
-            type = elements_type::static_normal_texture;
-        }
-        else
-        {
-            type = elements_type::static_normal;
-        }
-    }
-    else if (m.colors.size())
-    {
-        type = elements_type::static_color;
+        type = (m.uv_sets.size() && m.uv_sets[0].size()) ?
+            elements_type::static_normal_texture : elements_type::static_normal;
     }
 
-    // TODO: we lack data for skeletal meshes. Expand for skeletal meshes later.
+    if (m.colors.size())
+    {
+        type = (elements_type::type)(type | elements_type::static_color);
+    }
+
+    if (m.is_skeletal_mesh)
+    {
+        type = (elements_type::type)(type | elements_type::skeletal);
+    }
     return type;
 }
 
@@ -594,6 +664,8 @@ process_vertices(mesh& m, const geometry_import_settings& settings)
 
     m.elements_type = determine_elements_type(m);
     pack_vertices(m);
+    pack_joint_data(m);
+    pack_animation_data(m);
 }
 
 u64
@@ -606,19 +678,26 @@ get_mesh_size(const mesh& m)
     assert(element_buffer_size == get_vertex_elements_size(m.elements_type) * num_vertices);
     const u64 index_size{ (num_vertices < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
     const u64 index_buffer_size{ index_size * m.indices.size() };
+    // NOTE: When a mesh is split by material, only the first resulting mesh contains joint info.
+    const u64 joint_info_buffer_size{ m.joint_info_buffer.size()};
+    const u64 animations_buffer_size{ m.animations_buffer.size() };
     constexpr u64 su32{ sizeof(u32) };
     const u64 size{
-        su32 + m.name.size() + // mesh name length and room for mesh name string
-        su32 + // lod id
-        su32 + // vertex element size (vertex size excluding position element)
-        su32 + // element type enumeration
-        su32 + // number of vertices
-        su32 + // index size (16 bit or 32 bit)
-        su32 + // number of indices
-        sizeof(f32) + // LOD threshold
-        position_buffer_size + // room for vertex positions
-        element_buffer_size + // room for vertex elements
-        index_buffer_size // room for indices
+        su32 + m.name.size() +      // mesh name length and room for mesh name string
+        su32 +                      // lod id
+        su32 +                      // vertex element size (vertex size excluding position element)
+        su32 +                      // element type enumeration
+        su32 +                      // number of vertices
+        su32 +                      // index size (16 bit or 32 bit)
+        su32 +                      // number of indices
+        sizeof(f32) +               // LOD threshold
+        position_buffer_size +      // room for vertex positions
+        element_buffer_size +       // room for vertex elements
+        index_buffer_size +         // room for indices
+        su32 +                      // size of joint info buffer
+        joint_info_buffer_size +    // joint info buffer
+        su32 +                      // size of animation buffer
+        animations_buffer_size      // animation buffer size
     };
 
     return size;
@@ -671,7 +750,7 @@ pack_mesh_data(const mesh& m, utl::blob_stream_writer& blob)
     const u32 num_vertices{ (u32)m.vertices.size() };
     blob.write(num_vertices);
     // index size (16 bit or 32 bit)
-    const u32 index_size{ (num_vertices < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
+    const u32 index_size{ (u32)((num_vertices < (1 << 16)) ? sizeof(u16) : sizeof(u32)) };
     blob.write(index_size);
     // number of indices
     const u32 num_indices{ (u32)m.indices.size() };
@@ -696,6 +775,12 @@ pack_mesh_data(const mesh& m, utl::blob_stream_writer& blob)
         data = (const u8*)indices.data();
     }
     blob.write(data, index_buffer_size);
+    // joint info
+    blob.write<u32>((u32)m.joint_info_buffer.size());
+    blob.write(m.joint_info_buffer.data(), m.joint_info_buffer.size());
+    // animation info
+    blob.write<u32>((u32)m.animations_buffer.size());
+    blob.write(m.animations_buffer.data(), m.animations_buffer.size());
 }
 
 bool
@@ -704,6 +789,7 @@ split_meshes_by_material(u32 material_idx, const mesh& m, mesh& submesh)
     submesh.name = m.name;
     submesh.lod_threshold = m.lod_threshold;
     submesh.lod_id = m.lod_id;
+    submesh.is_skeletal_mesh = m.is_skeletal_mesh;
     submesh.material_used.emplace_back(material_idx);
     submesh.uv_sets.resize(m.uv_sets.size());
 
@@ -728,6 +814,12 @@ split_meshes_by_material(u32 material_idx, const mesh& m, mesh& submesh)
                 submesh.raw_indices.emplace_back((u32)submesh.positions.size());
                 vertex_ref[v_idx] = submesh.raw_indices.back();
                 submesh.positions.emplace_back(m.positions[v_idx]);
+
+                if (m.is_skeletal_mesh)
+                {
+                    submesh.joint_indices.emplace_back(m.joint_indices[v_idx]);
+                    submesh.joint_weights.emplace_back(m.joint_weights[v_idx]);
+                }
             }
 
             if (m.normals.size())
@@ -764,8 +856,11 @@ split_meshes_by_material(scene& scene, progression *const progression)
     {
         utl::vector<mesh> new_meshes;
 
-        for (const auto& m : lod.meshes)
+        for (auto& m : lod.meshes)
         {
+            assert(!(m.is_skeletal_mesh &&
+                (!m.joint_indices.size() || m.joint_indices.size() != m.joint_weights.size())));
+
             // If more than one material is used in this mesh
             // then split it into submeshes.
             const u32 num_materials{ (u32)m.material_used.size() };
@@ -776,6 +871,15 @@ split_meshes_by_material(scene& scene, progression *const progression)
                     mesh submesh{};
                     if (split_meshes_by_material(m.material_used[i], m, submesh))
                     {
+                        // NOTE: when splitting skeletal meshes, put joint info in the first mesh.
+                        if (m.is_skeletal_mesh && i == 0)
+                        {
+                            submesh.joint_hierarchy.swap(m.joint_hierarchy);
+                            submesh.inverse_bind_pose.swap(m.inverse_bind_pose);
+                            submesh.joint_names.swap(m.joint_names);
+                            // joint_ids is only needed to get animations. It won't be passed to the editor.
+                            submesh.joint_ids.swap(m.joint_ids);
+                        }
                         new_meshes.emplace_back(submesh);
                     }
                 }
@@ -789,15 +893,6 @@ split_meshes_by_material(scene& scene, progression *const progression)
         progression->callback(progression->value(), progression->max_value() + (u32)new_meshes.size());
         new_meshes.swap(lod.meshes);
     }
-}
-
-template <typename T> void
-append_to_vector_pod(utl::vector<T>& dst, const utl::vector<T>& src)
-{
-    if (src.empty()) return;
-    const u32 num_elements{ (u32)dst.size() };
-    dst.resize(dst.size() + src.size());
-    memcpy(&dst[num_elements], src.data(), src.size() * sizeof(T));
 }
 
 } // anonymous namespace
@@ -859,6 +954,37 @@ coalesce_meshes(const lod_group& lod, mesh& combined_mesh, progression *const pr
     combined_mesh.lod_threshold = first_mesh.lod_threshold;
     combined_mesh.lod_id = first_mesh.lod_id;
     combined_mesh.uv_sets.resize(first_mesh.uv_sets.size());
+    combined_mesh.inverse_bind_pose = first_mesh.inverse_bind_pose;
+    combined_mesh.joint_names = first_mesh.joint_names;
+    combined_mesh.joint_hierarchy = first_mesh.joint_hierarchy;
+    combined_mesh.joint_ids = first_mesh.joint_ids;
+
+    auto same_skinning_data = [](const mesh& lhs, const mesh& rhs)
+        {
+            if (lhs.joint_ids.size() != rhs.joint_ids.size() ||
+                lhs.joint_names.size() != rhs.joint_names.size() ||
+                lhs.joint_hierarchy.size() != rhs.joint_hierarchy.size() ||
+                lhs.inverse_bind_pose.size() != rhs.inverse_bind_pose.size())
+            {
+                return false;
+            }
+
+            if (!std::equal(lhs.joint_ids.begin(), lhs.joint_ids.end(), rhs.joint_ids.begin()) ||
+                !std::equal(lhs.joint_names.begin(), lhs.joint_names.end(), rhs.joint_names.begin()) ||
+                !std::equal(lhs.joint_hierarchy.begin(), lhs.joint_hierarchy.end(), rhs.joint_hierarchy.begin()))
+            {
+                return false;
+            }
+
+            for (u32 i{ 0 }; i < lhs.inverse_bind_pose.size(); ++i)
+                for (u32 row{ 0 }; row < 4; ++row)
+                    for (u32 col{ 0 }; col < 4; ++col)
+                        if (!math::is_equal(lhs.inverse_bind_pose[i].m[row][col],
+                            rhs.inverse_bind_pose[i].m[row][col]))
+                            return false;
+
+            return true;
+        };
 
     for (u32 mesh_idx{ 0 }; mesh_idx < lod.meshes.size(); ++mesh_idx)
     {
@@ -867,12 +993,23 @@ coalesce_meshes(const lod_group& lod, mesh& combined_mesh, progression *const pr
         if (combined_mesh.elements_type != determine_elements_type(m) ||
             combined_mesh.uv_sets.size() != m.uv_sets.size() ||
             combined_mesh.lod_id != m.lod_id ||
-            !math::is_equal(combined_mesh.lod_threshold, m.lod_threshold))
+            !math::is_equal(combined_mesh.lod_threshold, m.lod_threshold) ||
+            !same_skinning_data(first_mesh, m) ||
+            (!m.joint_indices.empty() &&
+                (m.joint_indices.size() != m.joint_weights.size())))
         {
             combined_mesh = {};
             return false;
         }
     }
+
+    auto append_to_vector_pod = []<typename T>(utl::vector<T>&dst, const utl::vector<T>&src)
+    {
+        if (src.empty()) return;
+        const u32 num_elements{ (u32)dst.size() };
+        dst.resize(dst.size() + src.size());
+        memcpy(&dst[num_elements], src.data(), src.size() * sizeof(T));
+    };
 
     for (u32 mesh_idx{ 0 }; mesh_idx < lod.meshes.size(); ++mesh_idx)
     {
@@ -885,6 +1022,8 @@ coalesce_meshes(const lod_group& lod, mesh& combined_mesh, progression *const pr
         append_to_vector_pod(combined_mesh.normals, m.normals);
         append_to_vector_pod(combined_mesh.tangents, m.tangents);
         append_to_vector_pod(combined_mesh.colors, m.colors);
+        append_to_vector_pod(combined_mesh.joint_indices, m.joint_indices);
+        append_to_vector_pod(combined_mesh.joint_weights, m.joint_weights);
 
         for (u32 i{ 0 }; i < combined_mesh.uv_sets.size(); ++i)
         {

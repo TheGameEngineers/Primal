@@ -39,11 +39,11 @@ struct Surface
 #define ElementsTypeStaticNormalTexture         0x03
 #define ElementsTypeStaticColor                 0x04
 #define ElementsTypeSkeletal                    0x08
-#define ElementsTypeSkeletalColor               ElementsTypeSkeletal                | ElementsTypeStaticColor
-#define ElementsTypeSkeletalNormal              ElementsTypeSkeletal                | ElementsTypeStaticNormal
-#define ElementsTypeSkeletalNormalColor         ElementsTypeSkeletalNormal          | ElementsTypeStaticColor
-#define ElementsTypeSkeletalNormalTexture       ElementsTypeSkeletal                | ElementsTypeStaticNormalTexture
-#define ElementsTypeSkeletalNormalTextureColor  ElementsTypeSkeletalNormalTexture   | ElementsTypeStaticColor
+#define ElementsTypeSkeletalColor               (ElementsTypeSkeletal                | ElementsTypeStaticColor)
+#define ElementsTypeSkeletalNormal              (ElementsTypeSkeletal                | ElementsTypeStaticNormal)
+#define ElementsTypeSkeletalNormalColor         (ElementsTypeSkeletalNormal          | ElementsTypeStaticColor)
+#define ElementsTypeSkeletalNormalTexture       (ElementsTypeSkeletal                | ElementsTypeStaticNormalTexture)
+#define ElementsTypeSkeletalNormalTextureColor  (ElementsTypeSkeletalNormalTexture   | ElementsTypeStaticColor)
 
 struct VertexElement
 {
@@ -61,6 +61,11 @@ struct VertexElement
 #elif ELEMENTS_TYPE == ElementsTypeSkeletalNormal
 #elif ELEMENTS_TYPE == ElementsTypeSkeletalNormalColor
 #elif ELEMENTS_TYPE == ElementsTypeSkeletalNormalTexture
+    uint        JointWeightsTSign;
+    uint16_t4   JointIndices;
+    uint16_t2   Normal;
+    uint16_t2   Tangent;
+    float2      UV;
 #elif ELEMENTS_TYPE == ElementsTypeSkeletalNormalTextureColor
 #endif
 };
@@ -111,6 +116,26 @@ VertexOut MainVS(in uint VertexIdx: SV_VertexID)
     float tSign = float(signs & 0x02) - 1.f;
     float hSign = float((signs & 0x01) << 1) - 1.f;
 
+    float2 nXY = element.Normal * InvIntervals - 1.f;
+    float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
+
+    float2 tXY = element.Tangent * InvIntervals - 1.f;
+    float3 tangent = float3(tXY, sqrt(saturate(1.f - dot(tXY, tXY))) * tSign);
+    tangent = tangent - normal * dot(normal, tangent);
+
+    vsOut.HomogeneousPosition = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.WorldPosition = worldPosition.xyz;
+    vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
+    vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), hSign);
+    vsOut.UV = element.UV;
+
+#elif ELEMENTS_TYPE == ElementsTypeSkeletalNormalTexture
+
+    VertexElement element = Elements[VertexIdx];
+    uint signs = element.JointWeightsTSign >> 24;
+    float nSign = float((signs & 0x04) >> 1) - 1.f;
+    float tSign = float(signs & 0x02) - 1.f;
+    float hSign = float((signs & 0x01) << 1) - 1.f;
 
     float2 nXY = element.Normal * InvIntervals - 1.f;
     float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);

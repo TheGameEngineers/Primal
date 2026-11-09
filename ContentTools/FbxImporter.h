@@ -26,9 +26,8 @@ public:
 
     ~fbx_context()
     {
-        _fbx_scene->Destroy();
-        _fbx_manager->Destroy();
-        ZeroMemory(this, sizeof(fbx_context));
+        if (_fbx_scene) _fbx_scene->Destroy();
+        if (_fbx_manager) _fbx_manager->Destroy();        
     }
 
     void get_scene(FbxNode* root = nullptr);
@@ -44,6 +43,7 @@ private:
     void get_mesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u32 lod_id, f32 lod_threshold);
     void get_lod_group(FbxNodeAttribute* attribute);
     bool get_mesh_data(FbxMesh* fbx_mesh, mesh& m);
+    void get_skinning_data(FbxMesh* fbx_mesh, mesh& m);
 
     scene*                  _scene{ nullptr };
     scene_data*             _scene_data{ nullptr };

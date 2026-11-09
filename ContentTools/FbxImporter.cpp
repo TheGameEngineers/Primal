@@ -2,8 +2,10 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #include "FbxImporter.h"
 #include "Geometry.h"
+#include "Profiling/UdpLog.h"
 
-// If you get any compilation or linker errors than make sure that
+
+// If you get any compilation or linker errors then make sure that
 // 1) FBX SDK 2020.2 or later is installed on your system
 // 2) the include path to fbxsdk.h is added to "Additional Include Directories" (compiler settings)
 // 3) the library paths in the following section point to the correct location
@@ -21,6 +23,7 @@
 
 namespace primal::tools {
 namespace {
+using profiling::udp_log::message_type;
 
 std::mutex fbx_mutex{};
 
@@ -55,14 +58,15 @@ fbx_context::load_fbx_file(const char* file)
     }
 
     FbxImporter* importer{ FbxImporter::Create(_fbx_manager, "Importer") };
-    if (!(importer &&
-          importer->Initialize(file, -1, _fbx_manager->GetIOSettings()) &&
-          importer->Import(_fbx_scene)))
+    const bool imported{ importer &&
+        importer->Initialize(file, -1, _fbx_manager->GetIOSettings()) &&
+        importer->Import(_fbx_scene) };
+    if (importer) importer->Destroy();
+    if (!imported)
     {
+        SEND_UDP_LOG(message_type::error, ("Failed to import the FBX scene from " + std::string(file)).c_str());
         return;
     }
-
-    importer->Destroy();
 
     // Get scene scale in meters.
     _scene_scale = (f32)_fbx_scene->GetGlobalSettings().GetSystemUnit().GetConversionFactorTo(FbxSystemUnit::m);
@@ -165,12 +169,12 @@ fbx_context::get_mesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u3
 {
     assert(attribute);
 
-    FbxMesh* fbx_mesh{ (FbxMesh*)attribute };
-    if (fbx_mesh->RemoveBadPolygons() < 0) return;
+    FbxMesh* fbx_mesh{ FbxCast<FbxMesh>(attribute) };
+    if (!fbx_mesh || fbx_mesh->RemoveBadPolygons() < 0) return;
 
     // Triangulate the mesh if needed.
     FbxGeometryConverter gc{ _fbx_manager };
-    fbx_mesh = (FbxMesh*)gc.Triangulate(fbx_mesh, true);
+    fbx_mesh = FbxCast<FbxMesh>(gc.Triangulate(fbx_mesh, true));
     if (!fbx_mesh || fbx_mesh->RemoveBadPolygons() < 0) return;
 
     FbxNode *const node{ fbx_mesh->GetNode() };
@@ -182,6 +186,7 @@ fbx_context::get_mesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u3
 
     if (get_mesh_data(fbx_mesh, m))
     {
+        get_skinning_data(fbx_mesh, m);
         meshes.emplace_back(m);
         _progression->callback(_progression->value(), _progression->max_value() + 1);
     }
@@ -192,7 +197,8 @@ fbx_context::get_lod_group(FbxNodeAttribute* attribute)
 {
     assert(attribute);
 
-    FbxLODGroup* lod_grp{ (FbxLODGroup*)attribute };
+    FbxLODGroup* lod_grp{ FbxCast<FbxLODGroup>(attribute) };
+    if (!lod_grp) return;
     FbxNode *const node{ lod_grp->GetNode() };
     lod_group lod{};
     lod.name = (node->GetName()[0] != '\0') ? node->GetName() : lod_grp->GetName();
@@ -258,8 +264,7 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
         else
         {
             FbxVector4 v = transform.MultT(vertices[v_idx]) * _scene_scale;
-            m.raw_indices[i] = (u32)m.positions.size();
-            vertex_ref[v_idx] = m.raw_indices[i];
+            m.raw_indices[i] = vertex_ref[v_idx] = (u32)m.positions.size();
             m.positions.emplace_back((f32)v[0], (f32)v[1], (f32)v[2]);
         }
     }
@@ -385,9 +390,9 @@ ImportFbx(const char* file, scene_data* data, progression::progress_callback cal
         }
     }
 
-    if (scene.lod_groups.empty())
+    if (scene.lod_groups.empty()) // TODO: check if the file contains animation data.
     {
-        // TODO: send failure log message to editor
+        SEND_UDP_LOG(message_type::error, "Failed to import FBX file");
         return;
     }
 

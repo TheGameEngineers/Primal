@@ -121,8 +121,8 @@ static class DefaultAssets
 
     private static void CreateDefaultMaterial(string file)
     {
-        var vsDefines = new[] { "ELEMENTS_TYPE=0", "ELEMENTS_TYPE=1", "ELEMENTS_TYPE=3" };
-        var vsKeys = new[] { (uint)ElementsType.PositionOnly, (uint)ElementsType.StaticNormal, (uint)ElementsType.StaticNormalTexture };
+        var vsDefines = new[] { "ELEMENTS_TYPE=0", "ELEMENTS_TYPE=1", "ELEMENTS_TYPE=3", "ELEMENTS_TYPE=11" };
+        var vsKeys = new[] { (uint)ElementsType.PositionOnly, (uint)ElementsType.StaticNormal, (uint)ElementsType.StaticNormalTexture, (uint)ElementsType.SkeletalNormalTexture };
         var psDefines = new[] { string.Empty };
         var psKeys = new[] { (uint)ID.INVALID_ID };
 
