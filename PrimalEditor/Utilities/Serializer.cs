@@ -20,7 +20,7 @@ public static class Serializer
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to serialize {instance} to {path}");
+            Logger.Log(MessageType.Error, $"Failed to serialize {instance} to {path}\n{ex.Message}");
             throw;
         }
     }
@@ -37,7 +37,7 @@ public static class Serializer
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to deserialize {path}");
+            Logger.Log(MessageType.Error, $"Failed to deserialize {path}\n{ex.Message}");
             throw;
         }
     }

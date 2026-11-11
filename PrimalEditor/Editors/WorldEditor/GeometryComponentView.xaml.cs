@@ -48,9 +48,7 @@ partial class GeometryComponentView : UserControl
             var file = files?.Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh).FirstOrDefault();
             if (!string.IsNullOrEmpty(file?.Trim()) && DataContext is MSGeometry vm)
             {
-                var assetInfo = Asset.TryGetAssetInfo(file);
-
-                if (assetInfo != null && vm.GeometryGuid != assetInfo.Guid)
+                if (Asset.TryGetAssetInfo(file) is { } assetInfo && vm.GeometryGuid != assetInfo.Guid)
                 {
                     var selection = vm.SelectedComponents.Where(geometry => geometry.GeometryGuid != assetInfo.Guid).ToList();
                     var undoSelection = selection.Select(geometry => (geometry, geometry.GeometryGuid, geometry.MaterialsList)).ToList();

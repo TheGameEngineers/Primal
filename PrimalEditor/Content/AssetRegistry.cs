@@ -159,7 +159,7 @@ static class AssetRegistry
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Warning, "Failed to read Asset Registry cache file.");
+            Logger.Log(MessageType.Warning, $"Failed to read Asset Registry cache file: {ex.Message}");
         }
         finally
         {
@@ -199,7 +199,7 @@ static class AssetRegistry
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Warning, "Failed to write Asset Registry cache file.");
+            Logger.Log(MessageType.Warning, $"Failed to write Asset Registry cache file: {ex.Message}");
             File.Delete(_cachePath); // If saving fails, delete the cache file to avoid using curropted version.
         }
     }

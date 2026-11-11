@@ -82,6 +82,7 @@ static class DefaultAssets
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
+            Logger.Log(MessageType.Error, $"Failed to compute BRDF integration LUT: {ex.Message}");
         }
     }
 
@@ -101,6 +102,7 @@ static class DefaultAssets
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
+            Logger.Log(MessageType.Error, $"Failed to create the default geometry: {ex.Message}");
         }
     }
 
@@ -145,6 +147,7 @@ static class DefaultAssets
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
+            Logger.Log(MessageType.Error, $"Failed to create the default material: {ex.Message}");
         }
     }
 }

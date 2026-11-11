@@ -28,7 +28,9 @@ collect_joint_nodes(FbxNode* node, const utl::vector<FbxNode*>& cluster_joints, 
         joint_nodes.emplace_back(node);
 
     for (s32 i{ 0 }; i < node->GetChildCount(); ++i)
+    {
         collect_joint_nodes(node->GetChild(i), cluster_joints, joint_nodes);
+    }
 }
 
 bool
@@ -45,9 +47,11 @@ get_bind_pose_matrix(FbxScene* scene, FbxNode* node, FbxAMatrix& matrix)
         if (node_idx < 0) continue;
 
         const FbxMatrix& bind_pose{ pose->GetMatrix(node_idx) };
+
         for (u32 row{ 0 }; row < 4; ++row)
             for (u32 col{ 0 }; col < 4; ++col)
                 matrix[row][col] = bind_pose.Get(row, col);
+
         return true;
     }
 
@@ -71,8 +75,9 @@ get_joint_hierarchy_recursive(
     hierarchy.emplace_back(parent_index);
 
     for (const u32 child_index : children[index])
-        get_joint_hierarchy_recursive(child_index, hierarchy_index, children,
-            visited, hierarchy, hierarchy_map);
+    {
+        get_joint_hierarchy_recursive(child_index, hierarchy_index, children, visited, hierarchy, hierarchy_map);
+    }
 }
 
 // parent_indices must be nearest-ancestor links. A repeated node along a chain
@@ -104,7 +109,9 @@ break_parent_cycles(utl::vector<u32>& parent_indices)
             parent_indices[chain.back()] = u32_invalid_id;
 
         for (const u32 node : chain)
+        {
             marker[node] = 2;
+        }
     }
 }
 
@@ -140,14 +147,19 @@ get_joint_hierarchy(
 
     utl::vector<utl::vector<u32>> children(num_source_joints);
     for (u32 i{ 0 }; i < num_source_joints; ++i)
+    {
         if (parent_indices[i] != u32_invalid_id)
+        {
             children[parent_indices[i]].emplace_back(i);
+        }
+    }
 
     // A tree is kept when any vertex has a positive weight on it. The whole tree
     // stays, including bones this mesh does not weight, so the skeleton matches
     // other meshes on the same rig. Trees with no weights are dropped.
     utl::vector<u8> keep_root(num_source_joints, 0);
     const u32 num_vertices{ (u32)m.joint_indices.size() };
+
     for (u32 vertex_idx{ 0 }; vertex_idx < num_vertices; ++vertex_idx)
     {
         const u32* joint_indices{ &m.joint_indices[vertex_idx].x };
@@ -172,9 +184,12 @@ get_joint_hierarchy(
     hierarchy_map.reserve(num_source_joints);
 
     for (u32 i{ 0 }; i < num_source_joints; ++i)
+    {
         if (keep_root[i] && parent_indices[i] == u32_invalid_id)
-            get_joint_hierarchy_recursive(i, u32_invalid_id, children, visited,
-                hierarchy, hierarchy_map);
+        {
+            get_joint_hierarchy_recursive(i, u32_invalid_id, children, visited, hierarchy, hierarchy_map);
+        }
+    }
 
     const u32 num_joints{ (u32)hierarchy_map.size() };
     if (!num_joints)
@@ -202,25 +217,32 @@ get_joint_hierarchy(
         m.joint_names[i] = joint->GetName();
         m.joint_ids[i] = joint->GetUniqueID();
 
-        const auto it{ std::find_if(cluster_bind_poses.begin(), cluster_bind_poses.end(),
-            [joint](const auto& bind_pose) { return bind_pose.first == joint; }) };
-
         FbxAMatrix bind_pose;
-        if (it != cluster_bind_poses.end())
+        if (m.joint_hierarchy[i] != u32_invalid_id) // if not a root joint...
         {
-            bind_pose = it->second;
-        }
-        else if (!get_bind_pose_matrix(scene, joint, bind_pose))
-        {
-            SEND_UDP_LOG(message_type::warning,
-                ("Missing bind pose for joint " + std::string(joint->GetName()) + " in " + m.name).c_str());
-            bind_pose = joint->EvaluateGlobalTransform();
-        }
+            const auto it{ std::find_if(cluster_bind_poses.begin(), cluster_bind_poses.end(),
+                [joint](const auto& bind_pose) { return bind_pose.first == joint; }) };
 
-        // Vertices are stored in meters. Scale the translation only; the 3x3 is unitless.
-        FbxVector4 translation{ bind_pose.GetT() };
-        translation *= (double)scene_scale;
-        bind_pose.SetT(translation);
+            if (it != cluster_bind_poses.end())
+            {
+                bind_pose = it->second;
+            }
+            else if (!get_bind_pose_matrix(scene, joint, bind_pose))
+            {
+                SEND_UDP_LOG(message_type::warning,
+                    ("Missing bind pose for joint " + std::string(joint->GetName()) + " in " + m.name).c_str());
+                bind_pose = joint->EvaluateGlobalTransform();
+            }
+
+            // Vertices are stored in meters. Scale the translation only; the 3x3 is unitless.
+            FbxVector4 translation{ bind_pose.GetT() };
+            translation *= (double)scene_scale;
+            bind_pose.SetT(translation);
+        }
+        else
+        {
+            bind_pose.SetIdentity();
+        }
 
         const FbxAMatrix inverse_bind_pose{ bind_pose.Inverse() };
         math::m4x4& mtx{ m.inverse_bind_pose.emplace_back() };
@@ -230,6 +252,7 @@ get_joint_hierarchy(
     }
 
     for (u32 j{ 0 }; j < num_vertices; ++j)
+    {
         for (u32 k{ 0 }; k < mesh::max_joints_per_vertex; ++k)
         {
             const u32 source_index{ (&m.joint_indices[j].x)[k] };
@@ -238,6 +261,7 @@ get_joint_hierarchy(
 
             (&new_joint_indices[j].x)[k] = mapped;
         }
+    }
 
     m.joint_indices.swap(new_joint_indices);
     return true;
@@ -353,9 +377,14 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
     // Scene order, not cluster order, so two meshes on one rig get the same joint indices.
     utl::vector<FbxNode*> joint_nodes;
     collect_joint_nodes(_fbx_scene->GetRootNode(), cluster_joints, joint_nodes);
+
     for (FbxNode* joint : cluster_joints)
+    {
         if (joint_index_of(joint_nodes, joint) == u32_invalid_id)
+        {
             joint_nodes.emplace_back(joint);
+        }
+    }
 
     if (joint_nodes.empty())
     {

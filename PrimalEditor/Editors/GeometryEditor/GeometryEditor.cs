@@ -224,6 +224,7 @@ class MeshRenderer : ViewModelBase
         double minX, minY, minZ; minX = minY = minZ = double.MaxValue;
         double maxX, maxY, maxZ; maxX = maxY = maxZ = double.MinValue;
         Vector3D avgNormal = new();
+        var normalCount = 0;
         // This is to unpack the packed normals:
         var intervals = 2.0f / ((1 << 16) - 1);
 
@@ -270,6 +271,7 @@ class MeshRenderer : ViewModelBase
                         normal.Normalize();
                         vertexData.Normals.Add(normal);
                         avgNormal += normal;
+                        ++normalCount;
 
                         // Read UVs
                         if (mesh.ElementsType.HasFlag(ElementsType.StaticNormalTexture))
@@ -326,19 +328,23 @@ class MeshRenderer : ViewModelBase
             var width = maxX - minX;
             var height = maxY - minY;
             var depth = maxZ - minZ;
-            var radius = new Vector3D(height, width, depth).Length * 1.2;
-            if (avgNormal.Length > 0.1)
-            {
-                avgNormal.Normalize();
-                avgNormal *= radius;
-                CameraPosition = new Point3D(avgNormal.X, avgNormal.Y, avgNormal.Z);
-            }
-            else
-            {
-                CameraPosition = new Point3D(width, height * 0.5, radius);
-            }
-
             CameraTarget = new Point3D(minX + width * 0.5, minY + height * 0.5, minZ + depth * 0.5);
+
+            var cameraDirection = avgNormal;
+            if (normalCount == 0 || cameraDirection.Length <= normalCount * 0.1 ||
+                Math.Abs(cameraDirection.Y) >= cameraDirection.Length * 0.95)
+            {
+                cameraDirection = new Vector3D(1, 0.5, 1);
+            }
+            cameraDirection.Normalize();
+
+            // Fit the bounding sphere within the viewport's 45-degree vertical field of view.
+            var boundsRadius = new Vector3D(width, height, depth).Length * 0.5;
+            var cameraDistance = Math.Max(boundsRadius, 0.01) * 1.1 / Math.Sin(Math.PI / 8);
+            CameraPosition = new Point3D(
+                cameraDirection.X * cameraDistance,
+                cameraDirection.Y * cameraDistance,
+                cameraDirection.Z * cameraDistance);
         }
     }
 
@@ -565,7 +571,7 @@ class GeometryEditor : ViewModelBase, IAssetEditor
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Failed to set geometry for use in geometry editor. File: {info.FullPath}");
+            Debug.WriteLine($"Failed to set geometry for use in geometry editor. File: {info.FullPath}\n{ex.Message}");
         }
     }
 

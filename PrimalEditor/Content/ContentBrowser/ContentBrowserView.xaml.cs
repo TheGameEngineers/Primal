@@ -321,8 +321,7 @@ _addCurrentDirectory:
         }
         else if (FileAccess.HasFlag(FileAccess.Read))
         {
-            var assetInfo = Asset.TryGetAssetInfo(info.FullPath);
-            if (assetInfo != null)
+            if (Asset.TryGetAssetInfo(info.FullPath) is { } assetInfo)
             {
                 OpenAssetEditor(assetInfo);
             }
@@ -342,7 +341,9 @@ _addCurrentDirectory:
                 case AssetType.Mesh:
                     editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor", true);
                     break;
-                case AssetType.Skeleton: break;
+                case AssetType.Skeleton:
+                    editor = OpenEditorPanel<SkeletonEditorView>(info, "Skeleton Editor", false);
+                    break;
                 case AssetType.Texture:
                     editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor", false);
                     break;
@@ -567,7 +568,7 @@ _addCurrentDirectory:
         {
 
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Error: failed to create new folder: {folder}");
+            Debug.WriteLine($"Error: failed to create new folder: {folder}\n{ex.Message}");
         }
     }
 

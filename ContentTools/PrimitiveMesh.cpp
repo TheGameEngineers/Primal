@@ -589,8 +589,12 @@ CreatePrimitiveMesh(scene_data* data, primitive_init_info* info)
     scene scene{};
     creators[info->type](scene, *info);
 
+    for (lod_group& lod : scene.lod_groups)
+        for (mesh& m : lod.meshes)
+            m.settings = data->settings;
+
     progression progression{};
-    process_scene(scene, data->settings, &progression);
+    process_scene(scene, &progression);
     pack_data(scene, *data);
 }
 

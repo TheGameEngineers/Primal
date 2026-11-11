@@ -1,6 +1,5 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
-using EnvDTE;
 using PrimalEditor.Components;
 using PrimalEditor.Content;
 using PrimalEditor.DllWrappers;
@@ -212,7 +211,7 @@ class Project : ViewModelBase
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to load project from {file}");
+            Logger.Log(MessageType.Error, $"Failed to load project from {file}\n{ex.Message}");
             if (Current != null)
             {
                 ContentWatcher.Reset(Current.ContentPath, Current.Path);

@@ -1,0 +1,75 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Editors.SkeletonEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Editors"
+             mc:Ignorable="d" 
+             d:DesignHeight="1080" d:DesignWidth="1920">
+    <UserControl.DataContext>
+        <local:SkeletonEditor/>
+    </UserControl.DataContext>
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
+        <HierarchicalDataTemplate DataType="{x:Type local:SkeletonJoint}" ItemsSource="{Binding Children}">
+            <TextBlock Text="{Binding Name}" Margin="4,2" Style="{StaticResource LightTextBlockStyle}"/>
+        </HierarchicalDataTemplate>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" MinWidth="300" MaxWidth="800"/>
+            <ColumnDefinition Width="*" MinWidth="600"/>
+        </Grid.ColumnDefinitions>
+        <Grid Margin="0,0,5,0">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <DockPanel Background="{StaticResource Editor.Window.GrayBrush3}" Margin="0,0,0,5">
+                <TextBlock Text="Joint hierarchy" VerticalAlignment="Top" FontSize="16" DockPanel.Dock="Top" Margin="5,0"/>
+                <TreeView ItemsSource="{Binding SkeletonData.RootJoint}" Margin="5"
+                          Background="{StaticResource Editor.Window.GrayBrush2}" BorderThickness="0"
+                          x:Name="jointTreeView"/>
+            </DockPanel>
+
+            <DockPanel Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}" 
+                       DataContext="{Binding Path=SelectedItem, ElementName=jointTreeView}" 
+                       d:DataContext="{d:DesignInstance Type=local:SkeletonJoint}">
+                <TextBlock Text="Joint details" VerticalAlignment="Top" FontSize="16" DockPanel.Dock="Top" Margin="5,0"/>
+                <StackPanel Margin="15,10,0,0" Orientation="Horizontal">
+                    <StackPanel Width="100">
+                        <TextBlock Text="Name" Margin="0,5"/>
+                        <TextBlock Text="Parent" Margin="0,5"/>
+                        <TextBlock Text="Inv. bind pose" Margin="0,5"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Name}" Margin="0,5"/>
+                        <TextBlock Text="{Binding Parent.Name}" Margin="0,5"/>
+                        <Border CornerRadius="3" Margin="0,5,5,10" Background="{StaticResource Editor.Window.GrayBrush2}"
+                                BorderThickness="1" BorderBrush="{StaticResource Editor.Window.GrayBrush4}">
+                            <ItemsControl ItemsSource="{Binding MatrixElements}" Margin="15,0,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Rows="4" Columns="4"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ., StringFormat=G4}" MinWidth="80" Margin="0,5"
+                                                   Style="{StaticResource LightTextBlockStyle}" Foreground="Moccasin"
+                                                   Opacity="0.7"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+        <GridSplitter VerticalAlignment="Stretch" HorizontalAlignment="Right" Width="5" Background="Transparent"/>
+    </Grid>
+</UserControl>

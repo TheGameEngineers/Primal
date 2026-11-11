@@ -306,7 +306,7 @@ namespace PrimalEditor.DllWrappers
             }
             catch (Exception ex)
             {
-                Logger.Log(MessageType.Error, $"Failed to compile shader {shaderGroup.FunctionName}");
+                Logger.Log(MessageType.Error, $"Failed to compile shader {shaderGroup.FunctionName}\n{ex.Message}");
                 Debug.WriteLine(ex.Message);
                 throw;
             }

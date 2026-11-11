@@ -149,7 +149,7 @@ private:
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to create script {scriptName.Text}");
+            Logger.Log(MessageType.Error, $"Failed to create script {scriptName.Text}\n{ex.Message}");
         }
         finally
         {

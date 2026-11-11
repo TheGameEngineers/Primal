@@ -118,9 +118,21 @@ struct skeletal_normal_texture_color
 
 } // namespace elements
 
+struct geometry_import_settings
+{
+    f32 smoothing_angle;
+    u8  calculate_normals;
+    u8  calculate_tangents;
+    u8  reverse_handedness;
+    u8  import_embedded_textures;
+    u8  import_animations;
+    u8  coalesce_meshes;
+};
+
 struct mesh
 {
     constexpr static u32 max_joints_per_vertex{ 4 };
+    geometry_import_settings settings;
 
     // Initial data
     utl::vector<math::v3>               positions;
@@ -171,17 +183,6 @@ struct scene
     utl::vector<lod_group>  lod_groups;
 };
 
-struct geometry_import_settings
-{
-    f32 smoothing_angle;
-    u8  calculate_normals;
-    u8  calculate_tangents;
-    u8  reverse_handedness;
-    u8  import_embedded_textures;
-    u8  import_animations;
-    u8  coalesce_meshes;
-};
-
 struct scene_data
 {
     u8*                      buffer;
@@ -189,7 +190,7 @@ struct scene_data
     geometry_import_settings settings;
 };
 
-void process_scene(scene& scene, const geometry_import_settings& settings, progression *const progression);
+void process_scene(scene& scene, progression *const progression);
 void pack_data(const scene& scene, scene_data& data);
 bool coalesce_meshes(const lod_group& lod, mesh& combined_mesh, progression *const progression);
 }

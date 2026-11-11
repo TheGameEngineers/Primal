@@ -179,7 +179,8 @@ fbx_context::get_mesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u3
 
     FbxNode *const node{ fbx_mesh->GetNode() };
 
-    mesh m;
+    mesh m; 
+    m.settings = _scene_data->settings;
     m.lod_id = lod_id;
     m.lod_threshold = lod_threshold;
     m.name = (node->GetName()[0] != '\0') ? node->GetName() : fbx_mesh->GetName();
@@ -289,9 +290,9 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
     }
 
     // Importing normals is ON by default
-    const bool import_normals{ !_scene_data->settings.calculate_normals };
+    const bool import_normals{ !m.settings.calculate_normals };
     // Importing tangents is OFF by default
-    const bool import_tangents{ !_scene_data->settings.calculate_tangents };
+    const bool import_tangents{ !m.settings.calculate_tangents };
 
     // Import normals
     if (import_normals)
@@ -304,7 +305,9 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
             const s32 num_normals{ normals.Size() };
             for (s32 i{ 0 }; i < num_normals; ++i)
             {
-                FbxVector4 n{ inverse_transpose.MultT(normals[i]) };
+                FbxVector4 n{ normals[i] };
+                n[3] = 0; // Don't pick up translations.
+                n = inverse_transpose.MultT(n);
                 n.Normalize();
                 m.normals.emplace_back((f32)n[0], (f32)n[1], (f32)n[2]);
             }
@@ -313,7 +316,7 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
         {
             // something went wrong with importing normals from FBX.
             // Fall back to our own normal calculation method.
-            _scene_data->settings.calculate_normals = true;
+            m.settings.calculate_normals = true;
         }
     }
 
@@ -323,7 +326,7 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
         FbxLayerElementArrayTemplate<FbxVector4>* tangents{ nullptr };
         // Calculate tangents using FBX's built-in method, but only if no tangent data is already there.
         // NOTE: the documentation states that the function returns true if tangent data is already there
-        //       and pOverwrite == false. This seeps to be wrong (i.e. it return false in that case)!
+        //       and pOverwrite == false. This seems to be wrong (i.e. it return false in that case)!
         fbx_mesh->GenerateTangentsData();
 
         if (fbx_mesh->GetTangents(&tangents) && tangents &&
@@ -345,7 +348,7 @@ fbx_context::get_mesh_data(FbxMesh* fbx_mesh, mesh& m)
         {
             // something went wrong with importing tangents from FBX.
             // Fall back to our own tangent calculation method.
-            _scene_data->settings.calculate_tangents = true;
+            m.settings.calculate_tangents = true;
         }
     }
 
@@ -396,7 +399,7 @@ ImportFbx(const char* file, scene_data* data, progression::progress_callback cal
         return;
     }
 
-    process_scene(scene, data->settings, &progression);
+    process_scene(scene, &progression);
     pack_data(scene, *data);
 }
 } // namespace primal::tools

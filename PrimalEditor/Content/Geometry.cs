@@ -343,6 +343,7 @@ class GeometryImportSettings : ViewModelBase, IAssetImportSettings
 class Geometry : Asset
 {
     private readonly List<LODGroup> _lodGroups = [];
+    private readonly Dictionary<MeshLOD, byte[]> _skeletons = [];
     private static readonly Lock _lock = new();
 
     public static AssetInfo Default => DefaultAssets.DefaultGeometry;
@@ -386,7 +387,13 @@ class Geometry : Asset
             // get number of meshes in this LOD group
             var numMeshes = reader.ReadInt32();
             Debug.Assert(numMeshes > 0);
-            var lods = ReadMeshLODs(numMeshes, reader);
+            var lodIds = new List<int>();
+            var lods = new List<MeshLOD>();
+            for (int j = 0; j < numMeshes; ++j)
+            {
+                var lodId = ReadMesh(reader, lodIds, lods);
+                ReadJointData(reader, lods[lodId]);
+            }
 
             var lodGroup = new LODGroup() { Name = lodGroupName };
             lods.ForEach(lodGroup.LODs.Add);
@@ -395,19 +402,23 @@ class Geometry : Asset
         }
     }
 
-    private static List<MeshLOD> ReadMeshLODs(int numMeshes, BinaryReader reader)
+    private void ReadJointData(BinaryReader reader, MeshLOD lod)
     {
-        var lodIds = new List<int>();
-        var lodList = new List<MeshLOD>();
-        for (int i = 0; i < numMeshes; ++i)
+        // Read joint and animation data
+        var jointInfoBufferSize = reader.ReadInt32();
+        if (jointInfoBufferSize > 0)
         {
-            ReadMeshes(reader, lodIds, lodList);
+            Debug.Assert(!_skeletons.ContainsKey(lod));
+            var jointInfo = reader.ReadBytes(jointInfoBufferSize);
+            _skeletons[lod] = jointInfo;
         }
 
-        return lodList;
+        // TODO: skip animation clips for now
+        var animationsBufferSize = reader.ReadInt32();
+        reader.BaseStream.Position += animationsBufferSize;
     }
 
-    private static void ReadMeshes(BinaryReader reader, List<int> lodIds, List<MeshLOD> lodList)
+    private static int ReadMesh(BinaryReader reader, List<int> lodIds, List<MeshLOD> lodList)
     {
         // get mesh's name
         var s = reader.ReadInt32();
@@ -440,14 +451,10 @@ class Geometry : Asset
         mesh.Elements = reader.ReadBytes(elementsBufferSize);
         mesh.Indices = reader.ReadBytes(indexBufferSize);
 
-        ReadSkeletonData(reader);
-        ReadAnimationData(reader);
-
         MeshLOD lod;
         if (ID.IsValid(lodId) && lodIds.Contains(lodId))
         {
             lod = lodList[lodIds.IndexOf(lodId)];
-            Debug.Assert(lod != null);
         }
         else
         {
@@ -457,20 +464,9 @@ class Geometry : Asset
         }
 
         lod.Meshes.Add(mesh);
-    }
-
-    private static void ReadSkeletonData(BinaryReader reader)
-    {
-        // TODO: skip joint info for now
-        var jointInfoBufferSize = reader.ReadInt32();
-        reader.BaseStream.Position += jointInfoBufferSize;
-    }
-
-    private static void ReadAnimationData(BinaryReader reader)
-    {
-        // TODO: skip animation clips for now
-        var animationsBufferSize = reader.ReadInt32();
-        reader.BaseStream.Position += animationsBufferSize;
+        // Return the index of LOD to which the mesh was added
+        // so it can be matched with joint data, if present.
+        return lodList.IndexOf(lod);
     }
 
     public override bool Import(string file)
@@ -510,7 +506,7 @@ class Geometry : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            var msg = $"Failed to read {file} for import";
+            var msg = $"Failed to read {file} for import: {ex.Message}";
             Debug.WriteLine(msg);
             Logger.Log(MessageType.Error, msg);
         }
@@ -571,7 +567,7 @@ class Geometry : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to load geometry asset from file: {file}");
+            Logger.Log(MessageType.Error, $"Failed to load geometry asset from file: {file}\n{ex.Message}");
         }
 
         return false;
@@ -596,7 +592,7 @@ class Geometry : Asset
                     path + fileName + ((_lodGroups.Count > 1) ? "_" + ((lodGroup.LODs.Count > 1) ? lodGroup.Name : lodGroup.LODs[0].Name) : string.Empty)) + AssetFileExtension;
                 // NOTE: we have to make a different id for each new asset file, but if a geometry asset file
                 //       with the same name already exists then we use its guid instead.
-                Guid = TryGetAssetInfo(meshFileName) is AssetInfo info && info.Type == Type ? info.Guid : Guid.NewGuid();
+                Guid = TryGetAssetInfo(meshFileName) is { } info && info.Type == Type ? info.Guid : Guid.NewGuid();
                 byte[] data = null;
                 using (var writer = new BinaryWriter(new MemoryStream()))
                 {
@@ -606,6 +602,7 @@ class Geometry : Asset
                     foreach (var lod in lodGroup.LODs)
                     {
                         LODToBinary(lod, writer, out var hash);
+                        TrySaveJointData(lod, meshFileName);
                         hashes.AddRange(hash);
                     }
 
@@ -633,10 +630,27 @@ class Geometry : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to save geometry to {file}");
+            Logger.Log(MessageType.Error, $"Failed to save geometry to {file}\n{ex.Message}");
         }
 
         return savedFiles;
+    }
+
+    private void TrySaveJointData(MeshLOD lod, string meshFileName)
+    {
+        if (_skeletons.TryGetValue(lod, out var rawData))
+        {
+            try
+            {
+                var skeleton = new Skeleton(rawData);
+                skeleton.Save(meshFileName);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Logger.Log(MessageType.Error, $"Failed to save skeleton asset.\n{ex.Message}");
+            }
+        }
     }
 
     /// <summary>

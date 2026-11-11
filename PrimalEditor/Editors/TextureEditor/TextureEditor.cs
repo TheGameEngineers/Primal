@@ -359,7 +359,7 @@ class TextureEditor : ViewModelBase, IAssetEditor
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Failed to set texture for use in texture editor. File: {info.FullPath}");
+            Debug.WriteLine($"Failed to set texture for use in texture editor. File: {info.FullPath}\n{ex.Message}");
             Texture = new();
         }
         finally { State = AssetEditorState.Done; }
@@ -378,7 +378,7 @@ class TextureEditor : ViewModelBase, IAssetEditor
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Failed to load mipmaps from {texture.FileName}");
+            Debug.WriteLine($"Failed to load mipmaps from {texture.FileName}\n{ex.Message}");
         }
     }
 

@@ -632,22 +632,22 @@ determine_elements_type(const mesh& m)
 }
 
 void
-process_vertices(mesh& m, const geometry_import_settings& settings)
+process_vertices(mesh& m)
 {
     assert((m.raw_indices.size() % 3) == 0);
-    if (settings.calculate_normals || m.normals.empty())
+    if (m.settings.calculate_normals || m.normals.size() != m.raw_indices.size())
     {
         recalculate_normals(m);
     }
 
-    process_normals(m, settings.smoothing_angle);
+    process_normals(m, m.settings.smoothing_angle);
 
     if (!m.uv_sets.empty())
     {
         process_uvs(m);
     }
 
-    if ((settings.calculate_tangents || m.tangents.empty()) &&
+    if ((m.settings.calculate_tangents || m.tangents.size() != m.raw_indices.size()) &&
         !m.uv_sets.empty())
     {
         calculate_mikk_tspace(m);
@@ -898,7 +898,7 @@ split_meshes_by_material(scene& scene, progression *const progression)
 } // anonymous namespace
 
 void
-process_scene(scene& scene, const geometry_import_settings& settings, progression *const progression)
+process_scene(scene& scene, progression *const progression)
 {
     assert(progression);
     split_meshes_by_material(scene, progression);
@@ -906,7 +906,7 @@ process_scene(scene& scene, const geometry_import_settings& settings, progressio
     for (auto& lod : scene.lod_groups)
         for (auto& m : lod.meshes)
         {
-            process_vertices(m, settings);
+            process_vertices(m);
             progression->callback(progression->value() + 1, progression->max_value());
         }
 }

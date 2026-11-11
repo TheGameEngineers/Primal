@@ -97,7 +97,7 @@ class OpenProject
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to read project data");
+            Logger.Log(MessageType.Error, $"Failed to read project data\n{ex.Message}");
             throw;
         }
     }

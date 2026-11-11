@@ -375,7 +375,7 @@ namespace PrimalEditor.DllWrappers
             }
             catch (Exception ex)
             {
-                Logger.Log(MessageType.Error, $"Failed to compute BRDF integration LUT {texture.FileName}");
+                Logger.Log(MessageType.Error, $"Failed to compute BRDF integration LUT {texture.FileName}\n{ex.Message}");
                 Debug.WriteLine(ex.Message);
             }
         }
@@ -406,7 +406,7 @@ namespace PrimalEditor.DllWrappers
             }
             catch (Exception ex)
             {
-                Logger.Log(MessageType.Error, $"Failed to decompress mipmaps from {texture.FileName}");
+                Logger.Log(MessageType.Error, $"Failed to decompress mipmaps from {texture.FileName}\n{ex.Message}");
                 Debug.WriteLine(ex.Message);
                 return [];
             }
@@ -457,7 +457,7 @@ namespace PrimalEditor.DllWrappers
             }
             catch (Exception ex)
             {
-                Logger.Log(MessageType.Error, $"Failed to import from {texture.FileName}");
+                Logger.Log(MessageType.Error, $"Failed to import from {texture.FileName}\n{ex.Message}");
                 Debug.WriteLine(ex.Message);
             }
         }
@@ -483,7 +483,7 @@ namespace PrimalEditor.DllWrappers
             }
             catch (Exception ex)
             {
-                Logger.Log(MessageType.Error, failureMessage);
+                Logger.Log(MessageType.Error, failureMessage + $"\n{ex.Message}");
                 Debug.WriteLine(ex.Message);
             }
         }

@@ -26,8 +26,7 @@ partial class AppliedMaterialProxyView : UserControl
             var file = files?.Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Texture).FirstOrDefault();
             if (!string.IsNullOrEmpty(file?.Trim()) && sender is FrameworkElement { DataContext: InputProxy input })
             {
-                var assetInfo = Asset.TryGetAssetInfo(file);
-                if (assetInfo != null)
+                if (Asset.TryGetAssetInfo(file) is { } assetInfo)
                 {
                     input.Asset = assetInfo;
                     AppliedMaterialProxy.IsDirty = true;

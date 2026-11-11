@@ -82,7 +82,7 @@ static class ContentInfoCache
         {
 
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Warning, "Failed to save Content Browser cache file.");
+            Logger.Log(MessageType.Warning, $"Failed to save Content Browser cache file: {ex.Message}");
             File.Delete(_cacheFilePath); // Delete the cache file if saving failed to avoid loading corrupted data next time.
         }
     }
@@ -115,7 +115,7 @@ static class ContentInfoCache
         {
 
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Warning, "Failed to read Content Browser cache file.");
+            Logger.Log(MessageType.Warning, $"Failed to read Content Browser cache file: {ex.Message}");
             _contentInfoCache.Clear();
         }
     }

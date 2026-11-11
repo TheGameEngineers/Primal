@@ -53,7 +53,11 @@ sealed class ContentInfo : ViewModelBase
             OnPropertyChanged(nameof(FullPath));
             OnPropertyChanged(nameof(DateModified));
         }
-        catch (Exception ex) { Debug.WriteLine(ex.Message); }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            Logger.Log(MessageType.Error, $"Couldn't rename file: {ex.Message}");
+        }
     }
 
     private bool Validate(string path, string newFileName)

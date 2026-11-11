@@ -165,7 +165,7 @@ class NewProject : ViewModelBase
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to create {ProjectName}");
+            Logger.Log(MessageType.Error, $"Failed to create {ProjectName}\n{ex.Message}");
             throw;
         }
     }
@@ -219,7 +219,7 @@ class NewProject : ViewModelBase
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to read project templates");
+            Logger.Log(MessageType.Error, $"Failed to read project templates\n{ex.Message}");
             throw;
         }
     }

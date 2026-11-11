@@ -128,7 +128,7 @@ partial class ProjectLayoutView : UserControl
                 foreach (var file in fileList)
                 {
                     Debug.Assert(!string.IsNullOrEmpty(file?.Trim()));
-                    if (Asset.TryGetAssetInfo(file) is AssetInfo assetInfo)
+                    if (Asset.TryGetAssetInfo(file) is { } assetInfo)
                     {
                         // NOTE: adding an entity to an active scene will automatically set its IsActive to true.
                         //       However, setting it to true here will create and upload entity resources without blocking the UI thread.

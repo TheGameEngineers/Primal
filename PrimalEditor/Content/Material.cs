@@ -691,7 +691,7 @@ class Material : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to load material asset from file: {file}");
+            Logger.Log(MessageType.Error, $"Failed to load material asset from file: {file}\n{ex.Message}");
         }
 
         return false;
@@ -703,7 +703,7 @@ class Material : Asset
     {
         try
         {
-            if (TryGetAssetInfo(file) is AssetInfo info && info.Type == Type)
+            if (TryGetAssetInfo(file) is { } info && info.Type == Type)
             {
                 Guid = info.Guid;
             }
@@ -743,7 +743,7 @@ class Material : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to save material to: {file}");
+            Logger.Log(MessageType.Error, $"Failed to save material to: {file}\n{ex.Message}");
             return [];
         }
     }

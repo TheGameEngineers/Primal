@@ -627,7 +627,7 @@ class Texture : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            var msg = $"Failed to read {file} for import";
+            var msg = $"Failed to read {file} for import\n{ex.Message}";
             Debug.WriteLine(msg);
             Logger.Log(MessageType.Error, msg);
         }
@@ -691,7 +691,7 @@ class Texture : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to load texture asset from file {file}");
+            Logger.Log(MessageType.Error, $"Failed to load texture asset from file {file}\n{ex.Message}");
         }
 
         return false;
@@ -755,7 +755,7 @@ class Texture : Asset
 
         try
         {
-            if (TryGetAssetInfo(file) is AssetInfo info && info.Type == Type)
+            if (TryGetAssetInfo(file) is { } info && info.Type == Type)
             {
                 Guid = info.Guid;
             }
@@ -814,7 +814,7 @@ class Texture : Asset
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Logger.Log(MessageType.Error, $"Failed to save texture to {file}");
+            Logger.Log(MessageType.Error, $"Failed to save texture to {file}\n{ex.Message}");
             return [];
         }
         finally
