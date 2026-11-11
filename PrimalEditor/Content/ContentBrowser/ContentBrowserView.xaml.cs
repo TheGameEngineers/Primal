@@ -367,6 +367,7 @@ _addCurrentDirectory:
                 content.DataContext is IAssetEditor editor &&
                 editor.CheckAssetGuid(info.Guid))
             {
+                if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
                 window.Activate();
                 return editor;
             }

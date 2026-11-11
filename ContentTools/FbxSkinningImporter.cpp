@@ -24,8 +24,11 @@ collect_joint_nodes(FbxNode* node, const utl::vector<FbxNode*>& cluster_joints, 
     if (!node) return;
 
     const bool is_cluster_joint{ joint_index_of(cluster_joints, node) != u32_invalid_id };
-    if ((node->GetSkeleton() || is_cluster_joint) && joint_index_of(joint_nodes, node) == u32_invalid_id)
+    if ((node->GetSkeleton() || is_cluster_joint) &&
+        joint_index_of(joint_nodes, node) == u32_invalid_id)
+    {
         joint_nodes.emplace_back(node);
+    }
 
     for (s32 i{ 0 }; i < node->GetChildCount(); ++i)
     {
@@ -56,28 +59,6 @@ get_bind_pose_matrix(FbxScene* scene, FbxNode* node, FbxAMatrix& matrix)
     }
 
     return false;
-}
-
-void
-get_joint_hierarchy_recursive(
-    u32 index,
-    u32 parent_index,
-    const utl::vector<utl::vector<u32>>& children,
-    utl::vector<u8>& visited,
-    utl::vector<u32>& hierarchy,
-    utl::vector<u32>& hierarchy_map)
-{
-    if (visited[index]) return;
-    visited[index] = 1;
-
-    const u32 hierarchy_index{ (u32)hierarchy_map.size() };
-    hierarchy_map.emplace_back(index);
-    hierarchy.emplace_back(parent_index);
-
-    for (const u32 child_index : children[index])
-    {
-        get_joint_hierarchy_recursive(child_index, hierarchy_index, children, visited, hierarchy, hierarchy_map);
-    }
 }
 
 // parent_indices must be nearest-ancestor links. A repeated node along a chain
@@ -137,30 +118,24 @@ get_joint_hierarchy(
             seen.emplace_back(parent);
 
             const u32 parent_index{ joint_index_of(joint_nodes, parent) };
-            if (parent_index == u32_invalid_id) continue;
-            parent_indices[i] = parent_index;
-            break;
+            if (parent_index != u32_invalid_id)
+            {
+                parent_indices[i] = parent_index;
+                break;
+            }
         }
     }
 
     break_parent_cycles(parent_indices);
 
-    utl::vector<utl::vector<u32>> children(num_source_joints);
-    for (u32 i{ 0 }; i < num_source_joints; ++i)
-    {
-        if (parent_indices[i] != u32_invalid_id)
-        {
-            children[parent_indices[i]].emplace_back(i);
-        }
-    }
-
-    // A tree is kept when any vertex has a positive weight on it. The whole tree
-    // stays, including bones this mesh does not weight, so the skeleton matches
-    // other meshes on the same rig. Trees with no weights are dropped.
-    utl::vector<u8> keep_root(num_source_joints, 0);
+    // Find the root joint's index
+    // One joint tree per skeletal mesh. Bones this mesh does not weight stay in
+    // that tree so the skeleton matches other meshes on the same rig.
+    u32 root_index{ u32_invalid_id };
+    bool multiple_roots{ false };
     const u32 num_vertices{ (u32)m.joint_indices.size() };
 
-    for (u32 vertex_idx{ 0 }; vertex_idx < num_vertices; ++vertex_idx)
+    for (u32 vertex_idx{ 0 }; vertex_idx < num_vertices && !multiple_roots; ++vertex_idx)
     {
         const u32* joint_indices{ &m.joint_indices[vertex_idx].x };
         const f32* joint_weights{ &m.joint_weights[vertex_idx].x };
@@ -168,47 +143,75 @@ get_joint_hierarchy(
         {
             if (joint_weights[i] <= 0.f || joint_indices[i] >= num_source_joints) continue;
 
-            u32 root_index{ joint_indices[i] };
-            while (parent_indices[root_index] != u32_invalid_id)
+            u32 weighted_root{ joint_indices[i] };
+            while (parent_indices[weighted_root] != u32_invalid_id)
             {
-                root_index = parent_indices[root_index];
+                weighted_root = parent_indices[weighted_root];
             }
-            keep_root[root_index] = 1;
+
+            if (root_index == u32_invalid_id)
+            {
+                root_index = weighted_root;
+            }
+            else if (root_index != weighted_root)
+            {
+                multiple_roots = true;
+                break;
+            }
         }
     }
 
-    utl::vector<u8> visited(num_source_joints, 0);
+    if (multiple_roots || root_index == u32_invalid_id)
+    {
+        SEND_UDP_LOG(message_type::error, multiple_roots ?
+            ("Skeletal mesh " + m.name + " has more than one root joint").c_str() :
+            ("No skinned joints for " + m.name).c_str());
+        return false;
+    }
+
+    // Create the joint index hierarchy
     utl::vector<u32> hierarchy;
     utl::vector<u32> hierarchy_map;
     hierarchy.reserve(num_source_joints);
     hierarchy_map.reserve(num_source_joints);
 
-    for (u32 i{ 0 }; i < num_source_joints; ++i)
+    struct index_pair { u32 index; u32 parent_index; };
+    utl::vector<index_pair> pending;
+    pending.emplace_back(root_index, u32_invalid_id);
+    // Each joint has one parent. Children are the entries in that flat array.
+    while (pending.size())
     {
-        if (keep_root[i] && parent_indices[i] == u32_invalid_id)
+        const index_pair pair{ pending.back() };
+        pending.pop_back();
+
+        const u32 hierarchy_index{ (u32)hierarchy_map.size() };
+        hierarchy_map.emplace_back(pair.index);
+        hierarchy.emplace_back(pair.parent_index);
+
+        for (u32 child_index{ num_source_joints }; child_index > 0; --child_index)
         {
-            get_joint_hierarchy_recursive(i, u32_invalid_id, children, visited, hierarchy, hierarchy_map);
+            if (parent_indices[child_index - 1] == pair.index)
+            {
+                pending.emplace_back(child_index - 1, hierarchy_index);
+            }
         }
     }
 
     const u32 num_joints{ (u32)hierarchy_map.size() };
-    if (!num_joints)
-    {
-        m.is_skeletal_mesh = false;
-        m.joint_indices.clear();
-        m.joint_weights.clear();
-        return false;
-    }
+    assert(num_joints > 0 && hierarchy[0] == u32_invalid_id);
+    // Check if each parent was written before its children, so this is a single tree.
+    assert(([&] {
+        for (u32 i{ 1 }; i < num_joints; ++i)
+            if (hierarchy[i] >= i) return false;
+        return true;
+        }()));
 
     m.joint_hierarchy.swap(hierarchy);
-    m.inverse_bind_pose.clear();
-    m.inverse_bind_pose.reserve(num_joints);
+    m.inverse_bind_pose.resize(num_joints);
     m.joint_ids.resize(num_joints, u64_invalid_id);
     m.joint_names.resize(num_joints);
-
-    utl::vector<math::u32v4> new_joint_indices(num_vertices, { 0, 0, 0, 0 });
-    utl::vector<u32> source_to_hierarchy(num_source_joints, u32_invalid_id);
-
+    utl::vector<u32> source_to_hierarchy(num_source_joints, 0);
+    // Get bind poses, joint unique ids and joint names
     for (u32 i{ 0 }; i < num_joints; ++i)
     {
         const u32 source_index{ hierarchy_map[i] };
@@ -218,52 +221,45 @@ get_joint_hierarchy(
         m.joint_ids[i] = joint->GetUniqueID();
 
         FbxAMatrix bind_pose;
-        if (m.joint_hierarchy[i] != u32_invalid_id) // if not a root joint...
-        {
-            const auto it{ std::find_if(cluster_bind_poses.begin(), cluster_bind_poses.end(),
-                [joint](const auto& bind_pose) { return bind_pose.first == joint; }) };
+        const auto it{ std::find_if(cluster_bind_poses.begin(), cluster_bind_poses.end(),
+            [joint](const auto& bind_pose) { return bind_pose.first == joint; }) };
 
-            if (it != cluster_bind_poses.end())
-            {
-                bind_pose = it->second;
-            }
-            else if (!get_bind_pose_matrix(scene, joint, bind_pose))
-            {
-                SEND_UDP_LOG(message_type::warning,
-                    ("Missing bind pose for joint " + std::string(joint->GetName()) + " in " + m.name).c_str());
-                bind_pose = joint->EvaluateGlobalTransform();
-            }
-
-            // Vertices are stored in meters. Scale the translation only; the 3x3 is unitless.
-            FbxVector4 translation{ bind_pose.GetT() };
-            translation *= (double)scene_scale;
-            bind_pose.SetT(translation);
-        }
-        else
+        if (it != cluster_bind_poses.end())
         {
-            bind_pose.SetIdentity();
+            bind_pose = it->second;
         }
+        else if (!get_bind_pose_matrix(scene, joint, bind_pose))
+        {
+            SEND_UDP_LOG(message_type::warning,
+                ("Missing bind pose for joint " + std::string(joint->GetName()) + " in " + m.name).c_str());
+            bind_pose = joint->EvaluateGlobalTransform();
+        }
+
+        // Vertices are stored in meters. Scale the translation only; the 3x3 is unitless.
+        FbxVector4 translation{ bind_pose.GetT() };
+        translation *= (double)scene_scale;
+        bind_pose.SetT(translation);
 
         const FbxAMatrix inverse_bind_pose{ bind_pose.Inverse() };
-        math::m4x4& mtx{ m.inverse_bind_pose.emplace_back() };
+        math::m4x4& mtx{ m.inverse_bind_pose[i] };
         for (u32 row{ 0 }; row < 4; ++row)
             for (u32 col{ 0 }; col < 4; ++col)
                 mtx.m[row][col] = (float)inverse_bind_pose[row][col];
     }
 
-    for (u32 j{ 0 }; j < num_vertices; ++j)
-    {
-        for (u32 k{ 0 }; k < mesh::max_joints_per_vertex; ++k)
-        {
-            const u32 source_index{ (&m.joint_indices[j].x)[k] };
-            const u32 mapped{ source_index < source_to_hierarchy.size() && source_to_hierarchy[source_index] != u32_invalid_id ?
-                source_to_hierarchy[source_index] : 0 };
+    // Remap the joint indices according to joint hierarchy
+    utl::vector<math::u32v4> new_joint_indices(num_vertices, { 0, 0, 0, 0 });
 
-            (&new_joint_indices[j].x)[k] = mapped;
+    for (u32 i{ 0 }; i < num_vertices; ++i)
+    {
+        u32* indices{ &m.joint_indices[i].x };
+        for (u32 j{ 0 }; j < mesh::max_joints_per_vertex; ++j)
+        {
+            const u32 source_index{ indices[j] };
+            indices[j] = source_index < num_source_joints ? source_to_hierarchy[source_index] : 0;
         }
     }
 
-    m.joint_indices.swap(new_joint_indices);
     return true;
 }
 
@@ -400,7 +396,6 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
     for (u32 vertex_idx{ 0 }; vertex_idx < num_vertices; ++vertex_idx)
     {
         auto& influences{ accumulated_influences[vertex_idx] };
-        // TODO: remove invalid weights (i.e. !std::isfinite(weight)).
         std::sort(influences.begin(), influences.end(),
             [](const joint_influence& lhs, const joint_influence& rhs) { return lhs.weight > rhs.weight; });
 
@@ -419,7 +414,15 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
     }
 
     if (get_joint_hierarchy(_fbx_scene, joint_nodes, cluster_bind_poses, _scene_scale, m))
+    {
         normalize_joint_weights(m);
+    }
+    else
+    {
+        m.is_skeletal_mesh = false;
+        m.joint_indices.clear();
+        m.joint_weights.clear();
+    }
 }
 
 } // namespace primal::tools

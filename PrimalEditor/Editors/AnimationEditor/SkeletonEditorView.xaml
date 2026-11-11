@@ -30,7 +30,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <DockPanel Background="{StaticResource Editor.Window.GrayBrush3}" Margin="0,0,0,5">
-                <TextBlock Text="Joint hierarchy" VerticalAlignment="Top" FontSize="16" DockPanel.Dock="Top" Margin="5,0"/>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="5,0">
+                    <TextBlock Text="Joint hierarchy" VerticalAlignment="Top" FontSize="16"/>
+                    <TextBlock Text="{Binding SkeletonData.JointCount,StringFormat=' ({0} joints)'}" Opacity="0.7"
+                               VerticalAlignment="Top" FontSize="16" Foreground="Moccasin"/>
+                </StackPanel>
                 <TreeView ItemsSource="{Binding SkeletonData.RootJoint}" Margin="5"
                           Background="{StaticResource Editor.Window.GrayBrush2}" BorderThickness="0"
                           x:Name="jointTreeView"/>

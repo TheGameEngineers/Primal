@@ -580,19 +580,13 @@ pack_joint_data(mesh& m)
         blob.write<u32>((u32)name.size());
         blob.write(name.c_str(), name.size());
     }
-    // Joint hierarchy
-    // Parents are already hierarchy indices. Every invalid parent is a root.
+    // Parents are already hierarchy indices. Only joint 0 is a root.
     utl::vector<u16> hierarchy(num_joints);
-    for (u32 i{ 0 }; i < num_joints; ++i)
+    hierarchy[0] = u16_invalid_id;
+    for (u32 i{ 1 }; i < num_joints; ++i)
     {
         const u32 parent{ m.joint_hierarchy[i] };
-        if (parent == u32_invalid_id)
-        {
-            hierarchy[i] = u16_invalid_id;
-            continue;
-        }
-
-        assert(parent < num_joints);
+        assert(parent != u32_invalid_id && parent < num_joints);
         hierarchy[i] = (u16)parent;
     }
 
@@ -679,7 +673,7 @@ get_mesh_size(const mesh& m)
     const u64 index_size{ (num_vertices < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
     const u64 index_buffer_size{ index_size * m.indices.size() };
     // NOTE: When a mesh is split by material, only the first resulting mesh contains joint info.
-    const u64 joint_info_buffer_size{ m.joint_info_buffer.size()};
+    const u64 joint_info_buffer_size{ m.joint_info_buffer.size() };
     const u64 animations_buffer_size{ m.animations_buffer.size() };
     constexpr u64 su32{ sizeof(u32) };
     const u64 size{

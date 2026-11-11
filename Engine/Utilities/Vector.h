@@ -37,7 +37,7 @@ public:
 
     // Move-constructor. Constructs by moving another vector.
     // The original vector will be empty after move.
-    constexpr vector(vector&& o)
+    constexpr vector(vector&& o) noexcept
         : _capacity{ o._capacity }, _size{ o._size }, _data{ o._data }
     {
         o.reset();
@@ -89,6 +89,12 @@ public:
     constexpr void push_back(T&& value)
     {
         emplace_back(std::move(value));
+    }
+
+    // Removes the last item
+    constexpr void pop_back()
+    {
+        erase_unordered(&back());
     }
 
     // Copy- or move-constructs an item at the end of the vector.

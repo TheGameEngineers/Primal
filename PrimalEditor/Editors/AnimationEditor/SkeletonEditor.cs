@@ -50,6 +50,7 @@ class SkeletonData
     private readonly List<SkeletonJoint> _flatJointList = [];
     private SkeletonJoint _rootJoint;
     public SkeletonJoint[] RootJoint => [_rootJoint];
+    public int JointCount => _flatJointList.Count;
 
     private void MakeJointTree()
     {
