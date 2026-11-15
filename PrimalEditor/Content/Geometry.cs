@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +30,7 @@ enum PrimitiveMeshType
 }
 
 // NOTE: copy of element_type enum in ContentTools Geometry.h
-enum ElementsType : UInt32
+enum ElementsType : uint
 {
     PositionOnly = 0x00,
     StaticNormal = 0x01,
@@ -344,6 +345,7 @@ class Geometry : Asset
 {
     private readonly List<LODGroup> _lodGroups = [];
     private readonly Dictionary<MeshLOD, byte[]> _skeletons = [];
+    private readonly List<byte[]> _animationClips = [];
     private static readonly Lock _lock = new();
 
     public static AssetInfo Default => DefaultAssets.DefaultGeometry;
@@ -393,6 +395,7 @@ class Geometry : Asset
             {
                 var lodId = ReadMesh(reader, lodIds, lods);
                 ReadJointData(reader, lods[lodId]);
+                ReadAnimationData(reader);
             }
 
             var lodGroup = new LODGroup() { Name = lodGroupName };
@@ -404,7 +407,7 @@ class Geometry : Asset
 
     private void ReadJointData(BinaryReader reader, MeshLOD lod)
     {
-        // Read joint and animation data
+        Debug.Assert(_skeletons.Count == 0);
         var jointInfoBufferSize = reader.ReadInt32();
         if (jointInfoBufferSize > 0)
         {
@@ -412,10 +415,22 @@ class Geometry : Asset
             var jointInfo = reader.ReadBytes(jointInfoBufferSize);
             _skeletons[lod] = jointInfo;
         }
+    }
 
-        // TODO: skip animation clips for now
+    private void ReadAnimationData(BinaryReader reader)
+    {
         var animationsBufferSize = reader.ReadInt32();
-        reader.BaseStream.Position += animationsBufferSize;
+        if (animationsBufferSize > 0)
+        {
+            var bufferEnd = reader.BaseStream.Position + animationsBufferSize;
+            while (reader.BaseStream.Position < bufferEnd)
+            {
+                var clipSize = reader.ReadInt32();
+                var clipData = reader.ReadBytes(clipSize);
+                _animationClips.Add(clipData);
+            }
+            Debug.Assert(reader.BaseStream.Position == bufferEnd);
+        }
     }
 
     private static int ReadMesh(BinaryReader reader, List<int> lodIds, List<MeshLOD> lodList)
@@ -602,7 +617,11 @@ class Geometry : Asset
                     foreach (var lod in lodGroup.LODs)
                     {
                         LODToBinary(lod, writer, out var hash);
-                        TrySaveJointData(lod, meshFileName);
+                        var files = TrySaveJointData(lod, meshFileName);
+                        var skeletonGuid =  TryGetAssetInfo(files.FirstOrDefault())?.Guid ?? Guid.Empty;
+                        Debug.Assert(files.Count() < 2); // 0 or 1 skeleton per LOD
+                        savedFiles.AddRange(files);
+                        savedFiles.AddRange(TrySaveAnimationData(meshFileName, skeletonGuid));
                         hashes.AddRange(hash);
                     }
 
@@ -636,14 +655,14 @@ class Geometry : Asset
         return savedFiles;
     }
 
-    private void TrySaveJointData(MeshLOD lod, string meshFileName)
+    private IEnumerable<string> TrySaveJointData(MeshLOD lod, string meshFileName)
     {
         if (_skeletons.TryGetValue(lod, out var rawData))
         {
             try
             {
                 var skeleton = new Skeleton(rawData);
-                skeleton.Save(meshFileName);
+                return skeleton.Save(meshFileName);
             }
             catch (Exception ex)
             {
@@ -651,6 +670,28 @@ class Geometry : Asset
                 Logger.Log(MessageType.Error, $"Failed to save skeleton asset.\n{ex.Message}");
             }
         }
+
+        return [];
+    }
+
+    private List<string> TrySaveAnimationData(string meshFileName, Guid skeletonGuid)
+    {
+        var savedFiles = new List<string>();
+        foreach (var rawData in _animationClips)
+        {
+            try
+            {
+                var animation = new Animation(rawData, skeletonGuid);
+                savedFiles.AddRange(animation.Save(meshFileName));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Logger.Log(MessageType.Error, $"Failed to save skeleton asset.\n{ex.Message}");
+            }
+        }
+
+        return savedFiles;
     }
 
     /// <summary>

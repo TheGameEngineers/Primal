@@ -108,8 +108,7 @@ class Skeleton : Asset
         ArgumentNullException.ThrowIfNull(data);
         if (data.Length == 0) throw new InvalidDataException("Missing joint data");
 
-        _rawData = new byte[data.Length];
-        Array.Copy(data, _rawData, data.Length);
+        _rawData = data;
         using var reader = new BinaryReader(new MemoryStream(data));
         var numJoints = reader.ReadInt32();
         if (numJoints <= 0) throw new InvalidDataException("Invalid number of joints");
@@ -117,12 +116,14 @@ class Skeleton : Asset
         for (int i = 0; i < numJoints; ++i)
         {
             var nameLength = reader.ReadInt32();
+            var jointName = $"joint{i:D3}";
             if (nameLength > 0)
             {
                 var nameBytes = reader.ReadBytes(nameLength);
-                var jointName = Encoding.UTF8.GetString(nameBytes);
-                _jointNames.Add(!string.IsNullOrWhiteSpace(jointName) ? jointName : $"joint{i:D3}");
+                jointName = Encoding.UTF8.GetString(nameBytes);
             }
+
+            _jointNames.Add(jointName);
         }
 
         for (int i = 0; i < numJoints; ++i)

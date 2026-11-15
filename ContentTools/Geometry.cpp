@@ -549,7 +549,7 @@ pack_vertices(mesh& m)
 void
 pack_joint_data(mesh& m)
 {
-    if (!m.is_skeletal_mesh || !m.joint_hierarchy.size()) return;
+    if (!m.is_skeletal_mesh || m.joint_hierarchy.empty()) return;
 
     const u32 num_joints{ (u32)m.joint_hierarchy.size() };
     assert(num_joints == m.joint_names.size() &&
@@ -593,12 +593,94 @@ pack_joint_data(mesh& m)
     blob.write((const u8*)hierarchy.data(), num_joints * sizeof(u16));
     // Inverse bind poses
     blob.write((const u8*)m.inverse_bind_pose.data(), num_joints * sizeof(math::m4x4));
+
+    assert(blob.offset() == total_size);
 }
 
 void
-pack_animation_data(mesh&)
+pack_animation_data(mesh& m)
 {
-    // TODO: incomplete
+    if (m.animation_clips.empty()) return;
+
+    // Calculate required buffer size
+    u64 buffer_size{ 0 };
+    const u32 num_joints{ (u32)m.joint_hierarchy.size() };
+    // NOTE: number of joints is repeated in each clip, because it
+    //       makes it easier to read in the editor.
+    for (const animation_clip& clip : m.animation_clips)
+    {
+        buffer_size +=
+            sizeof(u32) +               // clip size
+            sizeof(u32) +               // number of joints
+            sizeof(u32) +               // name length
+            clip.name.size() +          // name bytes
+            sizeof(f32) + sizeof(u32) + // fps and frame_count
+            clip.translations.size() * sizeof(math::v3) +
+            clip.rotations.size() * sizeof(math::v4) +
+            clip.scales.size() * sizeof(math::v3);
+
+        assert((clip.frame_count * num_joints) == clip.translations.size() &&
+            clip.translations.size() == clip.rotations.size() &&
+            clip.translations.size() == clip.scales.size());
+    }
+
+    assert(buffer_size);
+    if (!buffer_size) return;
+
+    m.animations_buffer.clear();
+    m.animations_buffer.resize(buffer_size);
+    utl::blob_stream_writer blob{ m.animations_buffer.data(), buffer_size };
+
+    // Clip data
+    for (const auto& clip : m.animation_clips)
+    {
+        const u64 clip_size_offset{ blob.offset() };
+        blob.write<u32>(0); // leave room for clip size
+        blob.write<u32>(num_joints);
+        blob.write<u32>((u32)clip.name.size());
+        blob.write(clip.name.c_str(), clip.name.size());
+        blob.write<f32>(clip.frames_per_second);
+        blob.write<u32>(clip.frame_count);
+
+        // NOTE: make all components joint-major.
+        for (u32 joint_idx{ 0 }; joint_idx < num_joints; ++joint_idx)
+            for (u32 frame_idx{ 0 }; frame_idx < clip.frame_count; ++frame_idx)
+            {
+                const u32 index{ frame_idx * num_joints + joint_idx };
+                const math::v3& t{ clip.translations[index] };
+                blob.write<f32>(t.x);
+                blob.write<f32>(t.y);
+                blob.write<f32>(t.z);
+            }
+
+        for (u32 joint_idx{ 0 }; joint_idx < num_joints; ++joint_idx)
+            for (u32 frame_idx{ 0 }; frame_idx < clip.frame_count; ++frame_idx)
+            {
+                const u32 index{ frame_idx * num_joints + joint_idx };
+                const math::v4& q{ clip.rotations[index] };
+                blob.write<f32>(q.x);
+                blob.write<f32>(q.y);
+                blob.write<f32>(q.z);
+                blob.write<f32>(q.w);
+            }
+
+        for (u32 joint_idx{ 0 }; joint_idx < num_joints; ++joint_idx)
+            for (u32 frame_idx{ 0 }; frame_idx < clip.frame_count; ++frame_idx)
+            {
+                const u32 index{ frame_idx * num_joints + joint_idx };
+                const math::v3& s{ clip.scales[index] };
+                blob.write<f32>(s.x);
+                blob.write<f32>(s.y);
+                blob.write<f32>(s.z);
+            }
+
+        // Write the clip size at the start of clip data. The size is excluding
+        // the clip_size field itself, hence the subtraction of sizeof(u32).
+        const u32 clip_size{ (u32)(blob.offset() - clip_size_offset - sizeof(u32)) };
+        memcpy(m.animations_buffer.data() + clip_size_offset, &clip_size, sizeof(u32));
+    }
+
+    assert(blob.offset() == buffer_size);
 }
 
 elements::elements_type::type
@@ -871,8 +953,7 @@ split_meshes_by_material(scene& scene, progression *const progression)
                             submesh.joint_hierarchy.swap(m.joint_hierarchy);
                             submesh.inverse_bind_pose.swap(m.inverse_bind_pose);
                             submesh.joint_names.swap(m.joint_names);
-                            // joint_ids is only needed to get animations. It won't be passed to the editor.
-                            submesh.joint_ids.swap(m.joint_ids);
+                            submesh.animation_clips.swap(m.animation_clips);
                         }
                         new_meshes.emplace_back(submesh);
                     }
@@ -938,6 +1019,7 @@ pack_data(const scene& scene, scene_data& data)
     assert(scene_size == blob.offset());
 }
 
+// NOTE: unused, untested function. Left here in case we ever need to merge multiple meshes.
 bool
 coalesce_meshes(const lod_group& lod, mesh& combined_mesh, progression *const progression)
 {
@@ -951,20 +1033,17 @@ coalesce_meshes(const lod_group& lod, mesh& combined_mesh, progression *const pr
     combined_mesh.inverse_bind_pose = first_mesh.inverse_bind_pose;
     combined_mesh.joint_names = first_mesh.joint_names;
     combined_mesh.joint_hierarchy = first_mesh.joint_hierarchy;
-    combined_mesh.joint_ids = first_mesh.joint_ids;
 
     auto same_skinning_data = [](const mesh& lhs, const mesh& rhs)
         {
-            if (lhs.joint_ids.size() != rhs.joint_ids.size() ||
-                lhs.joint_names.size() != rhs.joint_names.size() ||
+            if (lhs.joint_names.size() != rhs.joint_names.size() ||
                 lhs.joint_hierarchy.size() != rhs.joint_hierarchy.size() ||
                 lhs.inverse_bind_pose.size() != rhs.inverse_bind_pose.size())
             {
                 return false;
             }
 
-            if (!std::equal(lhs.joint_ids.begin(), lhs.joint_ids.end(), rhs.joint_ids.begin()) ||
-                !std::equal(lhs.joint_names.begin(), lhs.joint_names.end(), rhs.joint_names.begin()) ||
+            if (!std::equal(lhs.joint_names.begin(), lhs.joint_names.end(), rhs.joint_names.begin()) ||
                 !std::equal(lhs.joint_hierarchy.begin(), lhs.joint_hierarchy.end(), rhs.joint_hierarchy.begin()))
             {
                 return false;

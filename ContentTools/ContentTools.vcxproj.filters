@@ -17,5 +17,6 @@
     <ClCompile Include="MikkTSpace\mikktspace.c" />
     <ClCompile Include="EnvMapProcessing.cpp" />
     <ClCompile Include="FbxSkinningImporter.cpp" />
+    <ClCompile Include="FbxAnimationImporter.cpp" />
   </ItemGroup>
 </Project>

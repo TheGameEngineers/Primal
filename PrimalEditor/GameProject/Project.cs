@@ -263,6 +263,17 @@ class Project : ViewModelBase
         Logger.Log(MessageType.Info, $"Project saved to {project.FullPath}");
     }
 
+    public static void WarnIfNoScriptsToRun()
+    {
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (Current?.ActiveScene.GameEntities.All(entity => entity.GetComponent<Script>() == null) == true)
+            {
+                Logger.Log(MessageType.Warning, "There are no scripts to run for the current scene.");
+            }
+        });
+    }
+
     private async Task RunGame(bool debug)
     {
         if (_isBuilding || _isDebugging) return;
@@ -271,6 +282,7 @@ class Project : ViewModelBase
 
         try
         {
+            WarnIfNoScriptsToRun();
             // Set ConfigureAwait to false to prevent forcing the UI thread to resume
             var succeeded = await VisualStudio.BuildSolutionAsync(this, StandAloneBuildConfig, debug).ConfigureAwait(false);
 

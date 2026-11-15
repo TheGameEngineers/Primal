@@ -141,6 +141,7 @@ partial class WorldEditorView : UserControl
             _isPlaying = (sender as ToggleButton).IsChecked == true;
             if (_isPlaying)
             {
+                Project.WarnIfNoScriptsToRun();
                 if (!_isRunning) EngineAPI.BeginPlayAll();
                 if (DataContext is Project { ActiveScene: Scene scene })
                 {
@@ -177,6 +178,7 @@ partial class WorldEditorView : UserControl
             if (_isRunning)
             {
                 Debug.Assert(!_isPlaying);
+                Project.WarnIfNoScriptsToRun();
                 EngineAPI.BeginPlayAll();
                 // Resetting the focus, will reset the mouse state by the engine.
                 // It's not pretty, but it works for now.

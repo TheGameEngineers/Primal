@@ -44,6 +44,7 @@ private:
     void get_lod_group(FbxNodeAttribute* attribute);
     bool get_mesh_data(FbxMesh* fbx_mesh, mesh& m);
     void get_skinning_data(FbxMesh* fbx_mesh, mesh& m);
+    void get_animation_data(const utl::vector<FbxNode*>& joint_nodes, mesh& m);
 
     scene*                  _scene{ nullptr };
     scene_data*             _scene_data{ nullptr };

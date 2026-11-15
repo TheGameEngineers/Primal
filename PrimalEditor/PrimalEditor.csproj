@@ -31,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\Content\Animation.png" />
     <Resource Include="Resources\Content\Skeleton.png" />
     <Resource Include="Resources\ContentBrowser\FolderLarge.png" />
     <Resource Include="Resources\ContentBrowser\FolderSmall.png" />

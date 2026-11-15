@@ -99,9 +99,9 @@ break_parent_cycles(utl::vector<u32>& parent_indices)
 bool
 get_joint_hierarchy(
     FbxScene* scene,
-    const utl::vector<FbxNode*>& joint_nodes,
-    const utl::vector<std::pair<FbxNode*, FbxAMatrix>>& cluster_bind_poses,
     f32 scene_scale,
+    const utl::vector<std::pair<FbxNode*, FbxAMatrix>>& cluster_bind_poses,
+    utl::vector<FbxNode*>& joint_nodes,
     mesh& m)
 {
     const u32 num_source_joints{ (u32)joint_nodes.size() };
@@ -197,28 +197,27 @@ get_joint_hierarchy(
         }
     }
 
-    const u32 num_joints{ (u32)hierarchy_map.size() };
-    assert(num_joints > 0 && hierarchy[0] == u32_invalid_id);
+    assert(hierarchy_map.size() == num_source_joints && hierarchy[0] == u32_invalid_id);
     // Check if each parent was written before its children, so this is a single tree.
     assert(([&] {
-        for (u32 i{ 1 }; i < num_joints; ++i)
+        for (u32 i{ 1 }; i < num_source_joints; ++i)
             if (hierarchy[i] >= i) return false;
         return true;
         }()));
 
     m.joint_hierarchy.swap(hierarchy);
-    m.inverse_bind_pose.resize(num_joints);
-    m.joint_ids.resize(num_joints, u64_invalid_id);
-    m.joint_names.resize(num_joints);
+    m.inverse_bind_pose.resize(num_source_joints);
+    m.joint_names.resize(num_source_joints);
+    utl::vector<FbxNode*> new_joint_nodes(num_source_joints);
     utl::vector<u32> source_to_hierarchy(num_source_joints, 0);
-    // Get bind poses, joint unique ids and joint names
-    for (u32 i{ 0 }; i < num_joints; ++i)
+    // Get bind poses and joint names, and reorder joint_nodes to match the joint hierarchy
+    for (u32 i{ 0 }; i < num_source_joints; ++i)
     {
         const u32 source_index{ hierarchy_map[i] };
         source_to_hierarchy[source_index] = i;
         FbxNode* joint{ joint_nodes[source_index] };
+        new_joint_nodes[i] = joint;
         m.joint_names[i] = joint->GetName();
-        m.joint_ids[i] = joint->GetUniqueID();
 
         FbxAMatrix bind_pose;
         const auto it{ std::find_if(cluster_bind_poses.begin(), cluster_bind_poses.end(),
@@ -244,8 +243,10 @@ get_joint_hierarchy(
         math::m4x4& mtx{ m.inverse_bind_pose[i] };
         for (u32 row{ 0 }; row < 4; ++row)
             for (u32 col{ 0 }; col < 4; ++col)
-                mtx.m[row][col] = (float)inverse_bind_pose[row][col];
+                mtx.m[row][col] = (f32)inverse_bind_pose[row][col];
     }
+
+    joint_nodes.swap(new_joint_nodes);
 
     // Remap the joint indices according to joint hierarchy
     utl::vector<math::u32v4> new_joint_indices(num_vertices, { 0, 0, 0, 0 });
@@ -413,9 +414,10 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
         }
     }
 
-    if (get_joint_hierarchy(_fbx_scene, joint_nodes, cluster_bind_poses, _scene_scale, m))
+    if (get_joint_hierarchy(_fbx_scene, _scene_scale, cluster_bind_poses, joint_nodes, m))
     {
         normalize_joint_weights(m);
+        get_animation_data(joint_nodes, m);
     }
     else
     {

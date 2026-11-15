@@ -96,7 +96,7 @@ class ImportingItem : ViewModelBase
     {
         ProgressMaximum = maxValue;
         ProgressValue = progress;
-        NormalizedValue = maxValue > 0 ? Math.Clamp(progress / maxValue, 0, 1) : 0.0;
+        NormalizedValue = maxValue > 0 ? Math.Clamp((double)progress / maxValue, 0, 1) : 0.0;
     }
 
     private void UpdateTimer(object sender, EventArgs e)
@@ -106,7 +106,8 @@ class ImportingItem : ViewModelBase
             if (!_stopwatch.IsRunning) _stopwatch.Start();
 
             var t = _stopwatch.Elapsed;
-            ImportDuration = string.Format("{0:00}:{1:00}.{2:00}", t.Minutes, t.Seconds, t.Milliseconds / 10);
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+                ImportDuration = string.Format("{0:00}:{1:00}.{2:00}", t.Minutes, t.Seconds, t.Milliseconds / 10));
         }
         else
         {

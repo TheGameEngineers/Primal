@@ -129,6 +129,18 @@ struct geometry_import_settings
     u8  coalesce_meshes;
 };
 
+struct animation_clip
+{
+    std::string                 name;
+    f32                         frames_per_second{ 0.f };
+    u32                         frame_count{ 0 };
+    // Frame-major local transforms: index = frame * joint_count + joint.
+    // Rotation is a quaternion, x y z w.
+    utl::vector<math::v3>       translations;
+    utl::vector<math::v4>       rotations;
+    utl::vector<math::v3>       scales;
+};
+
 struct mesh
 {
     constexpr static u32 max_joints_per_vertex{ 4 };
@@ -156,7 +168,7 @@ struct mesh
     utl::vector<math::m4x4>             inverse_bind_pose;
     utl::vector<std::string>            joint_names;
     utl::vector<u32>                    joint_hierarchy;
-    utl::vector<u64>                    joint_ids;
+    utl::vector<animation_clip>         animation_clips;
 
     // Output data
     std::string                         name;
