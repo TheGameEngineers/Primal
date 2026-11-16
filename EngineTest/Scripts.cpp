@@ -24,7 +24,7 @@ public:
         DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
         math::v4 rot_quat{};
         DirectX::XMStoreFloat4(&rot_quat, quat);
-        set_rotation(rot_quat);
+        rotation(rot_quat);
     }
 
 private:
@@ -48,7 +48,7 @@ public:
         DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
         math::v4 rot_quat{};
         DirectX::XMStoreFloat4(&rot_quat, quat);
-        set_rotation(rot_quat);
+        rotation(rot_quat);
     }
 
 private:
@@ -77,10 +77,10 @@ public:
         DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
         math::v4 rot_quat{};
         DirectX::XMStoreFloat4(&rot_quat, quat);
-        set_rotation(rot_quat);
+        rotation(rot_quat);
         math::v3 pos{ position() };
         pos.y = 1.3f + 0.2f * std::sin(x) * std::sin(std::sin(x / 1.62f) + std::sin(1.62f * x) + std::sin(3.24f * x));
-        set_position(pos);
+        position(pos);
     }
 
 private:
@@ -156,8 +156,10 @@ private:
             if (value.current.z == 0.f) return;
 
             const f32 scale{ 0.005f };
-            const f32 dx{ (mouse_pos.current.x - mouse_pos.previous.x) * scale };
-            const f32 dy{ (mouse_pos.current.y - mouse_pos.previous.y) * scale };
+            /*const f32 dx{ (mouse_pos.current.x - mouse_pos.previous.x) * scale };
+            const f32 dy{ (mouse_pos.current.y - mouse_pos.previous.y) * scale };*/
+            const f32 dx{ mouse_pos.current.x * scale };
+            const f32 dy{ mouse_pos.current.y * scale };
 
             math::v3 spherical;
             DirectX::XMStoreFloat3(&spherical, _desired_spherical);
@@ -186,7 +188,7 @@ private:
             _position += (p * scale);
             math::v3 new_pos;
             XMStoreFloat3(&new_pos, _position);
-            set_position(new_pos);
+            position(new_pos);
         }
 
         if (_move_rotation)
@@ -200,7 +202,7 @@ private:
             DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(_spherical) };
             math::v4 rot_quat;
             DirectX::XMStoreFloat4(&rot_quat, quat);
-            set_rotation(rot_quat);
+            rotation(rot_quat);
         }
     }
 

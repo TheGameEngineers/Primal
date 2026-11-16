@@ -2,31 +2,108 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
 using PrimalEditor.Content;
+using PrimalEditor.DllWrappers;
 using PrimalEditor.GameDev;
 using PrimalEditor.GameProject;
+using PrimalEditor.Utilities;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace PrimalEditor.Editors;
+
+public static class WorldEditorCommands
+{
+    public static RoutedCommand RunCommand { get; } = new(nameof(RunCommand), typeof(WorldEditorView), [new KeyGesture(Key.F6, ModifierKeys.Shift)]);
+    public static RoutedCommand PlayCommand { get; } = new(nameof(PlayCommand), typeof(WorldEditorView), [new KeyGesture(Key.F6)]);
+    public static RoutedCommand PauseCommand { get; } = new(nameof(PauseCommand), typeof(WorldEditorView), [new KeyGesture(Key.F8)]);
+    public static RoutedCommand ToggleMaximizeCommand { get; } = new(nameof(ToggleMaximizeCommand), typeof(WorldEditorView), [new KeyGesture(Key.Enter, ModifierKeys.Alt)]);
+}
 
 /// <summary>
 /// Interaction logic for WorldEditorView.xaml
 /// </summary>
 partial class WorldEditorView : UserControl
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the render surface is playing.
+    /// When set to true, Game scripts are updated, the input will be captured and the active scene camera will be used.
+    /// When set to false, the input will be released and the editor camera will be used.
+    /// </summary>
+    private volatile bool _isPlaying = false;
+    /// <summary>
+    /// Gets or sets a value indicating whether the game scripts are updated.
+    /// </summary>
+    private volatile bool _isRunning;
+    private volatile bool _isPaused;
+
+    private volatile IdType _activeCameraId = ID.INVALID_ID;
+
     public WorldEditorView()
     {
         InitializeComponent();
+        Application.Current.Activated += OnRequestStop;
+        Application.Current.Deactivated += OnRequestStop;
+        Application.Current.MainWindow.StateChanged += OnRequestStop;
+
         Project.SceneUpdated += OnSceneUpdated;
         DataContextChanged += OnWorldEditorDataContextChanged;
+        sv1.RenderSurfaceControl.IsHostReadyChanged += OnRenderSurfaceView_IsHostReadyChanged;
+        sv1.RenderSurfaceControl.RenderFrame += OnRenderFrame;
+    }
+
+    private void OnRequestStop(object sender, EventArgs e)
+    {
+        if (DataContext is not null)
+        {
+            playToggleButton.IsChecked = false;
+            OnPlay_ToggleButton_Click(playToggleButton, null);
+            Focus();
+        }
+    }
+
+    // NOTE: OnRenderFrame is run on RenderSurfaceHost's render thread.
+    //       Don't access any UI owned data in here.
+    private void OnRenderFrame(object sender, RenderFrameEventArgs e)
+    {
+        // We want to run the scripts and update data once per frame.
+        if (sender != sv1.RenderSurfaceControl) return;
+
+        if (_isPlaying || _isRunning)
+        {
+            var scriptUpdateLock = Project.LockScriptUpdates;
+            if (scriptUpdateLock.TryEnter())
+            {
+                try
+                {
+                    if ((_isPlaying || _isRunning) && !_isPaused)
+                    {
+                        e.CameraId = _activeCameraId;
+                        EngineAPI.UpdateScripts(e.DeltaTime);
+                    }
+                }
+                finally { scriptUpdateLock.Exit(); }
+            }
+        }
+
+        EngineAPI.UpdateEngineData();
+    }
+
+    private void OnRenderSurfaceView_IsHostReadyChanged(object sender, RoutedPropertyChangedEventArgs<bool> e)
+    {
+        if (e.NewValue && DataContext is Project vm)
+        {
+            vm.UpdateScene();
+        }
     }
 
     private void OnWorldEditorDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-    {        
+    {
         if (DataContext is Project vm)
         {
             var index = LightSet.LightSets.IndexOf(vm.ActiveScene.LightSetKey);
@@ -51,12 +128,77 @@ partial class WorldEditorView : UserControl
         {
             var ids = scene.IsActive ? scene.GetGeometryComponentIds() : [];
             sv1.RenderSurfaceControl.SetComponentIds(ids);
-            sv2.RenderSurfaceControl.SetComponentIds(ids);
-            sv3.RenderSurfaceControl.SetComponentIds(ids);
-            sv4.RenderSurfaceControl.SetComponentIds(ids);
+            //sv2.RenderSurfaceControl.SetComponentIds(ids);
+            //sv3.RenderSurfaceControl.SetComponentIds(ids);
+            //sv4.RenderSurfaceControl.SetComponentIds(ids);
         }
     }
 
+    private void OnPlay_ToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        lock (Project.LockScriptUpdates)
+        {
+            _isPlaying = (sender as ToggleButton).IsChecked == true;
+            if (_isPlaying)
+            {
+                if (!_isRunning) EngineAPI.BeginPlayAll();
+                if (DataContext is Project { ActiveScene: Scene scene })
+                {
+                    // TODO: properly assign a camera as the active camera of the scene.
+                    _activeCameraId = scene.GameEntities.OfType<PerspectiveCamera>().FirstOrDefault()?.CameraId ?? ID.INVALID_ID;
+                    if (!ID.IsValid(_activeCameraId))
+                    {
+                        Logger.Log(MessageType.Warning, "The scene doesn't contain a perspective camera. Using editor camera instead.");
+                    }
+                }
+                KeyboardNavigation.SetTabNavigation(this, KeyboardNavigationMode.None);
+                sv1.RenderSurfaceControl.FocusHost(true);
+                pauseToggleButton.IsChecked = false;
+                OnPause_ToggleButton_Click(pauseToggleButton, e);
+            }
+            else
+            {
+                _activeCameraId = ID.INVALID_ID;
+                sv1.RenderSurfaceControl.FocusHost(false);
+                KeyboardNavigation.SetTabNavigation(this, KeyboardNavigationMode.Continue);
+
+                if (!_isRunning) MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
+            }
+
+            Project.IsRunningInEditor = _isRunning || _isPlaying;
+        }
+    }
+
+    private void OnRun_ToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        lock (Project.LockScriptUpdates)
+        {
+            _isRunning = (sender as ToggleButton).IsChecked == true;
+            if (_isRunning)
+            {
+                Debug.Assert(!_isPlaying);
+                EngineAPI.BeginPlayAll();
+                // Resetting the focus, will reset the mouse state by the engine.
+                // It's not pretty, but it works for now.
+                sv1.RenderSurfaceControl.FocusHost(true);
+                sv1.RenderSurfaceControl.FocusHost(false);
+                Focus();
+            }
+            else
+            {
+                pauseToggleButton.IsChecked = false;
+                OnPause_ToggleButton_Click(pauseToggleButton, e);
+                MSEntity.RestoreEntityStates((DataContext as Project).ActiveScene.GameEntities);
+            }
+
+            Project.IsRunningInEditor = _isRunning || _isPlaying;
+        }
+    }
+
+    private void OnPause_ToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        _isPaused = (sender as ToggleButton).IsChecked == true;
+    }
 
     private void OnNewScript_Button_Click(object sender, RoutedEventArgs e)
     {
@@ -124,9 +266,9 @@ partial class WorldEditorView : UserControl
             avgPos /= MSEntity.CurrentSelection.SelectedEntities.Count;
 
             sv1.RenderSurfaceControl.FocusPosition(avgPos);
-            sv2.RenderSurfaceControl.FocusPosition(avgPos);
-            sv3.RenderSurfaceControl.FocusPosition(avgPos);
-            sv4.RenderSurfaceControl.FocusPosition(avgPos);
+            //sv2.RenderSurfaceControl.FocusPosition(avgPos);
+            //sv3.RenderSurfaceControl.FocusPosition(avgPos);
+            //sv4.RenderSurfaceControl.FocusPosition(avgPos);
         }
     }
 
@@ -137,15 +279,65 @@ partial class WorldEditorView : UserControl
         var lightSetKey = (sender as ComboBox).SelectedItem as string;
 
         var key = LightSet.GetKey(lightSetKey);
-        if(key == LightSet.InvalidKey)
+        if (key == LightSet.InvalidKey)
         {
             key = LightSet.AddLightSet(lightSetKey, true);
         }
         Debug.Assert(key != LightSet.InvalidKey);
         vm.ActiveScene.LightSetKey = lightSetKey;
         sv1.RenderSurfaceControl.UseLightSet(key);
-        sv2.RenderSurfaceControl.UseLightSet(key);
-        sv3.RenderSurfaceControl.UseLightSet(key);
-        sv4.RenderSurfaceControl.UseLightSet(key);
+        //sv2.RenderSurfaceControl.UseLightSet(key);
+        //sv3.RenderSurfaceControl.UseLightSet(key);
+        //sv4.RenderSurfaceControl.UseLightSet(key);
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        if (_isPlaying)
+        {
+            if (e.Key == Key.Escape)
+            {
+                OnRequestStop(this, e);
+            }
+            else
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        base.OnPreviewKeyDown(e);
+    }
+
+    private void OnPlayCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (!_isPlaying)
+        {
+            playToggleButton.IsChecked = true;
+            OnPlay_ToggleButton_Click(playToggleButton, e);
+        }
+    }
+
+    private void OnRunCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        Debug.Assert(!_isPlaying);
+        runToggleButton.IsChecked = !_isRunning;
+        OnRun_ToggleButton_Click(runToggleButton, e);
+    }
+
+    private void OnPauseCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        if(_isRunning)
+        {
+            pauseToggleButton.IsChecked = !_isPaused;
+            OnPause_ToggleButton_Click(pauseToggleButton, e);
+        }
+    }
+
+    private void OnToggleMaximizeCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        Application.Current.MainWindow.WindowState = Application.Current.MainWindow.WindowState == WindowState.Normal ?
+            WindowState.Maximized : WindowState.Normal;
+        e.Handled = true;
     }
 }

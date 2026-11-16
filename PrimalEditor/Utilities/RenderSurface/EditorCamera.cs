@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.DllWrappers;
 using System;
+using System.Diagnostics;
 using System.Numerics;
 
 namespace PrimalEditor.Utilities;
@@ -25,6 +26,8 @@ class EditorCamera
 
     public float OrbitRadius { get; private set; }
 
+    public IdType CameraId { get; private set; } = ID.INVALID_ID;
+
     public float Speed
     {
         get;
@@ -47,7 +50,7 @@ class EditorCamera
             if (!field.IsTheSameAs(value))
             {
                 field = value;
-                EngineAPI.SetCameraFoV(_surfaceId, field);
+                EngineAPI.SetCameraFieldOfView([CameraId], [field], 1);
             }
         }
     } = 45f;
@@ -61,7 +64,7 @@ class EditorCamera
             if (!field.IsTheSameAs(value))
             {
                 field = value;
-                EngineAPI.SetCameraRange(_surfaceId, field, FarZ);
+                EngineAPI.SetCameraRange([CameraId], [field], [FarZ], 1);
             }
         }
     } = 0.1f;
@@ -75,7 +78,7 @@ class EditorCamera
             if (!field.IsTheSameAs(value))
             {
                 field = value;
-                EngineAPI.SetCameraRange(_surfaceId, NearZ, field);
+                EngineAPI.SetCameraRange([CameraId], [NearZ], [field], 1);
             }
         }
     } = 100f;
@@ -194,12 +197,14 @@ class EditorCamera
     public void SetSurfaceId(int surfaceId)
     {
         _surfaceId = surfaceId;
+        CameraId = EngineAPI.GetSurfaceCameraId(_surfaceId);
+        Debug.Assert(ID.IsValid(CameraId));
         EngineAPI.UpdateEditorCamera(_surfaceId, _position, _rotation);
     }
 
     public void Update(float dt)
     {
-        if ((_updatePosition || _updateRotation) && ID.IsValid(_surfaceId))
+        if ((_updatePosition || _updateRotation) && ID.IsValid(CameraId))
         {
             Seek(dt);
         }

@@ -4,6 +4,7 @@ using PrimalEditor.Components;
 using PrimalEditor.DllWrappers;
 using PrimalEditor.GameProject;
 using PrimalEditor.Utilities;
+using PrimalEditor.Utilities.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,6 +69,24 @@ partial class TransformComponentView : UserControl
 
                 if (Mouse.LeftButton == MouseButtonState.Released && !_disableUndoRedo)
                 {
+                    // NOTE: in case of uniform scaling where the scale is modified using the keyboard,
+                    //       we have to set all components to the same value before creating an
+                    //       undo/redo action. 
+                    if (vm.IsUniformScale)
+                    {
+                        float? value = null;
+                        if (_propertyName == nameof(MSTransform.ScaleX)) value = vm.ScaleX;
+                        if (_propertyName == nameof(MSTransform.ScaleY)) value = vm.ScaleY;
+                        else if (_propertyName == nameof(MSTransform.ScaleZ)) value = vm.ScaleZ;
+
+                        if (value.HasValue)
+                        {
+                            _disableUndoRedo = true;
+                            vm.ScaleX = vm.ScaleY = vm.ScaleZ = value.Value;
+                            _disableUndoRedo = false;
+                        }
+                    }
+
                     SetUndoRedo();
                 }
             };
@@ -151,7 +170,7 @@ partial class TransformComponentView : UserControl
     private void OnScale_VectorBox_ValueChanging(object sender, RoutedEventArgs e)
     {
         var vm = DataContext as MSTransform;
-        if (vm.IsUniformScale && e.OriginalSource is Utilities.Controls.NumberBox numberBox)
+        if (vm.IsUniformScale && e.OriginalSource is NumberBox numberBox)
         {
             _disableUndoRedo = true;
             vm.ScaleX = vm.ScaleY = vm.ScaleZ = (float?)numberBox.Value;

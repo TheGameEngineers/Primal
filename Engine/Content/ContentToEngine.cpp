@@ -57,16 +57,13 @@ private:
     u32             _lod_count;
 };
 
-// NOTE: This is needed to maintain compatibility with STL vector.
-struct noexcept_map {
-    std::unordered_map<u32, std::unique_ptr<u8[]>> map;
-    noexcept_map() = default;
-    noexcept_map(const noexcept_map&) = default;
-    noexcept_map(noexcept_map&&) noexcept = default;
-    noexcept_map& operator=(const noexcept_map&) = default;
-    noexcept_map& operator=(noexcept_map&&) noexcept = default;
+struct key_value
+{
+    u32 key;
+    std::unique_ptr<u8[]> value;
 };
 
+using noexcept_map = utl::vector<key_value>;
 // This constant indicates that an element in geometry_hierarchies is not a pointer, but a gpu_id
 constexpr uintptr_t             single_mesh_marker{ (uintptr_t)0x01 };
 utl::free_list<u8*>             geometry_hierarchies;
@@ -139,7 +136,7 @@ create_mesh_hierarchy(const void *const data)
             previous_threshold = stream.thresholds()[i];
         }
         return true;
-           }());
+        }());
 
     static_assert(alignof(void*) > 2, "We need the least significant bit for the single mesh marker.");
     std::lock_guard lock{ geometry_mutex };
@@ -356,7 +353,7 @@ add_shader_group(const u8 *const * shaders, u32 num_shaders, const u32 *const ke
         const u64 size{ shader_ptr->buffer_size() };
         std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
         memcpy(shader.get(), shaders[i], size);
-        group.map[keys[i]] = std::move(shader);
+        group.emplace_back(keys[i], std::move(shader));
     }
     std::lock_guard lock{ shader_mutex };
     return shader_groups.add(std::move(group));
@@ -368,7 +365,7 @@ remove_shader_group(id::id_type id)
     std::lock_guard lock{ shader_mutex };
     assert(id::is_valid(id));
 
-    shader_groups[id].map.clear();
+    shader_groups[id].clear();
     shader_groups.remove(id);
 }
 
@@ -378,7 +375,7 @@ get_shader(id::id_type id, u32 shader_key)
     std::lock_guard lock{ shader_mutex };
     assert(id::is_valid(id));
 
-    for (const auto& [key, value] : shader_groups[id].map)
+    for (const auto& [key, value] : shader_groups[id])
     {
         if (key == shader_key)
         {
@@ -386,7 +383,7 @@ get_shader(id::id_type id, u32 shader_key)
         }
     }
 
-    assert(false); // should never occure.
+    assert(false); // should never occur.
     return nullptr;
 }
 
@@ -409,7 +406,7 @@ get_submesh_gpu_ids(id::id_type geometry_content_id, u32 id_count, id::id_type *
             const lod_offset lod_offset{ stream.lod_offsets()[lod_count - 1] };
             const u32 gpu_id_count{ (u32)lod_offset.offset + (u32)lod_offset.count };
             return gpu_id_count == id_count;
-               }());
+            }());
 
         memcpy(gpu_ids, stream.gpu_ids(), sizeof(id::id_type) * id_count);
     }

@@ -19,11 +19,11 @@
     <ctrl:ComponentView Header="Transform">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="78"/>
@@ -33,12 +33,12 @@
 
             <TextBlock Text="Position" Grid.Column="0" Grid.Row="0"/>
             <ctrl:VectorBox X="{Binding PosX, TargetNullValue=''}" Y="{Binding PosY, TargetNullValue=''}" Z="{Binding PosZ, TargetNullValue=''}"
-                           Grid.Column="2" Grid.Row="0" PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"/>
+                            Grid.Column="2" Grid.Row="0" PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"/>
 
             <TextBlock Text="Local Offset" Grid.Column="0" Grid.Row="1"/>
             <!-- NOTE: setting context menu to null to disables copy/paste -->
             <ctrl:VectorBox X="{Binding LocalPosX}" Y="{Binding LocalPosY}" Z="{Binding LocalPosZ}" Grid.Column="2" Grid.Row="1"
-                           ValueChanged="OnLocalPosition_VectorBox_ValueChanged" ContextMenu="{x:Null}"/>
+                            ValueChanged="OnLocalPosition_VectorBox_ValueChanged" ContextMenu="{x:Null}"/>
             
             <TextBlock Text="Rotation" Grid.Column="0" Grid.Row="2"/>
             <ctrl:VectorBox X="{Binding RotX, TargetNullValue=''}" Y="{Binding RotY, TargetNullValue=''}" Z="{Binding RotZ, TargetNullValue=''}"
@@ -59,14 +59,14 @@
             </TextBlock>
             <!-- NOTE: setting context menu to null to disables copy/paste -->
             <ctrl:VectorBox X="{Binding RotOffsetX}" Y="{Binding RotOffsetY}" Z="{Binding RotOffsetZ}" Grid.Column="2" Grid.Row="3"
-                           Minimum="0" Maximum="360" WrapAround="True" ValueChanged="OnLocalRotation_VectorBox_ValueChanged" ContextMenu="{x:Null}"/>
-            <ToggleButton Content="O" IsChecked="{Binding IsLocalRotation}" Width="20" Margin="5,0" Grid.Column="1" Grid.Row="3"/>
+                            Minimum="0" Maximum="360" WrapAround="True" ValueChanged="OnLocalRotation_VectorBox_ValueChanged" ContextMenu="{x:Null}"/>
+            <ToggleButton Content="O" IsChecked="{Binding IsLocalRotation}" Width="24" Height="24" Margin="5,0" Grid.Column="1" Grid.Row="3"/>
 
             <TextBlock Text="Scale" Grid.Column="0" Grid.Row="4"/>
             <ctrl:VectorBox X="{Binding ScaleX, TargetNullValue=''}" Y="{Binding ScaleY, TargetNullValue=''}" Z="{Binding ScaleZ, TargetNullValue=''}"
-                           Grid.Column="2" Grid.Row="4" PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"
-                           ValueChanging="OnScale_VectorBox_ValueChanging"/>
-            <ToggleButton Content="O" IsChecked="{Binding IsUniformScale}" Width="20" Margin="5,0" Grid.Column="1" Grid.Row="4"/>
+                            Grid.Column="2" Grid.Row="4" PreviewMouseLeftButtonUp="On_VectorBox_PreviewMouse_LBU"
+                            ValueChanging="OnScale_VectorBox_ValueChanging"/>
+            <ToggleButton Content="O" IsChecked="{Binding IsUniformScale}" Width="24" Height="24" Margin="5,0" Grid.Column="1" Grid.Row="4"/>
         </Grid>
     </ctrl:ComponentView>
 </UserControl>

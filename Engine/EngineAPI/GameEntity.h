@@ -1,12 +1,26 @@
 // Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 #pragma once
-#include "../Components/ComponentsCommon.h"
+#include "CommonHeaders.h"
+#include "Engine.h"
 #include "TransformComponent.h"
 #include "ScriptComponent.h"
 #include "GeometryComponent.h"
 
-namespace primal::game_entity {
+namespace primal {
+
+struct component_type
+{
+    enum type : u32 {
+        transform,
+        script,
+        geometry,
+
+        count
+    };
+};
+
+namespace game_entity {
 
 DEFINE_TYPED_ID(entity_id);
 
@@ -30,10 +44,15 @@ public:
     [[nodiscard]] math::v3 front() const { return transform().front(); }
     [[nodiscard]] math::m3x3 local_frame() const { return transform().local_frame(); }
 
+    void rotation(math::v4 rotation_quaternion) const { transform().rotation(rotation_quaternion); }
+    void position(math::v3 position) const { transform().position(position); }
+    void scale(math::v3 scale) const { transform().scale(scale); }
+
 private:
     entity_id _id;
 };
 } // namespace game_entity
+} // namespace primal
 
 namespace primal::script {
 class entity_script : public game_entity::entity
@@ -45,14 +64,6 @@ public:
 protected:
     constexpr explicit entity_script(game_entity::entity entity)
         : game_entity::entity{ entity.get_id() } {}
-
-    void set_rotation(math::v4 rotation_quaternion) const { set_rotation(this, rotation_quaternion); }
-    void set_position(math::v3 position) const { set_position(this, position); }
-    void set_scale(math::v3 scale) const { set_scale(this, scale); }
-
-    static void set_rotation(const game_entity::entity *const entity, math::v4 rotation_quaternion);
-    static void set_position(const game_entity::entity *const entity, math::v3 position);
-    static void set_scale(const game_entity::entity *const entity, math::v3 scale);
 };
 
 namespace detail {

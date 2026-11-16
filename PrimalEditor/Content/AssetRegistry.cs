@@ -17,9 +17,13 @@ static class AssetRegistry
     private static readonly Dictionary<string, AssetInfo> _assetsFileDictionary = [];
     private static readonly Dictionary<Guid, AssetInfo> _assetsGuidDictionary = [];
     private static readonly ObservableCollection<AssetInfo> _assets = [];
+    private static readonly ObservableCollection<AssetInfo> _textures = [];
+    private static readonly ObservableCollection<AssetInfo> _meshes = [];
     private static string _cachePath = string.Empty;
 
-    public static ReadOnlyObservableCollection<AssetInfo> Assets { get; } = new ReadOnlyObservableCollection<AssetInfo>(_assets);
+    public static ReadOnlyObservableCollection<AssetInfo> Assets { get; } = new(_assets);
+    public static ReadOnlyObservableCollection<AssetInfo> Textures { get; } = new(_textures);
+    public static ReadOnlyObservableCollection<AssetInfo> Meshes { get; } = new(_meshes);
 
     private static void RegisterAllAssets(string path)
     {
@@ -33,6 +37,23 @@ static class AssetRegistry
             else
             {
                 RegisterAsset(entry);
+            }
+        }
+    }
+
+    private static void OnAssetsChanged()
+    {
+        _textures.Clear();
+        _meshes.Clear();
+        foreach (var asset in _assets)
+        {
+            if (asset.Type == AssetType.Texture)
+            {
+                _textures.Add(asset);
+            }
+            else if (asset.Type == AssetType.Mesh)
+            {
+                _meshes.Add(asset);
             }
         }
     }
@@ -75,6 +96,10 @@ static class AssetRegistry
             }
         }
         catch (Exception ex) { Debug.WriteLine(ex.Message); }
+        finally
+        {
+            OnAssetsChanged();
+        }
     }
 
     private static void UnregisterAsset(string file)
@@ -120,7 +145,9 @@ static class AssetRegistry
                     var hashSize = reader.ReadInt32();
                     info.Hash = (hashSize > 0) ? reader.ReadBytes(hashSize) : null;
 
-                    if (File.Exists(info.FullPath))
+                    var fileInfo = new FileInfo(info.FullPath);
+
+                    if (File.Exists(info.FullPath) && fileInfo.CreationTime.IsOlder(info.ImportDate))
                     {
                         _assetsFileDictionary[info.FullPath] = info;
                         _assetsGuidDictionary[info.Guid] = info;
@@ -133,6 +160,10 @@ static class AssetRegistry
         {
             Debug.WriteLine(ex.Message);
             Logger.Log(MessageType.Warning, "Failed to read Asset Registry cache file.");
+        }
+        finally
+        {
+            OnAssetsChanged();
         }
     }
 
@@ -187,6 +218,7 @@ static class AssetRegistry
             }
 
             _assets.Where(x => !File.Exists(x.FullPath)).ToList().ForEach(x => UnregisterAsset(x.FullPath));
+            OnAssetsChanged();
         }
     }
 

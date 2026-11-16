@@ -478,7 +478,7 @@ class Geometry : Asset
 
         lock (_lock)
         {
-            if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
+            Directory.CreateDirectory(tempPath);
         }
 
         var tempFile = $"{tempPath}{ContentHelper.GetRandomString()}.fbx";
@@ -791,7 +791,7 @@ class Geometry : Asset
                     GeometryView view = new()
                     {
                         Background = new SolidColorBrush(color),
-                        DataContext = new MeshRenderer(lod, null),
+                        DataContext = new MeshRenderer(lod, null, null),
                         Width = width,
                         Height = height,
                     };

@@ -290,7 +290,7 @@ equirectangular_to_cubemap(const Image* env_maps, u32 env_map_count, u32 cubemap
 
         assert(f32_env_map.GetImageCount() == 1);
         const Image* dst_images{ &working_scratch.GetImages()[i * 6] };
-        const Image& env_map_image{ f32_env_map.GetImages()[i] };
+        const Image& env_map_image{ f32_env_map.GetImages()[0] };
         const bool mirror{ mirror_cubemap };
 
         std::thread threads[]{
@@ -301,7 +301,7 @@ equirectangular_to_cubemap(const Image* env_maps, u32 env_map_count, u32 cubemap
             std::thread{ [&] {sample_cube_face(env_map_image, dst_images[4], 4, mirror); } },
         };
 
-        sample_cube_face(f32_env_map.GetImages()[i], dst_images[5], 5, mirror);
+        sample_cube_face(f32_env_map.GetImages()[0], dst_images[5], 5, mirror);
 
         for (u32 face{ 0 }; face < 5; ++face) threads[face].join();
     }

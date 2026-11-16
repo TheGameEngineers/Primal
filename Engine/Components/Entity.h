@@ -5,17 +5,6 @@
 
 namespace primal {
 
-struct component_type
-{
-    enum type : u32 {
-        transform,
-        script,
-        geometry,
-
-        count
-    };
-};
-
 #define INIT_INFO(component) namespace component { struct init_info; }
 
 INIT_INFO(transform);

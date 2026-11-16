@@ -43,6 +43,58 @@ struct light_owner
 class light_set
 {
 public:
+    light_set() = default;
+    light_set(light_set&& o)
+        : _owners{ std::move(o._owners) },
+          _non_cullable_lights{ std::move(o._non_cullable_lights) },
+          _non_cullable_owners{ std::move(o._non_cullable_owners) },
+          _cullable_lights{ std::move(o._cullable_lights) },
+          _culling_info{ std::move(o._culling_info) },
+          _bounding_spheres{ std::move(o._bounding_spheres) },
+          _cullable_entity_ids{ std::move(o._cullable_entity_ids) },
+          _cullable_owners{ std::move(o._cullable_owners) },
+          _dirty_bits{ std::move(o._dirty_bits) },
+          _transform_flags_cache{ std::move(o._transform_flags_cache) },
+          _enabled_light_count{ o._enabled_light_count },
+          _something_is_dirty{ o._something_is_dirty },
+          _ambient_light{ o._ambient_light },
+          _ambient_light_id{ o._ambient_light_id }
+    {
+        o._enabled_light_count = 0;
+        o._something_is_dirty = 0;
+        o._ambient_light = { -1.f, u32_invalid_id, u32_invalid_id, u32_invalid_id };
+        o._ambient_light_id = light_id{ id::invalid_id };
+    }
+
+    light_set& operator=(light_set&& o)
+    {
+        assert(this != std::addressof(o));
+        if (this != std::addressof(o))
+        {
+            assert(_owners.empty());
+            _owners = std::move(o._owners);
+            _non_cullable_lights = std::move(o._non_cullable_lights);
+            _non_cullable_owners = std::move(o._non_cullable_owners);
+            _cullable_lights = std::move(o._cullable_lights);
+            _culling_info = std::move(o._culling_info);
+            _bounding_spheres = std::move(o._bounding_spheres);
+            _cullable_entity_ids = std::move(o._cullable_entity_ids);
+            _cullable_owners = std::move(o._cullable_owners);
+            _dirty_bits = std::move(o._dirty_bits);
+            _transform_flags_cache = std::move(o._transform_flags_cache);
+            _enabled_light_count = o._enabled_light_count;
+            _something_is_dirty = o._something_is_dirty;
+            _ambient_light = o._ambient_light;
+            _ambient_light_id = o._ambient_light_id;
+
+            o._enabled_light_count = 0;
+            o._something_is_dirty = 0;
+            o._ambient_light = { -1.f, u32_invalid_id, u32_invalid_id, u32_invalid_id };
+            o._ambient_light_id = light_id{ id::invalid_id };
+        }
+        return *this;
+    }
+
     constexpr graphics::light add(const light_init_info& info)
     {
         if (info.type == graphics::light::directional)

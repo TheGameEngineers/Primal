@@ -33,11 +33,13 @@ struct culling_parameters
     uav_clearable_buffer                    light_index_counter;
     hlsl::LightCullingDispatchParameters    grid_frustums_dispatch_params{};
     hlsl::LightCullingDispatchParameters    light_culling_dispatch_params{};
+    D3D12_GPU_VIRTUAL_ADDRESS               light_index_list_opaque_buffer{ 0 };
     u32                                     frustum_count{ 0 };
     u32                                     view_width{ 0 };
     u32                                     view_height{ 0 };
     f32                                     camera_fov{ 0.f };
-    D3D12_GPU_VIRTUAL_ADDRESS               light_index_list_opaque_buffer{ 0 };
+    f32                                     camera_orthographic_size{ 0.f };
+    f32                                     camera_aspect_ratio{ 0.f };
     // NOTE: initialize has_lights with 'true' so that the culling shader
     //       is run at least once in order to clear the buffer.
     bool                                    has_lights{ true };
@@ -107,9 +109,9 @@ resize_buffers(culling_parameters& culler)
 {
     const u32 frustum_count{ culler.frustum_count };
 
-    const u32 frustums_buffer_size{ sizeof(hlsl::Frustum) * frustum_count };
+    const u32 frustums_buffer_size{ (u32)sizeof(hlsl::Frustum) * frustum_count };
     const u32 light_grid_buffer_size{ (u32)math::align_size_up<sizeof(math::v4)>(sizeof(math::u32v2) * frustum_count) };
-    const u32 light_index_list_buffer_size{ (u32)math::align_size_up<sizeof(math::v4)>(sizeof(u32) * max_lights_per_tile *frustum_count) };
+    const u32 light_index_list_buffer_size{ (u32)math::align_size_up<sizeof(math::v4)>(sizeof(u32) * max_lights_per_tile * frustum_count) };
     const u32 light_grid_and_index_list_buffer_size{ light_grid_buffer_size + light_index_list_buffer_size };
 
     d3d12_buffer_init_info info{};
@@ -131,7 +133,7 @@ resize_buffers(culling_parameters& culler)
         const D3D12_GPU_VIRTUAL_ADDRESS light_grid_opaque_buffer{ culler.light_grid_and_index_list.gpu_address() };
         culler.light_index_list_opaque_buffer = light_grid_opaque_buffer + light_grid_buffer_size;
         NAME_D3D12_OBJECT_INDEXED(culler.light_grid_and_index_list.buffer(), light_grid_and_index_list_buffer_size,
-                                  L"Light Grid and Index List Buffer - size");
+            L"Light Grid and Index List Buffer - size");
 
         if (!culler.light_index_counter.buffer())
         {
@@ -176,9 +178,9 @@ resize(culling_parameters& culler)
 
 void
 calculate_grid_frustums(const culling_parameters& culler,
-                        id3d12_graphics_command_list *const cmd_list,
-                        const d3d12_frame_info& d3d12_info,
-                        d3dx::d3d12_resource_barrier& barriers)
+    id3d12_graphics_command_list *const cmd_list,
+    const d3d12_frame_info& d3d12_info,
+    d3dx::d3d12_resource_barrier& barriers)
 {
     constant_buffer& cbuffer{ core::cbuffer() };
     hlsl::LightCullingDispatchParameters *const buffer{ cbuffer.allocate<hlsl::LightCullingDispatchParameters>() };
@@ -188,8 +190,8 @@ calculate_grid_frustums(const culling_parameters& culler,
     // Make frustums buffer writable
     // TODO: remove pixel_shader_resource flag (it's only there so we can visualize grid frustums).
     barriers.add(culler.frustums.buffer(),
-                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     barriers.apply(cmd_list);
 
     using param = light_culling_root_parameter;
@@ -204,19 +206,21 @@ calculate_grid_frustums(const culling_parameters& culler,
     // NOTE: cull_lights() will apply this transition.
     // TODO: remove pixel_shader_resource flag (it's only there so we can visualize grid frustums).
     barriers.add(culler.frustums.buffer(),
-                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
 void _declspec(noinline)
 resize_and_calculate_grid_frustums(culling_parameters& culler,
-                                   id3d12_graphics_command_list *const cmd_list,
-                                   const d3d12_frame_info& d3d12_info,
-                                   d3dx::d3d12_resource_barrier& barriers)
+    id3d12_graphics_command_list *const cmd_list,
+    const d3d12_frame_info& d3d12_info,
+    d3dx::d3d12_resource_barrier& barriers)
 {
-    culler.camera_fov = d3d12_info.camera->field_of_view();
     culler.view_width = d3d12_info.surface_width;
     culler.view_height = d3d12_info.surface_height;
+    culler.camera_fov = d3d12_info.camera->field_of_view();
+    culler.camera_orthographic_size = d3d12_info.camera->orthographic_size();
+    culler.camera_aspect_ratio = d3d12_info.camera->aspect_ratio();
 
     resize(culler);
     calculate_grid_frustums(culler, cmd_list, d3d12_info, barriers);
@@ -254,8 +258,8 @@ remove_culler(id::id_type id)
 
 void
 cull_lights(id3d12_graphics_command_list *const cmd_list,
-                 const d3d12_frame_info& d3d12_info,
-                 d3dx::d3d12_resource_barrier& barriers)
+    const d3d12_frame_info& d3d12_info,
+    d3dx::d3d12_resource_barrier& barriers)
 {
     const id::id_type id{ d3d12_info.light_culling_id };
     assert(id::is_valid(id));
@@ -263,7 +267,9 @@ cull_lights(id3d12_graphics_command_list *const cmd_list,
 
     if (d3d12_info.surface_width != culler.view_width ||
         d3d12_info.surface_height != culler.view_height ||
-        !math::is_equal(d3d12_info.camera->field_of_view(), culler.camera_fov))
+        !math::is_equal(d3d12_info.camera->field_of_view(), culler.camera_fov) ||
+        !math::is_equal(d3d12_info.camera->orthographic_size(), culler.camera_orthographic_size) ||
+        !math::is_equal(d3d12_info.camera->aspect_ratio(), culler.camera_aspect_ratio))
     {
         resize_and_calculate_grid_frustums(culler, cmd_list, d3d12_info, barriers);
     }
@@ -284,7 +290,7 @@ cull_lights(id3d12_graphics_command_list *const cmd_list,
 
     // Make light grid and light index buffers writable
     barriers.add(culler.light_grid_and_index_list.buffer(),
-                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     barriers.apply(cmd_list);
 
     const math::u32v4 clear_value{ 0, 0, 0, 0 };
@@ -307,7 +313,7 @@ cull_lights(id3d12_graphics_command_list *const cmd_list,
     // Make light grid and light index buffers readable
     // NOTE: this transition barrier will be applied by the caller of this function.
     barriers.add(culler.light_grid_and_index_list.buffer(),
-                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
 // TODO: temporary for visualizing light culling. Remove later.

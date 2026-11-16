@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.DllWrappers;
-using PrimalEditor.GameProject;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,6 +18,12 @@ class RenderSurfaceFrameStatsArgs(float averageFrameTime, int fps) : EventArgs
 {
     public float AverageFrameTime { get; } = averageFrameTime;
     public int FPS { get; } = fps;
+}
+
+class RenderFrameEventArgs(float dt) : EventArgs
+{
+    public float DeltaTime { get; } = dt;
+    public IdType CameraId { get; set; } = ID.INVALID_ID;
 }
 
 class RenderSurfaceControl : ContentControl, IDisposable
@@ -83,7 +88,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     }
 
     private readonly FrameTimer _frameTimer = new();
-    private readonly EditorCamera _camera = new();
+    private EditorCamera _camera;
     private RenderSurfaceHost _host = null;
     private Point _clickPosition = new(0, 0);
     private bool _capturedLeft;
@@ -91,22 +96,26 @@ class RenderSurfaceControl : ContentControl, IDisposable
     private bool _isMouseOver;
     private bool _isXZLocked = false;
     private ulong _lightSetKey;
+    private bool _isPlaying;
 
     public event EventHandler<RenderSurfaceFrameStatsArgs> FrameStatsUpdated;
+    public event EventHandler<RenderFrameEventArgs> RenderFrame;
+    public event RoutedPropertyChangedEventHandler<bool> IsHostReadyChanged;
 
     public bool IsXZLocked
     {
-        get { return (bool)GetValue(IsXZLockedProperty); }
-        set { SetValue(IsXZLockedProperty, value); }
+        get => (bool)GetValue(IsXZLockedProperty);
+        set => SetValue(IsXZLockedProperty, value);
     }
+
     public static readonly DependencyProperty IsXZLockedProperty =
         DependencyProperty.Register(nameof(IsXZLocked), typeof(bool), typeof(RenderSurfaceControl),
             new PropertyMetadata(false, new PropertyChangedCallback(IsXZLockedChanged)));
 
     public int CameraSpeed
     {
-        get { return (int)GetValue(CameraSpeedProperty); }
-        set { SetValue(CameraSpeedProperty, value); }
+        get => (int)GetValue(CameraSpeedProperty);
+        set => SetValue(CameraSpeedProperty, value);
     }
     public static readonly DependencyProperty CameraSpeedProperty =
         DependencyProperty.Register(nameof(CameraSpeed), typeof(int), typeof(RenderSurfaceControl),
@@ -114,8 +123,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public float CameraFov
     {
-        get { return (float)GetValue(CameraFovProperty); }
-        set { SetValue(CameraFovProperty, value); }
+        get => (float)GetValue(CameraFovProperty);
+        set => SetValue(CameraFovProperty, value);
     }
     public static readonly DependencyProperty CameraFovProperty =
         DependencyProperty.Register(nameof(CameraFov), typeof(float), typeof(RenderSurfaceControl),
@@ -123,8 +132,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public float CameraNearZ
     {
-        get { return (float)GetValue(CameraNearZProperty); }
-        set { SetValue(CameraNearZProperty, value); }
+        get => (float)GetValue(CameraNearZProperty);
+        set => SetValue(CameraNearZProperty, value);
     }
     public static readonly DependencyProperty CameraNearZProperty =
         DependencyProperty.Register(nameof(CameraNearZ), typeof(float), typeof(RenderSurfaceControl),
@@ -132,8 +141,8 @@ class RenderSurfaceControl : ContentControl, IDisposable
 
     public float CameraFarZ
     {
-        get { return (float)GetValue(CameraFarZProperty); }
-        set { SetValue(CameraFarZProperty, value); }
+        get => (float)GetValue(CameraFarZProperty);
+        set => SetValue(CameraFarZProperty, value);
     }
     public static readonly DependencyProperty CameraFarZProperty =
         DependencyProperty.Register(nameof(CameraFarZ), typeof(float), typeof(RenderSurfaceControl),
@@ -173,11 +182,12 @@ class RenderSurfaceControl : ContentControl, IDisposable
     {
         if (e.NewValue != null && _host == null)
         {
+            _camera = new();
             _host = new RenderSurfaceHost(ActualWidth, ActualHeight, new RenderFrameCallback(OnRenderFrame));
+            _host.IsHostReadyChanged += OnRenderHost_IsHostReadyChanged;
             _host.MessageHook += new HwndSourceHook(HostMsgFilter);
             Content = _host;
             await _host.WaitReady();
-            Project.Current.UpdateScene();
             _camera.SetSurfaceId(_host.SurfaceId);
             _disposedValue = false;
         }
@@ -187,6 +197,11 @@ class RenderSurfaceControl : ContentControl, IDisposable
             Content = null;
             Dispose();
         }
+    }
+
+    private void OnRenderHost_IsHostReadyChanged(object sender, RoutedPropertyChangedEventArgs<bool> e)
+    {
+        IsHostReadyChanged?.Invoke(this, e);
     }
 
     private void OnRenderSurfaceControl_KeyDown(object sender, KeyEventArgs e)
@@ -202,19 +217,26 @@ class RenderSurfaceControl : ContentControl, IDisposable
             FrameStatsUpdated?.Invoke(this, new RenderSurfaceFrameStatsArgs(_frameTimer.AverageFrameTime, _frameTimer.FPS));
         }
 
+        var dt = float.Min(_frameTimer.AverageFrameTime, 1f / 30f);
+
         if (_capturedLeft && !_isXZLocked && GetAsyncKeyState(VKey.Alt) == 0)
         {
             var moveDir = GetMoveDirection();
             if (moveDir.LengthSquared() > MathUtil.Epsilon)
             {
-                _camera.ChangePosition(moveDir, _frameTimer.AverageFrameTime);
+                _camera.ChangePosition(moveDir, dt);
             }
         }
 
-        _camera.Update(_frameTimer.AverageFrameTime);
+        _camera.Update(dt);
+
+        var renderFrameEventArgs = new RenderFrameEventArgs(dt);
+        RenderFrame?.Invoke(this, renderFrameEventArgs);
 
         return new()
         {
+            CameraId = ID.IsValid(renderFrameEventArgs.CameraId) ? renderFrameEventArgs.CameraId : _camera.CameraId,
+            AvgFrameTime = _frameTimer.AverageFrameTime,
             SurfaceId = _host.SurfaceId,
             LightSetKey = _lightSetKey,
         };
@@ -306,7 +328,12 @@ class RenderSurfaceControl : ContentControl, IDisposable
     }
 
     private IntPtr HostMsgFilter(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
+    {        
+        if (_isPlaying)
+        {
+            return IntPtr.Zero;
+        }
+
         switch ((Win32Msg)msg)
         {
             case Win32Msg.WM_SIZING:
@@ -380,7 +407,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
     public void SetComponentIds(List<IdType> componentIds)
     {
         Debug.Assert(componentIds != null);
-        if (_host?.HostReady == true)
+        if (_host?.IsHostReady == true)
         {
             EngineAPI.SetGeometryIds(_host.SurfaceId, [.. componentIds], componentIds.Count);
         }
@@ -394,12 +421,41 @@ class RenderSurfaceControl : ContentControl, IDisposable
         }
     }
 
+    public void FocusHost(bool focus)
+    {
+        if (focus)
+        {
+            _isPlaying = true;
+            RenderSurfaceHost.SetFocus(_host.Handle);
+            SetCapture(_host.Handle);
+        }
+        else
+        {
+            ReleaseCapture();
+            RenderSurfaceHost.SetFocus(nint.Zero);
+            _isPlaying = false;
+        }
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        // Prevent main menu from gaining focus when Alt-key is pressed in renderer.
+        if (e.Key == Key.System && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt) &&
+            e.OriginalSource is RenderSurfaceControl)
+        {
+            e.Handled = true;
+        }
+        else
+        {
+            base.OnPreviewKeyDown(e);
+        }
+    }
+
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
 
         DataContextChanged += OnDataContextChanged;
-        KeyDown += OnRenderSurfaceControl_KeyDown;
 
         OnDataContextChanged(this, new(DataContextProperty, null, DataContext));
     }
@@ -421,6 +477,7 @@ class RenderSurfaceControl : ContentControl, IDisposable
             {
                 Content = null;
                 _host.Dispose();
+                _host.IsHostReadyChanged -= OnRenderHost_IsHostReadyChanged;
                 _host = null;
             }
 

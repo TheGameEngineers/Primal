@@ -3,10 +3,12 @@
 using PrimalEditor.Content;
 using PrimalEditor.DllWrappers;
 using PrimalEditor.GameProject;
+using PrimalEditor.Utilities;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 
 namespace PrimalEditor;
@@ -16,8 +18,7 @@ namespace PrimalEditor;
 /// </summary>
 partial class MainWindow : Window
 {
-    private static readonly Version _editorVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-    public static string PrimalPath { get; private set; }
+    private static readonly Version _editorVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
     private static bool VersionsAreEqual(int[] engineVersion, Version editorVersion) =>
         engineVersion[0] == editorVersion.Major &&
@@ -27,8 +28,23 @@ partial class MainWindow : Window
     private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnMainWindowLoaded;
+        
         DefaultAssets.GenerateDefaultAssets();
-        GetEnginePath();
+        
+        // Set process scoped environment variable for Primal engine's location.
+        if (Directory.Exists(Project.EditorPath) &&
+            Directory.Exists(Path.Combine(Project.EditorPath, Project.EngineApi)) &&
+            File.Exists(Path.Combine(Project.EditorPath, Project.EngineLib)))
+        {
+            Environment.SetEnvironmentVariable(Project.PrimalEnv, Project.EditorPath, EnvironmentVariableTarget.Process);
+        }
+        else
+        {
+            Logger.Log(MessageType.Warning, "Couldn't create the environment variable for the engine's path. Building game code will fail.");
+            Application.Current.Shutdown();
+        }
+
+        // Initialize the engine.
         var initResult = EngineAPI.InitializeEngine();
         if (initResult == EngineAPIStructs.EngineInitError.Succeeded)
         {
@@ -40,28 +56,6 @@ partial class MainWindow : Window
         {
             MessageBox.Show($"{initResult.GetDescription()}", "Engine initialization failed", MessageBoxButton.OK, MessageBoxImage.Error);
             Application.Current.Shutdown();
-        }
-    }
-
-    private void GetEnginePath()
-    {
-        var primalPath = Environment.GetEnvironmentVariable("PRIMAL_ENGINE", EnvironmentVariableTarget.User);
-        if (primalPath == null || !Directory.Exists(Path.Combine(primalPath, @"Engine\EngineAPI")))
-        {
-            var dlg = new EnginePathDialog();
-            if (dlg.ShowDialog() == true)
-            {
-                PrimalPath = dlg.PrimalPath;
-                Environment.SetEnvironmentVariable("PRIMAL_ENGINE", PrimalPath.ToUpper(), EnvironmentVariableTarget.User);
-            }
-            else
-            {
-                Application.Current.Shutdown();
-            }
-        }
-        else
-        {
-            PrimalPath = primalPath;
         }
     }
 

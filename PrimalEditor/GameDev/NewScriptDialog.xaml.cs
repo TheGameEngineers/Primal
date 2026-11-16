@@ -43,7 +43,12 @@ class {0} : public primal::script::entity_script
 {{
 public:
     constexpr explicit {0}(primal::game_entity::entity entity)
-        : primal::script::entity_script{{entity}} {{}}
+        : primal::script::entity_script{{entity}} 
+    {{
+        // NOTE: prefer to use begin_play() for initialization instead of the constructor
+        //       because the entity may not be fully initialized yet
+        //       This is especially true when the script is attached to a light or camera entity.
+    }}
 
     void begin_play() override;
     void update(float dt) override;
@@ -139,7 +144,7 @@ private:
             var path = Path.GetFullPath(Path.Combine(Project.Current.Path, scriptPath.Text.Trim()));
             var solution = Project.Current.Solution;
             var projectName = Project.Current.Name;
-            await Task.Run(() => CreateScript(name, path, solution, projectName));
+            await CreateScriptAsync(name, path, solution, projectName);
         }
         catch (Exception ex)
         {
@@ -159,9 +164,9 @@ private:
         }
     }
 
-    private void CreateScript(string name, string path, string solution, string projectName)
+    private static async Task<bool> CreateScriptAsync(string name, string path, string solution, string projectName)
     {
-        if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+        Directory.CreateDirectory(path);
 
         var cpp = Path.GetFullPath(Path.Combine(path, $"{name}.cpp"));
         var h = Path.GetFullPath(Path.Combine(path, $"{name}.h"));
@@ -177,7 +182,7 @@ private:
 
         string[] files = [cpp, h];
 
-        VisualStudio.AddFilesToSolution(solution, projectName, files);
+        return await VisualStudio.AddFilesToSolutionAsync(solution, projectName, files);
     }
 
     public NewScriptDialog()
@@ -185,5 +190,6 @@ private:
         InitializeComponent();
         Owner = Application.Current.MainWindow;
         scriptPath.Text = @"GameCode\";
+        Loaded += (_, _) => scriptName.Focus();
     }
 }

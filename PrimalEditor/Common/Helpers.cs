@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -287,6 +288,9 @@ static class ContentHelper
         catch (Exception ex) { Debug.WriteLine(ex.Message); }
         return false;
     }
+
+    public static bool IsMissingOrOutdated(string filePath, DateTime importDate)
+        => !File.Exists(filePath) || File.GetLastWriteTime(filePath).IsOlder(importDate);
 
     public static bool IsDirectory(this FileInfo info) => info.Attributes.HasFlag(FileAttributes.Directory);
 
@@ -671,5 +675,58 @@ static class BitmapHelper
             image = BitmapSource.Create(slice.Width, slice.Height, 96.0, 96.0, format, null, bgrData, stride);
         }
         return image;
+    }
+}
+
+static class ExpanderStateHelper
+{
+    private static readonly Dictionary<string, bool> _expandedStates = [];
+
+    // Allow any value (including bindings/template bindings) to be set without throwing
+    public static readonly DependencyProperty StateKeyProperty =
+        DependencyProperty.RegisterAttached("StateKey", typeof(object), typeof(ExpanderStateHelper),
+            new PropertyMetadata(null, OnStateKeyChanged));
+
+    public static string GetStateKey(DependencyObject obj) => obj.GetValue(StateKeyProperty)?.ToString();
+    public static void SetStateKey(DependencyObject obj, object value) => obj.SetValue(StateKeyProperty, value);
+
+    private static void OnStateKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is Expander expander && e.NewValue is string newKey && !string.IsNullOrEmpty(newKey))
+        {
+            if (_expandedStates.TryGetValue(newKey, out var isExpanded))
+            {
+                expander.IsExpanded = isExpanded;
+            }
+
+            SubscribeToExpanderEvents(expander);
+        }
+    }
+
+    private static void SubscribeToExpanderEvents(Expander expander)
+    {
+        WeakEventManager<Expander, RoutedEventArgs>.RemoveHandler(expander, nameof(Expander.Expanded), OnExpanded);
+        WeakEventManager<Expander, RoutedEventArgs>.RemoveHandler(expander, nameof(Expander.Collapsed), OnCollapsed);
+
+        WeakEventManager<Expander, RoutedEventArgs>.AddHandler(expander, nameof(Expander.Expanded), OnExpanded);
+        WeakEventManager<Expander, RoutedEventArgs>.AddHandler(expander, nameof(Expander.Collapsed), OnCollapsed);
+    }
+
+    private static void OnExpanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is Expander expander && GetStateKey(expander) is string key)
+        {
+            _expandedStates[key] = true;
+            e.Handled = true;
+        }
+    }
+
+    private static void OnCollapsed(object sender, RoutedEventArgs e)
+    {
+        if (sender is Expander expander && GetStateKey(expander) is string key)
+        {
+            _expandedStates[key] = false;
+            e.Handled = true;
+        }
     }
 }

@@ -39,8 +39,8 @@ class NumberBox : Control
     /// </summary>
     public event RoutedPropertyChangedEventHandler<double> ValueChanged
     {
-        add { AddHandler(ValueChangedEvent, value); }
-        remove { RemoveHandler(ValueChangedEvent, value); }
+        add => AddHandler(ValueChangedEvent, value);
+        remove => RemoveHandler(ValueChangedEvent, value);
     }
 
     /// <summary>
@@ -55,8 +55,8 @@ class NumberBox : Control
     /// </summary>
     public event RoutedEventHandler ValueChanging
     {
-        add { AddHandler(ValueChangingEvent, value); }
-        remove { RemoveHandler(ValueChangingEvent, value); }
+        add => AddHandler(ValueChangingEvent, value);
+        remove => RemoveHandler(ValueChangingEvent, value);
     }
 
     /// <summary>

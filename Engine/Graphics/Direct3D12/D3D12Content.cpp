@@ -350,7 +350,7 @@ create_root_signature(material_type::type type, shader_flags::flags flags)
 id::id_type
 create_pso_if_needed(const u8* const stream_ptr, u64 aligned_stream_size, [[maybe_unused]] bool is_depth)
 {
-    const u64 key{ math::calc_crc32_u64(stream_ptr, aligned_stream_size) };
+    const u64 key{ math::crc64_ecma182(stream_ptr, aligned_stream_size) };
 
     { // Lock scope to check if PSO already exists
         std::lock_guard lock{ pso_mutex };
@@ -927,7 +927,7 @@ add(id::id_type entity_id, id::id_type geometry_content_id,
     submesh::get_views(gpu_ids, material_count, views_cache);
 
     // NOTE: the list of ids starts with geomtery id and ends with an invalid id to mark the end of the list.
-    std::unique_ptr<id::id_type[]> items{ std::make_unique<id::id_type[]>(sizeof(id::id_type) * (1 + (u64)material_count + 1)) };
+    std::unique_ptr<id::id_type[]> items{ std::make_unique<id::id_type[]>(1 + (u64)material_count + 1) };
 
     items[0] = geometry_content_id;
     id::id_type *const item_ids{ &items[1] };

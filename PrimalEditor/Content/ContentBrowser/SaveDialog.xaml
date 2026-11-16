@@ -24,7 +24,7 @@
             <StackPanel>
                 <DockPanel Margin="10">
                     <TextBlock Text="File name:" Style="{StaticResource LightTextBlockStyle}"/>
-                    <TextBox x:Name="fileNameTextBox"
+                    <TextBox x:Name="fileNameTextBox" KeyDown="OnFileName_TextBox_KeyDown"
                              Text="{Binding Path=SelectedItem.FileName, ElementName=contentBrowserView, Mode=OneWay}"
                              Margin="5,0,0,0"/>
                 </DockPanel>

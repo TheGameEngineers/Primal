@@ -73,9 +73,9 @@ struct spot_light_params
 
 struct ambient_params
 {
-    id::id_type diffuse_texture_id;
-    id::id_type specular_texture_id;
-    id::id_type brdf_lut_texture_id;
+    id::id_type diffuse_texture_id{ id::invalid_id };
+    id::id_type specular_texture_id{ id::invalid_id };
+    id::id_type brdf_lut_texture_id{ id::invalid_id };
 };
 
 struct light_init_info
@@ -116,8 +116,7 @@ struct camera_parameter {
         up_vector,
         field_of_view,
         aspect_ratio,
-        view_width,
-        view_height,
+        orthographic_size,
         near_z,
         far_z,
         view,
@@ -138,15 +137,12 @@ struct camera_init_info
     camera::type    type{};
     math::v3        up;
     union {
-        f32 field_of_view;
-        f32 view_width;
+        f32         field_of_view;
+        f32         orthographic_size;
     };
-    union {
-        f32 aspect_ratio;
-        f32 view_height;
-    };
-    f32 near_z;
-    f32 far_z;
+    f32             aspect_ratio;
+    f32             near_z;
+    f32             far_z;
 };
 
 struct perspective_camera_init_info : public camera_init_info
@@ -172,10 +168,10 @@ struct orthographic_camera_init_info : public camera_init_info
         entity_id = id;
         type = camera::orthographic;
         up = { 0.f, 1.f, 0.f };
-        view_width = 1920;
-        view_height = 1080;
+        orthographic_size = 4.f;
+        aspect_ratio = 16.f / 10.f;
         near_z = 0.01f;
-        far_z = 1000.f;
+        far_z = 100.f;
     }
 };
 
@@ -248,14 +244,10 @@ struct primitive_topology {
     };
 };
 
-#ifndef PRIMAL_PLUS
 enum class graphics_platform :u32
 {
     direct3d12 = 0,
 };
-#else
-#include "Graphics/GraphicsPlatform.h"
-#endif
 
 bool initialize(graphics_platform platform);
 void shutdown();
@@ -279,9 +271,13 @@ void remove_light_set(u64 light_set_key);
 
 light create_light(light_init_info info);
 void remove_light(light_id id, u64 light_set_key);
+light get_light(id::id_type entity_id);
+void update_lights();
 
 camera create_camera(camera_init_info info);
 void remove_camera(camera_id id);
+camera get_camera(id::id_type entity_id);
+void update_cameras();
 
 void add_mesh(const u8 *const data, id::id_type *const ids, u32 count);
 void remove_mesh(const id::id_type *const ids, u32 count);
@@ -293,6 +289,6 @@ id::id_type add_material(material_init_info info);
 void remove_material(id::id_type id);
 
 id::id_type add_render_item(id::id_type entity_id, id::id_type geometry_content_id,
-                            u32 material_count, const id::id_type *const material_ids);
+    u32 material_count, const id::id_type *const material_ids);
 void remove_render_item(id::id_type id);
 }

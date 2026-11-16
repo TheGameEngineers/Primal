@@ -2,13 +2,15 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 
 namespace PrimalEditor.Components;
 
-interface IMSComponent { }
+interface IMSComponent
+{
+    void UpdateEngine();
+}
 
 [DataContract]
 abstract class Component : ViewModelBase
@@ -17,7 +19,6 @@ abstract class Component : ViewModelBase
     public GameEntity Owner { get; init; }
 
     public abstract IMSComponent GetMultiselectionComponent(MSEntity msEntity);
-    public abstract void WriteToBinary(BinaryWriter bw);
 
     public virtual void Load() { }
     public virtual void Unload() { }
@@ -44,9 +45,11 @@ abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
         _enableUpdates = true;
     }
 
+    public abstract void UpdateEngine();
+
     public MSComponent(MSEntity msEntity)
     {
-        Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
+        Debug.Assert(msEntity?.SelectedEntities?.Count > 0);
         SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
         PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
     }

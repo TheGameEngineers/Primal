@@ -1,9 +1,11 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Components;
+using PrimalEditor.DllWrappers;
 using PrimalEditor.Utilities;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -17,6 +19,8 @@ namespace PrimalEditor.GameProject;
 [KnownType(typeof(PointLight))]
 [KnownType(typeof(Spotlight))]
 [KnownType(typeof(AmbientLight))]
+[KnownType(typeof(PerspectiveCamera))]
+[KnownType(typeof(OrthographicCamera))]
 class Scene : ViewModelBase
 {
     public ICommand RenameCommand { get; private set; }
@@ -89,6 +93,18 @@ class Scene : ViewModelBase
 
             entity.IsEnabled = isEnabled;
             entity.IsActive = IsActive;
+            if (IsActive && entity.GetComponent<Script>() is not null)
+            {
+                lock (Project.LockScriptUpdates)
+                {
+                    var id = EngineAPI.EntityAPI.GetComponentId(entity.EntityId, ComponentType.Script);
+                    Debug.Assert(ID.IsValid(id));
+                    if (Project.IsRunningInEditor && ID.IsValid(id))
+                    {
+                        EngineAPI.BeginPlay(id);
+                    }
+                }
+            }
 
             if (index == -1 || index >= _gameEntities.Count)
             {
@@ -126,11 +142,14 @@ class Scene : ViewModelBase
         var enableList = DisableAndUpdate(entities);
         var indices = enableList.Select(x => (x.Entity, x.IsEnabled, _gameEntities.IndexOf(x.Entity))).ToList();
 
-        foreach (var entity in entities)
+        lock (Project.LockScriptUpdates)
         {
-            Debug.Assert(_gameEntities.Contains(entity));
-            entity.IsActive = false;
-            _gameEntities.Remove(entity);
+            foreach (var entity in entities)
+            {
+                Debug.Assert(_gameEntities.Contains(entity));
+                entity.IsActive = false;
+                _gameEntities.Remove(entity);
+            }
         }
 
         return indices;

@@ -7,12 +7,14 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Interop;
 
 namespace PrimalEditor.Utilities;
 
 class FrameInfo
 {
+    public float AvgFrameTime { get; init; }
     public int SurfaceId { get; init; }
     public ulong LightSetKey { get; init; }
     public IdType CameraId { get; init; } = ID.INVALID_ID;
@@ -131,9 +133,33 @@ partial class RenderSurfaceHost : HwndHost
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool DestroyWindow(IntPtr hwnd);
 
+    [LibraryImport("user32.dll", EntryPoint = "SetFocus")]
+    public static partial IntPtr SetFocus(IntPtr hwnd);    
+
     public int SurfaceId { get; private set; } = ID.INVALID_ID;
 
-    public bool HostReady { get; private set; }
+    public static readonly RoutedEvent IsHostReadyChangedEvent =
+        EventManager.RegisterRoutedEvent(nameof(IsHostReadyChanged), RoutingStrategy.Bubble,
+            typeof(RoutedPropertyChangedEventHandler<bool>), typeof(RenderSurfaceHost));
+
+    public event RoutedPropertyChangedEventHandler<bool> IsHostReadyChanged
+    {
+        add => AddHandler(IsHostReadyChangedEvent, value);
+        remove => RemoveHandler(IsHostReadyChangedEvent, value);
+    }
+
+    private static readonly DependencyPropertyKey IsHostReadyPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(IsHostReady), typeof(bool), typeof(RenderSurfaceHost),
+                new PropertyMetadata(false, OnIsHostReadyChanged));
+
+    public static readonly DependencyProperty IsHostReadyProperty = IsHostReadyPropertyKey.DependencyProperty;
+    public bool IsHostReady => (bool)GetValue(IsHostReadyProperty);
+
+    private static void OnIsHostReadyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var host = (RenderSurfaceHost)d;
+        host.RaiseEvent(new RoutedPropertyChangedEventArgs<bool>((bool)e.OldValue, (bool)e.NewValue, IsHostReadyChangedEvent));
+    }
 
     private void Resize(object sender, DelayEventTimerArgs e)
     {
@@ -162,6 +188,7 @@ partial class RenderSurfaceHost : HwndHost
         {
             if (disposing)
             {
+                SetValue(IsHostReadyPropertyKey, false);
                 RenderThread.UnregisterCallback(_windowHandle);
                 EngineAPI.RemoveRenderSurface(SurfaceId);
                 _windowHandle = IntPtr.Zero;
@@ -182,8 +209,11 @@ partial class RenderSurfaceHost : HwndHost
         Debug.Assert(ID.IsValid(SurfaceId));
         _windowHandle = EngineAPI.GetWindowHandle(SurfaceId);
         Debug.Assert(_windowHandle != IntPtr.Zero);
+        // NOTE: resize the surface before starting the renderer in order to set the camera's aspect ratio correctly.
+        //       It is needed for grid frustum calculation.
+        EngineAPI.ResizeRenderSurface(SurfaceId);
         RenderThread.RegisterCallback(_windowHandle, _renderFrameCallback);
-        HostReady = RenderThread.IsRunning;
+        SetValue(IsHostReadyPropertyKey, RenderThread.IsRunning);
         _resetEvent.Set();
         return new HandleRef(this, _windowHandle);
     }

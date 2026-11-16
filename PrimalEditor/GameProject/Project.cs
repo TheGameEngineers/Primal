@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Arash Khatami
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
+using EnvDTE;
 using PrimalEditor.Components;
 using PrimalEditor.Content;
 using PrimalEditor.DllWrappers;
@@ -12,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -23,7 +25,18 @@ class Project : ViewModelBase
 {
     public static event EventHandler SceneUpdated;
 
+    private bool _isBuilding;
+    private bool _isDebugging;
+    private string _lastLoadedDllPath = string.Empty;
+
+    public static string EngineApi => @"Include\EngineAPI";
+    public static string EngineLib => "engine.lib";
+    public static string PrimalEnv => "PRIMAL_ENGINE";
+    public static string EditorPath { get; } = AppDomain.CurrentDomain.BaseDirectory;
     public static string Extension => ".primal";
+    public static Lock LockScriptUpdates { get; private set; } = new();
+    public static bool IsRunningInEditor { get; set; }
+
     [DataMember]
     public string Name { get; private set; } = "New Project";
     /// <summary>
@@ -34,7 +47,7 @@ class Project : ViewModelBase
     /// Gets the full path of the current Primal project file, including its file name and extension.
     /// </summary>
     public string FullPath => $@"{Path}{Name}{Extension}";
-    public string Solution => $@"{Path}{Name}.sln";
+    public string Solution => $@"{Path}{Name}.slnx";
     public string ContentPath => $@"{Path}Content\";
     public string TempFolder => $@"{Path}.Primal\Temp\";
 
@@ -102,6 +115,9 @@ class Project : ViewModelBase
     public ICommand DebugStopCommand { get; private set; }
     public ICommand BuildCommand { get; private set; }
 
+    private static void RefreshCommandState()
+        => Application.Current?.Dispatcher.InvokeAsync(CommandManager.InvalidateRequerySuggested);
+
     public void UpdateScene()
     {
         if (Current != null) SceneUpdated?.Invoke(ActiveScene, new());
@@ -135,10 +151,22 @@ class Project : ViewModelBase
         UndoCommand = new RelayCommand<object>(x => UndoRedo.Undo(), x => UndoRedo.UndoList.Any());
         RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
         SaveCommand = new RelayCommand<object>(x => Save(this));
-        DebugStartCommand = new RelayCommand<object>(async x => await RunGame(true), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
-        DebugStartWithoutDebuggingCommand = new RelayCommand<object>(async x => await RunGame(false), x => VisualStudio.BuildDone);
-        DebugStopCommand = new RelayCommand<object>(async x => await StopGame(), x => VisualStudio.IsDebugging());
-        BuildCommand = new RelayCommand<bool>(async x => await BuildGameCodeDLL(x), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
+
+        DebugStartCommand = new RelayCommand<object>(
+            async _ => await RunGame(true),
+            _ => !_isBuilding && !_isDebugging && VisualStudio.BuildSucceeded);
+
+        DebugStartWithoutDebuggingCommand = new RelayCommand<object>(
+            async _ => await RunGame(false),
+            _ => !_isBuilding && !_isDebugging && VisualStudio.BuildSucceeded);
+
+        DebugStopCommand = new RelayCommand<object>(
+            async _ => await StopGame(),
+            _ => _isDebugging);
+
+        BuildCommand = new RelayCommand<bool>(
+            async showWindow => await BuildGameCodeDLL(showWindow),
+            _ => !_isBuilding && !_isDebugging);
 
         OnPropertyChanged(nameof(AddSceneCommand));
         OnPropertyChanged(nameof(RemoveSceneCommand));
@@ -202,7 +230,17 @@ class Project : ViewModelBase
         MSEntity.Reset();
         LightSet.Reset();
         UnloadGameCodeDLL();
-        VisualStudio.CloseVisualStudio();
+
+        try
+        {
+            // Wait up to 5 seconds for VS to close
+            VisualStudio.CloseVisualStudioAsync().Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
+
         AssetRegistry.Save();
         UndoRedo.Reset();
         Logger.Clear();
@@ -226,94 +264,146 @@ class Project : ViewModelBase
         Logger.Log(MessageType.Info, $"Project saved to {project.FullPath}");
     }
 
-    private void SaveToBinary()
-    {
-        var configName = VisualStudio.GetConfigurationName(StandAloneBuildConfig);
-        var bin = $@"{Path}x64\{configName}\game.bin";
-
-        using (var bw = new BinaryWriter(File.Open(bin, FileMode.Create, FileAccess.Write)))
-        {
-            bw.Write(ActiveScene.GameEntities.Count);
-            foreach (var entity in ActiveScene.GameEntities)
-            {
-                bw.Write(0); // entity type (reserved for later)
-                bw.Write(entity.Components.Count);
-                foreach (var component in entity.Components)
-                {
-                    bw.Write((int)component.ToEnumType());
-                    component.WriteToBinary(bw);
-                }
-            }
-        }
-    }
-
     private async Task RunGame(bool debug)
     {
-        await Task.Run(() => VisualStudio.BuildSolution(this, StandAloneBuildConfig, debug));
-        if (VisualStudio.BuildSucceeded)
-        {
-            SaveToBinary();
-            await Task.Run(() => VisualStudio.Run(this, StandAloneBuildConfig, debug));
-        }
-    }
+        if (_isBuilding || _isDebugging) return;
+        _isBuilding = true;
+        RefreshCommandState();
 
-    private async Task StopGame() => await Task.Run(VisualStudio.Stop);
-
-    private async Task BuildGameCodeDLL(bool showWindow = true)
-    {
         try
         {
-            var scriptNames = UnloadGameCodeDLL();
-            await Task.Run(() => VisualStudio.BuildSolution(this, DLLBuildConfig, showWindow));
-            if (VisualStudio.BuildSucceeded)
+            // Set ConfigureAwait to false to prevent forcing the UI thread to resume
+            var succeeded = await VisualStudio.BuildSolutionAsync(this, StandAloneBuildConfig, debug).ConfigureAwait(false);
+
+            if (!succeeded || !VisualStudio.BuildSucceeded)
             {
-                LoadGameCodeDLL(scriptNames);
+                Logger.Log(MessageType.Error, "Standalone build failed; not starting the game.");
+                return;
             }
+
+            Save(this);
+            Chef.SaveForDryRun();
+            Logger.Log(MessageType.Info, $"Starting game {(debug ? "with" : "without")} debugging");
+
+            _isDebugging = true;
+            RefreshCommandState();
+
+            await VisualStudio.RunAsync(debug).ConfigureAwait(false);
+
+            // Monitor the background debug state to unlock the UI when the game exits
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000); // Give VS time to transition into debug/run mode
+
+                // Wait while the game is still running
+                while (await VisualStudio.IsDebuggingAsync().ConfigureAwait(false))
+                {
+                    await Task.Delay(1000);
+                }
+
+                // Once finished, release the lock so the user can hit Start again
+                _isDebugging = false;
+                RefreshCommandState();
+            });
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
-            throw;
+            Logger.Log(MessageType.Error, $"Failed to run game: {ex.Message}");
+            _isDebugging = false;
+        }
+        finally
+        {
+            _isBuilding = false;
+            RefreshCommandState();
         }
     }
 
-    private List<(GameEntity Entity, string ScriptName)> RemoveScriptComponents()
+    private async Task StopGame()
     {
-        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+        if (!_isDebugging) return;
+
+        try
+        {
+            await VisualStudio.StopAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(MessageType.Error, $"Failed to stop debugging: {ex.Message}");
+        }
+        finally
+        {
+            _isDebugging = false;
+            RefreshCommandState();
+        }
+    }
+
+    private async Task BuildGameCodeDLL(bool showWindow = true)
+    {
+        if (_isBuilding) return;
+
+        _isBuilding = true;
+        RefreshCommandState();
+
+        var scriptNames = UnloadGameCodeDLL();
+        try
+        {
+            var succeeded = await VisualStudio.BuildSolutionAsync(this, DLLBuildConfig, showWindow)
+                .ConfigureAwait(false);
+
+            if (!succeeded)
+                Logger.Log(MessageType.Error, "Game-code DLL build failed.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(MessageType.Error, $"Game-code DLL build threw: {ex.Message}");
+        }
+        finally
+        {
+            _isBuilding = false;
+            LoadGameCodeDLL(scriptNames);
+            RefreshCommandState();
+        }
+    }
+
+    private List<(GameEntity Entity, string ScriptName)> RemoveScriptComponents() =>
+        Application.Current.Dispatcher.Invoke(() =>
         {
             if (!ActiveScene.IsActive) return [];
 
             var scriptNames = new List<(GameEntity Entity, string ScriptName)>();
 
-            foreach (var entity in ActiveScene.GameEntities)
+            lock (LockScriptUpdates)
             {
-                if (ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
+                foreach (var entity in ActiveScene.GameEntities)
                 {
-                    Debug.Assert(entity.IsActive && ID.IsValid(entity.EntityId));
-                    scriptNames.Add((entity, script.Name));
-                    entity.RemoveComponent(script);
+                    if (ID.IsValid(entity.EntityId) && entity.GetComponent<Script>() is Script script)
+                    {
+                        Debug.Assert(entity.IsActive && ID.IsValid(entity.EntityId));
+                        scriptNames.Add((entity, script.Name));
+                        entity.RemoveComponent(script);
+                    }
                 }
             }
-
             MSEntity.Refresh();
             return scriptNames;
         });
 
-        return [];
-    }
-
     private void AddScriptComponents(List<(GameEntity Entity, string ScriptName)> scriptNames)
     {
-        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+        Application.Current.Dispatcher.Invoke(() =>
         {
-            foreach (var (entity, scriptName) in scriptNames)
+            lock (LockScriptUpdates)
             {
-                if (!ID.IsValid(entity.EntityId)) continue;
-                Debug.Assert(entity.GetComponent<Script>() == null && !string.IsNullOrEmpty(scriptName));
-                var script = ComponentFactory.GetCreationFunction(ComponentType.Script)(entity, scriptName);
-                entity.AddComponent(script);
-            }
+                foreach (var (entity, scriptName) in scriptNames)
+                {
+                    if (!ID.IsValid(entity.EntityId) || !AvailableScripts.Contains(scriptName)) continue;
+                    Debug.Assert(entity.GetComponent<Script>() == null && !string.IsNullOrEmpty(scriptName));
+                    var script = ComponentFactory.GetCreationFunction(ComponentType.Script)(entity, scriptName);
+                    entity.AddComponent(script);
+                }
 
+                if (IsRunningInEditor) EngineAPI.BeginPlayAll();
+            }
             MSEntity.Refresh();
         });
     }
@@ -322,12 +412,26 @@ class Project : ViewModelBase
     {
         var configName = VisualStudio.GetConfigurationName(DLLBuildConfig);
         var dll = $@"{Path}x64\{configName}\{Name}.dll";
+        if (!File.Exists(dll) && !string.IsNullOrEmpty(_lastLoadedDllPath))
+        {
+            Logger.Log(MessageType.Error, $@"Failed to load \{configName}\{Name}.dll.");
+            Logger.Log(MessageType.Info, $"Loading {System.IO.Path.GetRelativePath(Path, _lastLoadedDllPath)}");
+            dll = _lastLoadedDllPath;
+            if (!File.Exists(dll))
+            {
+                Logger.Log(MessageType.Error, "Failed to load previous version.");
+                return;
+            }
+        }
+
         AvailableScripts = null;
         if (File.Exists(dll) && EngineAPI.LoadGameCodeDll(dll) != 0)
         {
-            AvailableScripts = EngineAPI.GetScriptNames();
+            var scripts = EngineAPI.GetScriptNames();
+            Application.Current.Dispatcher.Invoke(() => AvailableScripts = scripts);
             Logger.Log(MessageType.Info, "Game code DLL loaded successfully.");
             AddScriptComponents(scriptNames);
+            _lastLoadedDllPath = dll;
         }
         else
         {
@@ -349,8 +453,10 @@ class Project : ViewModelBase
     }
 
     [OnDeserialized]
-    private async void OnDeserialized(StreamingContext context)
+    private void OnDeserialized(StreamingContext context)
     {
+        LockScriptUpdates ??= new();
+
         if (_scenes != null)
         {
             Scenes = new ReadOnlyObservableCollection<Scene>(_scenes);
@@ -361,7 +467,7 @@ class Project : ViewModelBase
         Debug.Assert(ActiveScene != null);
         SetCommands();
 
-        await BuildGameCodeDLL(false);
+        Task.Run(() => BuildGameCodeDLL(false));
     }
 
     public Project(string name, string path)

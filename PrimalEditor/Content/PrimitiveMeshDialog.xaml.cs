@@ -26,9 +26,7 @@ partial class PrimitiveMeshDialog : Window
 
     private void OnSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdatePrimitive();
 
-    private void OnTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdatePrimitive();
-
-    private void OnScalarBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdatePrimitive();
+    private void OnScalarBox_ValueChanging(object sender, RoutedEventArgs e) => UpdatePrimitive();
 
     private void OnTexture_CheckBox_Click(object sender, RoutedEventArgs e)
     {
@@ -47,21 +45,10 @@ partial class PrimitiveMeshDialog : Window
 
     private static int Value(Slider slider) => (int)slider.Value;
 
-    private static float Value(TextBox textBox, float min)
+    private static float Value(ScalarBox scalarBox, float min)
     {
-        _ = float.TryParse(textBox.Text, out float result);
+        var result = (float)scalarBox.Value;
         return Math.Max(result, min);
-    }
-
-    private static int Value(TextBox textBox, int min)
-    {
-        _ = int.TryParse(textBox.Text, out int result);
-        return Math.Max(result, min);
-    }
-
-    private float Value(ScalarBox scalarBox, float min)
-    {
-        return Math.Max((float?)scalarBox.Value ?? 0f, min);
     }
 
     private void UpdatePrimitive()
@@ -80,16 +67,17 @@ partial class PrimitiveMeshDialog : Window
                     info.SegmentsZ = Value(zSliderPlane);
                     info.Size.X = Value(widthScalarBoxPlane, 0.001f);
                     info.Size.Z = Value(lengthScalarBoxPlane, 0.001f);
-                    break;
                 }
+                break;
             case PrimitiveMeshType.Cube:
-                info.SegmentsX = Value(xSliderCube);
-                info.SegmentsY = Value(ySliderCube);
-                info.SegmentsZ = Value(zSliderCube);
-                info.Size.X = Value(xTextBoxCube, 0.001f);
-                info.Size.Y = Value(yTextBoxCube, 0.001f);
-                info.Size.Z = Value(zTextBoxCube, 0.001f);
-                info.LOD = Value(lodTextBoxCube, 0);
+                {
+                    info.SegmentsX = Value(xSliderCube);
+                    info.SegmentsY = Value(ySliderCube);
+                    info.SegmentsZ = Value(zSliderCube);
+                    info.Size.X = Value(xScalarBoxCube, 0.001f);
+                    info.Size.Y = Value(yScalarBoxCube, 0.001f);
+                    info.Size.Z = Value(zScalarBoxCube, 0.001f);
+                }
                 break;
             case PrimitiveMeshType.UvSphere:
                 {
@@ -102,13 +90,21 @@ partial class PrimitiveMeshDialog : Window
                 }
                 break;
             case PrimitiveMeshType.IcoSphere:
-                return;
+                {
+                    info.SegmentsX = Value(xSliderIcoSphere);
+                    info.Size.X = Value(xScalarBoxIcoSphere, 0.001f);
+                    info.Size.Y = Value(yScalarBoxIcoSphere, 0.001f);
+                    info.Size.Z = Value(zScalarBoxIcoSphere, 0.001f);
+                    info.LOD = Value(lodSliderIcoSphere);
+                    smoothingAngle = Value(angleSliderIcoSphere);
+                }
+                break;
             case PrimitiveMeshType.Cylinder:
                 return;
             case PrimitiveMeshType.Capsule:
                 return;
             default:
-                break;
+                return;
         }
 
         var geometry = new Geometry();
@@ -122,9 +118,10 @@ partial class PrimitiveMeshDialog : Window
     {
         var uris = new List<Uri>
         {
-            new Uri("pack://application:,,,/Resources/PrimitiveMeshView/PlaneTexture.png"),
-            new Uri("pack://application:,,,/Resources/PrimitiveMeshView/CubeCheckermap.png"),
-            new Uri("pack://application:,,,/Resources/PrimitiveMeshView/Checkermap.png"),
+            new ("pack://application:,,,/Resources/PrimitiveMeshView/PlaneTexture.png"),
+            new ("pack://application:,,,/Resources/PrimitiveMeshView/CubeCheckermap.png"),
+            new ("pack://application:,,,/Resources/PrimitiveMeshView/Checkermap.png"),
+            new ("pack://application:,,,/Resources/PrimitiveMeshView/IcoSphere.png"),
         };
 
         _textures.Clear();
@@ -155,7 +152,7 @@ partial class PrimitiveMeshDialog : Window
             asset.FullPath = dlg.SaveFilePath;
             asset.SaveAsset();
 
-            // Note: you can choose to close this window after saving.
+            // NOTE: you can choose to close this window after saving.
         }
     }
 
@@ -168,5 +165,6 @@ partial class PrimitiveMeshDialog : Window
     {
         InitializeComponent();
         Loaded += (s, e) => UpdatePrimitive();
+        Closing += (_, _) => (DataContext as GeometryEditor).Unload();
     }
 }

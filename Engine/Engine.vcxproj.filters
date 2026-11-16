@@ -48,6 +48,9 @@
     <ClInclude Include="Components\Geometry.h" />
     <ClInclude Include="EngineAPI\GeometryComponent.h" />
     <ClInclude Include="Utilities\Threading.h" />
+    <ClInclude Include="EditorAPI\EditorAPI.h" />
+    <ClInclude Include="EngineAPI\Engine.h" />
+    <ClInclude Include="Utilities\MutationCache.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -76,8 +79,9 @@
     <ClCompile Include="Input\InputWin32.cpp" />
     <ClCompile Include="Graphics\Direct3D12\D3D12LightCulling.cpp" />
     <ClCompile Include="Components\Geometry.cpp" />
+    <ClCompile Include="EditorAPI\EditorAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <Natvis Include="engine.natvis" />
   </ItemGroup>
 </Project>

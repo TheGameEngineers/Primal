@@ -162,7 +162,8 @@
                             <TextBlock Margin="5,0,0,0" Text="{Binding MeshInfo.Name}" FontStyle="Italic" Foreground="{StaticResource Editor.Disabled.FontBrush}"/>
                         </StackPanel>
                     </Border>
-                    <Expander Margin="5" FocusVisualStyle="{x:Null}" Style="{StaticResource MaterialExpanderStyle}">
+                    <Expander Margin="5" FocusVisualStyle="{x:Null}" Style="{StaticResource MaterialExpanderStyle}"
+                              primal:ExpanderStateHelper.StateKey="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource Mode=TemplatedParent}}">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal" IsHitTestVisible="False">
                                 <Border CornerRadius="5" BorderThickness="2" BorderBrush="{StaticResource Editor.Window.GrayBrush6}"
@@ -190,8 +191,8 @@
                                 </StackPanel>
                             </StackPanel>
                         </Expander.Header>
-                        <local:AppliedMaterialProxyView DataContext="{Binding MaterialProxy}"/>
-
+                        <local:AppliedMaterialProxyView DataContext="{Binding MaterialProxy}"
+                                                        Tag="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource Mode=TemplatedParent}}"/>
                     </Expander>
                 </DockPanel>
             </Border>
@@ -218,11 +219,11 @@
                     </StackPanel.Style>
                     <StackPanel Orientation="Horizontal" Margin="5">
                         <TextBlock Text="Name" Width="73"/>
-                        <TextBlock Text="{Binding Name}" d:Text="CharacterModel" Foreground="{StaticResource Editor.GreenBrush}"/>
+                        <TextBlock Text="{Binding Name}" d:Text="CharacterModel" Foreground="{StaticResource RadioButton.Static.Glyph}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0,0,5">
                         <TextBlock Text="Threshold" Width="73"/>
-                        <TextBlock Text="{Binding Threshold}" d:Text="12.34" Foreground="{StaticResource Editor.GreenBrush}"/>
+                        <TextBlock Text="{Binding Threshold}" d:Text="12.34" Foreground="{StaticResource RadioButton.Static.Glyph}"/>
                     </StackPanel>
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding Meshes}" AlternationCount="{Binding Meshes.Count}" Grid.Row="1"/>
@@ -246,11 +247,12 @@
             <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="0,5,0,0" Grid.Row="1">
                 <Expander d:IsExpanded="True" VerticalAlignment="Top" FocusVisualStyle="{x:Null}"
                           Visibility="{Binding Visibility, ElementName=meshInfoStackPanel}"
-                          Style="{StaticResource MaterialExpanderStyle}">
+                          Style="{StaticResource MaterialExpanderStyle}"
+                          primal:ExpanderStateHelper.StateKey="0">
                     <Expander.Header>
                         <Border Height="{Binding ActualHeight, ElementName=iconBorder}"/>
                     </Expander.Header>
-                    <local:AppliedMaterialProxyView DataContext="{Binding GeometryWithMaterials.LODs[0].Meshes[0].MaterialProxy}"/>
+                    <local:AppliedMaterialProxyView DataContext="{Binding GeometryWithMaterials.LODs[0].Meshes[0].MaterialProxy}" Tag="0"/>
                 </Expander>
                 <Grid VerticalAlignment="Top">
                     <Grid.ColumnDefinitions>

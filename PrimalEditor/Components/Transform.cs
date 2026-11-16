@@ -4,7 +4,6 @@ using PrimalEditor.DllWrappers;
 using PrimalEditor.Utilities;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.Serialization;
@@ -67,13 +66,6 @@ class Transform(GameEntity owner) : Component(owner)
     }
 
     public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSTransform(msEntity);
-
-    public override void WriteToBinary(BinaryWriter bw)
-    {
-        bw.Write(_position.X); bw.Write(_position.Y); bw.Write(_position.Z);
-        bw.Write(_rotation.X); bw.Write(_rotation.Y); bw.Write(_rotation.Z);
-        bw.Write(_scale.X); bw.Write(_scale.Y); bw.Write(_scale.Z);
-    }
 }
 
 sealed class MSTransform : MSComponent<Transform>
@@ -366,6 +358,32 @@ sealed class MSTransform : MSComponent<Transform>
         ScaleZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Scale.Z));
 
         return true;
+    }
+
+    public override void UpdateEngine()
+    {
+        var count = SelectedComponents.Count;
+        var componentIds = SelectedComponents.Select(c => c.Owner.EntityId).ToArray();
+        Debug.Assert(count == componentIds.Length);
+        float[] px = new float[count], py = new float[count], pz = new float[count];
+        float[] rx = new float[count], ry = new float[count], rz = new float[count];
+        float[] sx = new float[count], sy = new float[count], sz = new float[count];
+        var index = 0;
+
+        SelectedComponents.ForEach(c =>
+        {
+            var p = c.Position;
+            var r = c.Rotation;
+            var s = c.Scale;
+            px[index] = p.X; py[index] = p.Y; pz[index] = p.Z;
+            rx[index] = r.X; ry[index] = r.Y; rz[index] = r.Z;
+            sx[index] = s.X; sy[index] = s.Y; sz[index] = s.Z;
+            ++index;
+        });
+
+        EngineAPI.EntityAPI.SetPosition(componentIds, px, py, pz, count, (int)Space.Absolute);
+        EngineAPI.EntityAPI.SetRotation(componentIds, rx, ry, rz, count, (int)Space.Absolute);
+        EngineAPI.EntityAPI.SetScale(componentIds, sx, sy, sz, count, (int)Space.Local);
     }
 
     public MSTransform(MSEntity msEntity) : base(msEntity)

@@ -111,8 +111,20 @@ abstract class Light(Scene scene, LightType type, string lightSetKey) : GameEnti
                 field = value;
                 if (ID.IsValid(LightId))
                 {
+                    var scriptName = string.Empty;
+                    if (GetComponent<Script>() is Script script)
+                    {
+                        Debug.Assert(IsActive && ID.IsValid(EntityId));
+                        scriptName = script.Name;
+                        RemoveComponent(script);
+                    }
                     EngineAPI.RemoveLight(LightId, LightSet.GetKey(oldKey));
                     LightId = EngineAPI.CreateLight(this);
+                    if(!string.IsNullOrEmpty(scriptName))
+                    {
+                        var component = ComponentFactory.GetCreationFunction(ComponentType.Script)(this, scriptName);
+                        AddComponent(component);
+                    }
                     Debug.Assert(ID.IsValid(LightId));
                 }
                 OnPropertyChanged(nameof(LightSetKey));
@@ -391,7 +403,7 @@ class AmbientLight(Scene scene, string lightSetKey) : Light(scene, LightType.Amb
     {
         Debug.Assert(_envMapGuid != Guid.Empty);
         var assetInfo = AssetRegistry.GetAssetInfo(_envMapGuid);
-        if (assetInfo != null)
+        if (assetInfo == null)
         {
             assetInfo = Texture.DefaultSpecularIBL;
             Logger.Log(MessageType.Warning, $"Environment map texture asset with GUID {_envMapGuid} not found in the asset registry. Using default environment map.");
@@ -414,6 +426,19 @@ abstract class MSLight<T> : MSEntity where T : Light
             {
                 field = value;
                 OnPropertyChanged(nameof(LightSetKey));
+            }
+        }
+    }
+
+    public LightType? LightType
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(LightType));
             }
         }
     }
@@ -530,6 +555,7 @@ abstract class MSLight<T> : MSEntity where T : Light
             ColorR = light.Color.ScR;
             ColorG = light.Color.ScG;
             ColorB = light.Color.ScB;
+            LightType = light.Type;
         }
         else
         {
@@ -538,9 +564,31 @@ abstract class MSLight<T> : MSEntity where T : Light
             ColorR = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScR));
             ColorG = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScG));
             ColorB = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScB));
+            LightType = (LightType?)GetMixedValue(SelectedLights, new Func<Light, int>(x => (int)x.Type));
         }
 
         return base.UpdateMSGameEntity();
+    }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedLights.Count;
+        var ids = SelectedLights.Select(x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var intensity = SelectedLights.Select(x => x.Intensity).ToArray();
+        EngineAPI.SetLightIntensity(ids, lightSetKeys, intensity, count);
+
+        var index = 0;
+        var r = new float[count]; var g = new float[count]; var b = new float[count];
+        SelectedLights.ForEach(x =>
+        {
+            var color = x.Color;
+            r[index] = color.ScR; g[index] = color.ScG; b[index] = color.ScB; ++index;
+        });
+
+        EngineAPI.SetLightColor(ids, lightSetKeys, r, g, b, count);
     }
 
     protected MSLight(List<GameEntity> entities) : base(entities)
@@ -671,6 +719,27 @@ abstract class MSPointLight<T>(List<GameEntity> entities) : MSLight<T>(entities)
 
         return base.UpdateMSGameEntity();
     }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedLights.Count;
+        var ids = SelectedLights.Select(x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var range = SelectedLights.Select(x => x.Range).ToArray();        
+        EngineAPI.SetLightRange(ids, lightSetKeys, range, count);
+
+        var index = 0;
+        var a = new float[count]; var b = new float[count]; var c = new float[count];
+        SelectedLights.ForEach(x =>
+        {
+            var att = x.Attenuation;
+            a[index] = att.X; b[index] = att.Y; c[index] = att.Z; ++index;
+        });
+        EngineAPI.SetLightAttenuation(ids, lightSetKeys, a, b, c, count);
+
+    }
 }
 
 class MSPointLight(List<GameEntity> entities) : MSPointLight<PointLight>(entities) { }
@@ -684,7 +753,7 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, 0f, Penumbra ?? 180f);
+                value = float.Clamp(value.Value, 0f, Penumbra ?? SelectedLights.Min(x => x.Penumbra));
             }
 
             if (!field.IsTheSameAs(value))
@@ -702,7 +771,7 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, Umbra ?? 0f, 180f);
+                value = float.Clamp(value.Value, Umbra ?? SelectedLights.Max(x => x.Umbra), 180f);
             }
 
             if (!field.IsTheSameAs(value))
@@ -764,6 +833,23 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         }
 
         return base.UpdateMSGameEntity();
+    }
+
+    protected override void UpdateEngine()
+    {
+        base.UpdateEngine();
+
+        var count = SelectedLights.Count;
+        var ids = SelectedLights.Select(x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var index = 0;
+
+        var umbra = new float[count]; var penumbra = new float[count];
+        SelectedLights.ForEach(x =>
+        {
+            umbra[index] = x.Umbra; penumbra[index] = x.Penumbra; ++index;
+        });
+        EngineAPI.SetLightConeAngles(ids, lightSetKeys, umbra, penumbra, count);
     }
 }
 

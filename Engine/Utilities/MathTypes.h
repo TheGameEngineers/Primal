@@ -10,6 +10,7 @@ constexpr f32 inv_pi{ 1.f / pi };
 constexpr f32 half_pi{ pi * 0.5f };
 constexpr f32 two_pi{ 2.f * pi };
 constexpr f32 inv_two_pi{ 1.f / two_pi };
+constexpr f32 phi{ 1.61803398875f }; // phi = (1 + sqrt(5)) / 2
 constexpr f32 epsilon{ 1e-5f };
 constexpr f32 to_rad{ pi * (1.f/180.f)};
 constexpr f32 to_deg{ inv_pi * 180.f};

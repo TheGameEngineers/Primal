@@ -15,6 +15,28 @@ class free_list
     static_assert(sizeof(T) >= sizeof(u32));
 public:
     free_list() = default;
+    free_list(free_list&& o)
+        : _array{ std::move(o._array) }, _next_free_index{ o._next_free_index }, _size{ o._size }
+    {
+        o._next_free_index = u32_invalid_id;
+        o._size = 0;
+    }
+
+    free_list& operator=(free_list&& o)
+    {
+        assert(this != std::addressof(o));
+        if (this != std::addressof(o))
+        {
+            assert(empty());
+            _array = std::move(o._array);
+            _next_free_index = o._next_free_index;
+            _size = o._size;
+            o._next_free_index = u32_invalid_id;
+            o._size = 0;
+        }
+        return *this;
+    }
+
     explicit free_list(u32 count)
     {
         _array.reserve(count);
@@ -94,7 +116,7 @@ private:
         {
             u32 i{ sizeof(u32) }; //skip the first 4 bytes.
             const u8 *const p{ (const u8 *const)std::addressof(_array[id]) };
-            while ((p[i] == 0xcc) && (i < sizeof(T))) ++i;
+            while ((i < sizeof(T)) && (p[i] == 0xcc)) ++i;
             return i == sizeof(T);
         }
         else

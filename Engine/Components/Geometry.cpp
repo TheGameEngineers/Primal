@@ -81,10 +81,16 @@ remove(component c)
     }
 }
 
+u32
+get_render_item_count()
+{
+    return (u32)render_item_ids.size();
+}
+
 void
 get_render_item_ids(id::id_type *const item_ids, u32 count)
 {
-    assert(item_ids && render_item_ids.size() >= count);
+    assert((!item_ids && !count) || (item_ids && render_item_ids.size() >= count));
     memcpy(item_ids, render_item_ids.data(), count * sizeof(id::id_type));
 }
 

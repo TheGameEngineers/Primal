@@ -54,20 +54,22 @@ create(entity_info info)
     assert(transforms[index].get_id() == id);
     if (!transforms[index].is_valid()) return {};
 
-    // Create script component
-    if (info.script && info.script->script_creator)
-    {
-        assert(!scripts[index].is_valid());
-        scripts[index] = script::create(*info.script, new_entity);
-        assert(scripts[index].is_valid());
-    }
-
     // Create geometry component
     if (info.geometry)
     {
         assert(!geometries[index].is_valid());
         geometries[index] = geometry::create(*info.geometry, new_entity);
         assert(geometries[index].is_valid());
+    }
+
+    // Create script component
+    // NOTE: the scrip component is added last, so that if its constructor accesses any other components
+    //       then everything is already properly created.
+    if (info.script && info.script->script_creator)
+    {
+        assert(!scripts[index].is_valid());
+        scripts[index] = script::create(*info.script, new_entity);
+        assert(scripts[index].is_valid());
     }
 
     return new_entity;
