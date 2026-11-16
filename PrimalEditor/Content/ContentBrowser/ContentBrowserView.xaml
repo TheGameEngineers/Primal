@@ -203,7 +203,12 @@
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
                         <DockPanel HorizontalAlignment="Stretch">
-                            <Image Style="{StaticResource SmallIconStyle}" Width="18" Margin="5,0" VerticalAlignment="Center"/>
+                            <DockPanel.ToolTip>
+                                <Border Background="{StaticResource Editor.Window.GrayBrush1}" Margin="-7" VerticalAlignment="Center">
+                                    <Image Style="{StaticResource LargeIconStyle}" Width="180" Height="180"/>
+                                </Border>
+                            </DockPanel.ToolTip>
+                            <Image Style="{StaticResource SmallIconStyle}" Width="24" Margin="5,0" VerticalAlignment="Center"/>
                             <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                 <TextBlock Text="{Binding FileName}" Margin="5,2,0,2" TextTrimming="CharacterEllipsis"/>
                                 <TextBox Margin="0,-2" HorizontalAlignment="Stretch" Padding="2,0,0,0" Style="{StaticResource TextBoxStyle_WithRename}"

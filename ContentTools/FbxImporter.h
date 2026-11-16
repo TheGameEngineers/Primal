@@ -27,11 +27,11 @@ public:
     ~fbx_context()
     {
         if (_fbx_scene) _fbx_scene->Destroy();
-        if (_fbx_manager) _fbx_manager->Destroy();        
+        if (_fbx_manager) _fbx_manager->Destroy();
     }
 
     void get_scene(FbxNode* root = nullptr);
-
+    
     constexpr bool is_valid() const { return _fbx_manager && _fbx_scene; }
     constexpr f32 scene_scale() const { return _scene_scale; }
     constexpr progression* get_progression() const { return _progression; }
@@ -45,6 +45,8 @@ private:
     bool get_mesh_data(FbxMesh* fbx_mesh, mesh& m);
     void get_skinning_data(FbxMesh* fbx_mesh, mesh& m);
     void get_animation_data(const utl::vector<FbxNode*>& joint_nodes, mesh& m);
+    // Skeletons (and their animation clips) that no skinned mesh already took.
+    void get_skeletons();
 
     scene*                  _scene{ nullptr };
     scene_data*             _scene_data{ nullptr };
@@ -52,6 +54,8 @@ private:
     FbxScene*               _fbx_scene{ nullptr };
     progression*            _progression{ nullptr };
     f32                     _scene_scale{ 1.0f };
+    // Unique ids of root joints already taken while importing skinned meshes.
+    utl::vector<u64>        _imported_skeleton_roots;
 };
 
 }

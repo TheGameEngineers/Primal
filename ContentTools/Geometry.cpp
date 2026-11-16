@@ -710,6 +710,18 @@ determine_elements_type(const mesh& m)
 void
 process_vertices(mesh& m)
 {
+    // Skeleton-only import: joint hierarchy and clips, no vertex data to weld.
+    if (m.positions.empty())
+    {
+        if (m.is_skeletal_mesh && !m.joint_hierarchy.empty())
+        {
+            m.elements_type = determine_elements_type(m);
+            pack_joint_data(m);
+            pack_animation_data(m);
+        }
+        return;
+    }
+
     assert((m.raw_indices.size() % 3) == 0);
     if (m.settings.calculate_normals || m.normals.size() != m.raw_indices.size())
     {
@@ -934,7 +946,8 @@ split_meshes_by_material(scene& scene, progression *const progression)
 
         for (auto& m : lod.meshes)
         {
-            assert(!(m.is_skeletal_mesh &&
+            // A skeleton with no positions has no per-vertex influences.
+            assert(!(m.is_skeletal_mesh && !m.positions.empty() &&
                 (!m.joint_indices.size() || m.joint_indices.size() != m.joint_weights.size())));
 
             // If more than one material is used in this mesh

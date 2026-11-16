@@ -602,6 +602,8 @@ class Geometry : Asset
             foreach (var lodGroup in _lodGroups)
             {
                 Debug.Assert(lodGroup.LODs.Count > 0);
+                // Some imported files only contain animation data
+                var hasMeshData = true;
                 // Use the name of most detailed LOD for file name
                 var meshFileName = ContentHelper.SanitizeFileName(
                     path + fileName + ((_lodGroups.Count > 1) ? "_" + ((lodGroup.LODs.Count > 1) ? lodGroup.Name : lodGroup.LODs[0].Name) : string.Empty)) + AssetFileExtension;
@@ -616,9 +618,10 @@ class Geometry : Asset
                     var hashes = new List<byte>();
                     foreach (var lod in lodGroup.LODs)
                     {
+                        hasMeshData = lod.Meshes.Any(m => m.VertexCount > 0);
                         LODToBinary(lod, writer, out var hash);
                         var files = TrySaveJointData(lod, meshFileName);
-                        var skeletonGuid =  TryGetAssetInfo(files.FirstOrDefault())?.Guid ?? Guid.Empty;
+                        var skeletonGuid = TryGetAssetInfo(files.FirstOrDefault())?.Guid ?? Guid.Empty;
                         Debug.Assert(files.Count() < 2); // 0 or 1 skeleton per LOD
                         savedFiles.AddRange(files);
                         savedFiles.AddRange(TrySaveAnimationData(meshFileName, skeletonGuid));
@@ -630,18 +633,21 @@ class Geometry : Asset
                     Icon = GenerateIcons(lodGroup.LODs[0])[0];
                 }
 
-                Debug.Assert(data?.Length > 0);
+                Debug.Assert(!(hasMeshData && (data == null || data.Length == 0)));
 
-                using (var writer = new BinaryWriter(File.Open(meshFileName, FileMode.Create, FileAccess.Write)))
+                if (hasMeshData)
                 {
-                    WriteAssetFileHeader(writer);
-                    ImportSettings.ToBinary(writer);
-                    writer.Write(data.Length);
-                    writer.Write(data);
-                }
+                    using (var writer = new BinaryWriter(File.Open(meshFileName, FileMode.Create, FileAccess.Write)))
+                    {
+                        WriteAssetFileHeader(writer);
+                        ImportSettings.ToBinary(writer);
+                        writer.Write(data.Length);
+                        writer.Write(data);
+                    }
 
-                Logger.Log(MessageType.Info, $"Saved geometry to {meshFileName}");
-                savedFiles.Add(meshFileName);
+                    Logger.Log(MessageType.Info, $"Saved geometry to {meshFileName}");
+                    savedFiles.Add(meshFileName);
+                }
             }
 
             FullPath = file;

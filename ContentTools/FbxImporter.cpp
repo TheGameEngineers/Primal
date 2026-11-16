@@ -126,6 +126,8 @@ fbx_context::get_scene(FbxNode* root /*= nullptr*/)
             }
         }
     }
+
+    get_skeletons();
 }
 
 void
@@ -173,9 +175,12 @@ fbx_context::get_mesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u3
     if (!fbx_mesh || fbx_mesh->RemoveBadPolygons() < 0) return;
 
     // Triangulate the mesh if needed.
-    FbxGeometryConverter gc{ _fbx_manager };
-    fbx_mesh = FbxCast<FbxMesh>(gc.Triangulate(fbx_mesh, true));
-    if (!fbx_mesh || fbx_mesh->RemoveBadPolygons() < 0) return;
+    if (!fbx_mesh->IsTriangleMesh())
+    {
+        FbxGeometryConverter gc{ _fbx_manager };
+        fbx_mesh = FbxCast<FbxMesh>(gc.Triangulate(fbx_mesh, true));
+        if (!fbx_mesh || fbx_mesh->RemoveBadPolygons() < 0) return;
+    }
 
     FbxNode *const node{ fbx_mesh->GetNode() };
 
@@ -393,7 +398,7 @@ ImportFbx(const char* file, scene_data* data, progression::progress_callback cal
         }
     }
 
-    if (scene.lod_groups.empty()) // TODO: check if the file contains animation data.
+    if (scene.lod_groups.empty())
     {
         SEND_UDP_LOG(message_type::error, "Failed to import FBX file");
         return;

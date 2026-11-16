@@ -91,18 +91,17 @@
                 </StackPanel>
             </Border>
         </Popup>
-        <Border BorderThickness="1" d:BorderBrush="#ffbc9cc6" Grid.Row="1">
+        <Border BorderThickness="1" d:BorderBrush="#ffbc9cc6" Grid.Row="1" Opacity="0.5">
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
-                    <Setter Property="BorderBrush" Value="{StaticResource Editor.Window.GrayBrush3}"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsFocused, ElementName=renderSurface}" Value="True">
-                            <Setter Property="BorderBrush" Value="#ffbc9cc6"/>
+                            <Setter Property="BorderBrush" Value="Moccasin"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Border.Style>
-            <local:RenderSurfaceControl x:Name="renderSurface" x:FieldModifier="private"/>
+            <local:RenderSurfaceControl x:Name="renderSurface" x:FieldModifier="private" Margin="1"/>
         </Border>
     </Grid>
 </UserControl>

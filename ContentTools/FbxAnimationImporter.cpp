@@ -3,6 +3,7 @@
 #include "FbxImporter.h"
 #include "Geometry.h"
 #include "Profiling/UdpLog.h"
+#include <algorithm>
 #include <string>
 
 namespace primal::tools {
@@ -21,6 +22,14 @@ fbx_context::get_animation_data(const utl::vector<FbxNode*>& joint_nodes, mesh& 
     if (!evaluator || num_stacks <= 0) return;
 
     const u32 num_joints{ (u32)joint_nodes.size() };
+    assert(m.joint_hierarchy.size() == num_joints);
+    utl::vector<FbxNode*> joint_parents(num_joints, nullptr);
+    for (u32 joint_idx{ 0 }; joint_idx < num_joints; ++joint_idx)
+    {
+        const u32 parent_index{ m.joint_hierarchy[joint_idx] };
+        joint_parents[joint_idx] = parent_index != u32_invalid_id ? joint_nodes[parent_index] : nullptr;
+    }
+
     const FbxTime::EMode time_mode{ _fbx_scene->GetGlobalSettings().GetTimeMode() };
     FbxTime step;
     step.SetTime(0, 0, 0, 1, 0, time_mode);
@@ -71,10 +80,18 @@ fbx_context::get_animation_data(const utl::vector<FbxNode*>& joint_nodes, mesh& 
 
             for (u32 joint_idx{ 0 }; joint_idx < num_joints; ++joint_idx)
             {
-                FbxNode* joint{ joint_nodes[joint_idx] };                
-                const FbxAMatrix local{ evaluator->GetNodeLocalTransform(joint, time) };
-                // Local translation is in the parent's space, but still in scene units.
-                // Scale every joint the same way so parent * local stays in meters.    
+                // Rebase against the nearest exported joint to include skipped helper transforms.
+                // A root uses its global transform, including transforms above the skeleton root.
+                FbxNode* joint{ joint_nodes[joint_idx] };
+                const FbxAMatrix global{ evaluator->GetNodeGlobalTransform(joint, time) };
+                FbxAMatrix local{ global };
+                if (joint_parents[joint_idx])
+                {
+                    const FbxAMatrix parent_global{
+                        evaluator->GetNodeGlobalTransform(joint_parents[joint_idx], time) };
+                    local = parent_global.Inverse() * global;
+                }
+
                 FbxVector4 t{ local.GetT() * (double)_scene_scale };    // translation
                 const FbxQuaternion q{ local.GetQ() };                  // rotation quaternion
                 const FbxVector4 s{ local.GetS() };                     // scale

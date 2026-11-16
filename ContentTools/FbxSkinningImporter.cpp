@@ -4,6 +4,7 @@
 #include "Geometry.h"
 #include "Profiling/UdpLog.h"
 #include <algorithm>
+#include <string>
 
 namespace primal::tools {
 namespace {
@@ -96,6 +97,50 @@ break_parent_cycles(utl::vector<u32>& parent_indices)
     }
 }
 
+// Top skeleton joint. Parents that are not skeleton nodes are not part of the rig root.
+FbxNode*
+skeleton_root(FbxNode* node)
+{
+    FbxNode* root{ nullptr };
+    for (FbxNode* current{ node }; current; current = current->GetParent())
+    {
+        if (current->GetSkeleton()) root = current;
+        else if (root) break;
+    }
+    return root;
+}
+
+void
+note_imported_skeleton_root(utl::vector<FbxUInt64>& roots, const utl::vector<FbxNode*>& joint_nodes)
+{
+    // joint_nodes[0] may be a null cluster link above the first skeleton joint.
+    // Store the skeleton root so it matches the id get_skeletons compares.
+    FbxNode* root{ nullptr };
+    for (FbxNode* joint : joint_nodes)
+    {
+        if (!joint || !joint->GetSkeleton()) continue;
+        root = skeleton_root(joint);
+        break;
+    }
+    if (!root) return;
+
+    const FbxUInt64 root_id{ root->GetUniqueID() };
+    if (std::find(roots.begin(), roots.end(), root_id) == roots.end())
+        roots.emplace_back(root_id);
+}
+
+
+// True when node, or a transform above it, is a root already taken by a skinned mesh.
+// The parent walk covers a cluster link that sits above the first skeleton node.
+bool
+is_imported_skeleton(const utl::vector<u64>& roots, FbxNode* node)
+{
+    FbxNode* root{ skeleton_root(node) };
+    if (!root) return false;
+    const u64 root_id{ root->GetUniqueID() };
+    return std::find(roots.begin(), roots.end(), root_id) != roots.end();
+}
+
 bool
 get_joint_hierarchy(
     FbxScene* scene,
@@ -161,6 +206,20 @@ get_joint_hierarchy(
         }
     }
 
+    // No influences: this joint list is a skeleton that is not tied to a mesh.
+    // One parentless joint is that skeleton's root.
+    if (!multiple_roots && root_index == u32_invalid_id && num_vertices == 0)
+    {
+        u32 root_count{ 0 };
+        for (u32 i{ 0 }; i < num_source_joints; ++i)
+        {
+            if (parent_indices[i] != u32_invalid_id) continue;
+            root_index = i;
+            ++root_count;
+        }
+        if (root_count != 1) root_index = u32_invalid_id;
+    }
+
     if (multiple_roots || root_index == u32_invalid_id)
     {
         SEND_UDP_LOG(message_type::error, multiple_roots ?
@@ -197,21 +256,24 @@ get_joint_hierarchy(
         }
     }
 
-    assert(hierarchy_map.size() == num_source_joints && hierarchy[0] == u32_invalid_id);
+    const u32 num_joints{ (u32)hierarchy_map.size() };
+    // Joints this root cannot reach belong to another skeleton. Leave them out
+    // so get_skeletons can import that rig. One rig still keeps every bone in its tree.
+    assert(num_joints > 0 && hierarchy[0] == u32_invalid_id);
     // Check if each parent was written before its children, so this is a single tree.
     assert(([&] {
-        for (u32 i{ 1 }; i < num_source_joints; ++i)
+        for (u32 i{ 1 }; i < num_joints; ++i)
             if (hierarchy[i] >= i) return false;
         return true;
         }()));
 
     m.joint_hierarchy.swap(hierarchy);
-    m.inverse_bind_pose.resize(num_source_joints);
-    m.joint_names.resize(num_source_joints);
-    utl::vector<FbxNode*> new_joint_nodes(num_source_joints);
+    m.inverse_bind_pose.resize(num_joints);
+    m.joint_names.resize(num_joints);
+    utl::vector<FbxNode*> new_joint_nodes(num_joints);
     utl::vector<u32> source_to_hierarchy(num_source_joints, 0);
     // Get bind poses and joint names, and reorder joint_nodes to match the joint hierarchy
-    for (u32 i{ 0 }; i < num_source_joints; ++i)
+    for (u32 i{ 0 }; i < num_joints; ++i)
     {
         const u32 source_index{ hierarchy_map[i] };
         source_to_hierarchy[source_index] = i;
@@ -336,7 +398,11 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
             // NOTE: we don't support additive clusters yet (FbxCluster::eAdditive)
             const FbxCluster::ELinkMode link_mode{ cluster->GetLinkMode() };
             if (link_mode != FbxCluster::eNormalize &&
-                link_mode != FbxCluster::eTotalOne) continue;
+                link_mode != FbxCluster::eTotalOne)
+            {
+                SEND_UDP_LOG(message_type::warning, "SKipped unsupported skinning mode.");
+                continue;
+            }
 
             if (joint_index_of(cluster_joints, joint_node) == u32_invalid_id)
             {
@@ -417,6 +483,7 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
     if (get_joint_hierarchy(_fbx_scene, _scene_scale, cluster_bind_poses, joint_nodes, m))
     {
         normalize_joint_weights(m);
+        note_imported_skeleton_root(_imported_skeleton_roots, joint_nodes);
         get_animation_data(joint_nodes, m);
     }
     else
@@ -424,6 +491,77 @@ fbx_context::get_skinning_data(FbxMesh* fbx_mesh, mesh& m)
         m.is_skeletal_mesh = false;
         m.joint_indices.clear();
         m.joint_weights.clear();
+    }
+}
+
+void
+fbx_context::get_skeletons()
+{
+    if (!_fbx_scene || !_scene || !_scene_data) return;
+
+    FbxNode* scene_root{ _fbx_scene->GetRootNode() };
+    if (!scene_root) return;
+
+    // Same walk the skinned path uses, but with no cluster links: skeleton nodes only.
+    // One preorder walk. A rig is a contiguous span of that list: the root, then
+    // every following joint whose top skeleton ancestor is that same root.
+    utl::vector<FbxNode*> skeleton_nodes;
+    const utl::vector<FbxNode*> no_clusters;
+    collect_joint_nodes(scene_root, no_clusters, skeleton_nodes);
+
+    const u32 count{ (u32)skeleton_nodes.size() };
+    if (!count) return;
+
+    utl::vector<FbxNode*> root_of(count);
+    for (u32 i{ 0 }; i < count; ++i)
+    {
+        root_of[i] = skeleton_root(skeleton_nodes[i]);
+    }
+
+    const utl::vector<std::pair<FbxNode*, FbxAMatrix>> no_bind_poses;
+    u32 unnamed{ 0 };
+
+    for (u32 begin{ 0 }; begin < count; )
+    {
+        FbxNode* root{ root_of[begin] };
+        u32 end{ begin + 1 };
+        // Skip joints with the same root
+        for (; end < count && root_of[end] == root; ++end) {}
+
+        if (root && !is_imported_skeleton(_imported_skeleton_roots, root))
+        {
+            // Found new skeleton
+            utl::vector<FbxNode*> joint_nodes;
+            joint_nodes.reserve(end - begin);
+            for (u32 index{ begin }; index < end; ++index)
+            {
+                joint_nodes.emplace_back(skeleton_nodes[index]);
+            }
+
+            mesh skeleton{};
+            skeleton.settings = _scene_data->settings;
+            skeleton.is_skeletal_mesh = true;
+            skeleton.lod_id = 0;
+            skeleton.lod_threshold = -1.f;
+            skeleton.name = (root->GetName()[0] != '\0') ? root->GetName() :
+                ("Skeleton" + std::to_string(unnamed++));
+
+            if (get_joint_hierarchy(_fbx_scene, _scene_scale, no_bind_poses, joint_nodes, skeleton))
+            {
+                note_imported_skeleton_root(_imported_skeleton_roots, joint_nodes);
+                get_animation_data(joint_nodes, skeleton);
+
+                lod_group lod{};
+                lod.name = skeleton.name;
+                lod.meshes.emplace_back(skeleton);
+                _scene->lod_groups.emplace_back(lod);
+
+                if (_progression)
+                    _progression->callback(_progression->value(), _progression->max_value() + 1);
+            }
+        }
+
+        begin = end;
     }
 }
 
