@@ -12,7 +12,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Resources\Icons\Primal.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.0.1</Version>
+    <Version>0.1.0</Version>
     <OutputPath>..\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>..\$(Platform)\intermediate\$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
