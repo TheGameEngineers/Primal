@@ -41,8 +41,8 @@ namespace primal {
 constexpr const struct version_t
 {
     const int major{ 0 };
-    const int minor{ 0 };
-    const int revision{ 1 };
+    const int minor{ 1 };
+    const int revision{ 0 };
 } version;
 }
 
