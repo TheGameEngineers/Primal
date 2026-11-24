@@ -65,24 +65,24 @@ partial class ProjectLayoutView : UserControl
 
         if (newSelection.Count != 0)
         {
-            var lights = newSelection.Where(x => x is Light).Cast<Light>().ToList();
-            var cameras = newSelection.Where(x => x is Camera).Cast<Camera>().ToList();
+            var lights = newSelection.Where(static x => x is Light).Cast<Light>().ToList();
+            var cameras = newSelection.Where(static x => x is Camera).Cast<Camera>().ToList();
 
             if (lights.Count == newSelection.Count)
             {
-                if (lights.All(x => x.Type == LightType.Directional))
+                if (lights.All(static x => x.Type == LightType.Directional))
                 {
                     msEntities = new MSDirectionalLight(newSelection);
                 }
-                else if (lights.All(x => x.Type == LightType.Point))
+                else if (lights.All(static x => x.Type == LightType.Point))
                 {
                     msEntities = new MSPointLight(newSelection);
                 }
-                else if (lights.All(x => x.Type == LightType.Spot))
+                else if (lights.All(static x => x.Type == LightType.Spot))
                 {
                     msEntities = new MSSpotlight(newSelection);
                 }
-                else if (lights.All(x => x.Type == LightType.Ambient))
+                else if (lights.All(static x => x.Type == LightType.Ambient))
                 {
                     msEntities = new MSAmbientLight(newSelection);
                 }
@@ -93,11 +93,11 @@ partial class ProjectLayoutView : UserControl
             }
             else if (cameras.Count == newSelection.Count)
             {
-                if (cameras.All(x => x.Type == CameraType.Perspective))
+                if (cameras.All(static x => x.Type == CameraType.Perspective))
                 {
                     msEntities = new MSPerspectiveCamera(newSelection);
                 }
-                else if (cameras.All(x => x.Type == CameraType.Orthographic))
+                else if (cameras.All(static x => x.Type == CameraType.Orthographic))
                 {
                     msEntities = new MSOrthographicCamera(newSelection);
                 }
@@ -123,7 +123,7 @@ partial class ProjectLayoutView : UserControl
             await Task.Run(() =>
             {
                 var fileList = files
-                    .Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh);
+                    .Where(static x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Mesh);
 
                 foreach (var file in fileList)
                 {

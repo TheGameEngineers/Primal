@@ -70,9 +70,9 @@ static class ContentWatcher
 
         e.Data
             .Cast<FileSystemEventArgs>()
-            .GroupBy(x => x.FullPath)
-            .Select(x => x.First())
-            .ToList().ForEach(x => ContentModified?.Invoke(null, new ContentModifiedEventArgs(x.FullPath)));
+            .GroupBy(static x => x.FullPath)
+            .Select(static x => x.First())
+            .ToList().ForEach(static x => ContentModified?.Invoke(null, new ContentModifiedEventArgs(x.FullPath)));
     }
 
     static ContentWatcher()

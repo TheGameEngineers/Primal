@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE file in the project root for more information.
 using PrimalEditor.Content;
 using PrimalEditor.DllWrappers;
+using PrimalEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -342,24 +343,20 @@ class TextureEditor : ViewModelBase, IAssetEditor
     {
         try
         {
+            Debug.Assert(info != null && File.Exists(info.FullPath));
             _assetGuid = info.Guid;
             Texture = null;
-            Debug.Assert(info != null && File.Exists(info.FullPath));
             var texture = new Texture();
             State = AssetEditorState.Loading;
 
-            await Task.Run(() =>
-            {
-                texture.Load(info.FullPath);
-            });
-
+            await Task.Run(() => texture.Load(info.FullPath));
             await SetMipmaps(texture);
             Texture = texture;
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Failed to set texture for use in texture editor. File: {info.FullPath}\n{ex.Message}");
+            Logger.Log(MessageType.Error, $"Failed to set texture for use in texture editor. File: {info.FullPath}\n{ex.Message}");
             Texture = new();
         }
         finally { State = AssetEditorState.Done; }
@@ -378,7 +375,7 @@ class TextureEditor : ViewModelBase, IAssetEditor
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Failed to load mipmaps from {texture.FileName}\n{ex.Message}");
+            Logger.Log(MessageType.Error, $"Failed to load mipmaps from {texture.FileName}\n{ex.Message}");
         }
     }
 

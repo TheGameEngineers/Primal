@@ -149,7 +149,7 @@ abstract class MSCamera<T> : MSEntity where T : Camera
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, 0f, FarZ ?? SelectedCameras.Min(x => x.FarZ));
+                value = float.Clamp(value.Value, 0f, FarZ ?? SelectedCameras.Min(static x => x.FarZ));
             }
 
             if (!field.IsTheSameAs(value))
@@ -167,7 +167,7 @@ abstract class MSCamera<T> : MSEntity where T : Camera
         {
             if (value.HasValue)
             {
-                value = float.Max(value.Value, NearZ ?? SelectedCameras.Max(x => x.NearZ));
+                value = float.Max(value.Value, NearZ ?? SelectedCameras.Max(static x => x.NearZ));
             }
 
             if (!field.IsTheSameAs(value))
@@ -181,7 +181,7 @@ abstract class MSCamera<T> : MSEntity where T : Camera
     protected override bool UpdateGameEntities(string propertyName)
     {
         var count = SelectedCameras.Count;
-        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
+        var ids = SelectedCameras.Select(static x => x.CameraId).ToArray();
         var index = 0;
 
         switch (propertyName)
@@ -224,9 +224,9 @@ abstract class MSCamera<T> : MSEntity where T : Camera
         }
         else
         {
-            NearZ = GetMixedValue(SelectedCameras, new Func<Camera, float>(x => x.NearZ));
-            FarZ = GetMixedValue(SelectedCameras, new Func<Camera, float>(x => x.FarZ));
-            CameraType = (CameraType?)GetMixedValue(SelectedCameras, new Func<Camera, int>(x => (int)x.Type));
+            NearZ = GetMixedValue(SelectedCameras, new Func<Camera, float>(static x => x.NearZ));
+            FarZ = GetMixedValue(SelectedCameras, new Func<Camera, float>(static x => x.FarZ));
+            CameraType = (CameraType?)GetMixedValue(SelectedCameras, new Func<Camera, int>(static x => (int)x.Type));
         }
 
         return base.UpdateMSGameEntity();
@@ -237,7 +237,7 @@ abstract class MSCamera<T> : MSEntity where T : Camera
         base.UpdateEngine();
 
         var count = SelectedCameras.Count;
-        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
+        var ids = SelectedCameras.Select(static x => x.CameraId).ToArray();
         var nearZ = new float[count]; var farZ = new float[count];
         var index = 0;
 
@@ -307,7 +307,7 @@ class MSPerspectiveCamera(List<GameEntity> entities) : MSCamera<PerspectiveCamer
     {
         FieldOfView = SelectedCameras.Count == 1 ?
             SelectedCameras[0].FieldOfView :
-            GetMixedValue(SelectedCameras, new Func<PerspectiveCamera, float>(x => x.FieldOfView));
+            GetMixedValue(SelectedCameras, new Func<PerspectiveCamera, float>(static x => x.FieldOfView));
 
         return base.UpdateMSGameEntity();
     }
@@ -317,8 +317,8 @@ class MSPerspectiveCamera(List<GameEntity> entities) : MSCamera<PerspectiveCamer
         base.UpdateEngine();
 
         var count = SelectedCameras.Count;
-        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
-        var fov = SelectedCameras.Select(x => x.FieldOfView).ToArray();
+        var ids = SelectedCameras.Select(static x => x.CameraId).ToArray();
+        var fov = SelectedCameras.Select(static x => x.FieldOfView).ToArray();
         EngineAPI.SetCameraFieldOfView(ids, fov, count);
     }
 }
@@ -350,7 +350,7 @@ class MSOrthographicCamera(List<GameEntity> entities) : MSCamera<OrthographicCam
             case nameof(OrthographicSize):
                 {
                     var count = SelectedCameras.Count;
-                    var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
+                    var ids = SelectedCameras.Select(static x => x.CameraId).ToArray();
                     var size = new float[count];
                     var index = 0;
                     SelectedCameras.ForEach(x =>
@@ -370,7 +370,7 @@ class MSOrthographicCamera(List<GameEntity> entities) : MSCamera<OrthographicCam
     {
         OrthographicSize = SelectedCameras.Count == 1 ?
             SelectedCameras[0].OrthographicSize :
-            GetMixedValue(SelectedCameras, new Func<OrthographicCamera, float>(x => x.OrthographicSize));
+            GetMixedValue(SelectedCameras, new Func<OrthographicCamera, float>(static x => x.OrthographicSize));
 
         return base.UpdateMSGameEntity();
     }
@@ -380,8 +380,8 @@ class MSOrthographicCamera(List<GameEntity> entities) : MSCamera<OrthographicCam
         base.UpdateEngine();
 
         var count = SelectedCameras.Count;
-        var ids = SelectedCameras.Select(x => x.CameraId).ToArray();
-        var size = SelectedCameras.Select(x => x.OrthographicSize).ToArray();
+        var ids = SelectedCameras.Select(static x => x.CameraId).ToArray();
+        var size = SelectedCameras.Select(static x => x.OrthographicSize).ToArray();
         EngineAPI.SetCameraOrthographicSize(ids, size, count);
     }
 }

@@ -1,0 +1,162 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Editors.JointHierarchyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Editors"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource LightTextBlockStyle}"/>
+        <HierarchicalDataTemplate DataType="{x:Type local:SkeletonJoint}" ItemsSource="{Binding Children}">
+            <TextBlock Text="{Binding Name}" Margin="4,2" Style="{StaticResource LightTextBlockStyle}"/>
+        </HierarchicalDataTemplate>
+
+        <local:TreeViewSelectionMarginConverter x:Key="SelectionMarginConverter"/>
+        <local:TreeViewLineConverter x:Key="LineConverter"/>
+        <SolidColorBrush x:Key="TreeView.LineBrush" Color="Moccasin" Opacity="0.6"/>
+
+        <Style x:Key="TreeViewToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Width="13" Height="13" BorderBrush="{StaticResource TreeView.LineBrush}"
+                                BorderThickness="1" CornerRadius="7" SnapsToDevicePixels="True" Background="Transparent">
+                            <Path Data="M5.5,3 5.5,8 M3,5.5 8,5.5" Stroke="{StaticResource TreeView.LineBrush}" StrokeThickness="1"
+                                  StrokeEndLineCap="Round" StrokeStartLineCap="Round" x:Name="path"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="path" Property="Data" Value="M3,5.5 8,5.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TreeViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource Editor.FontBrush}"/>
+            <Setter Property="Padding" Value="0,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border x:Name="SelectionBorder" Grid.Row="0" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3" SnapsToDevicePixels="True"
+                                    Margin="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource SelectionMarginConverter}}"/>
+
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="28"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Column="0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Rectangle x:Name="VertLineTop" Grid.Row="0" Width="1" HorizontalAlignment="Left" Fill="{StaticResource TreeView.LineBrush}"/>
+                                    <Rectangle x:Name="VertLineBottom" Grid.Row="1" Width="1" HorizontalAlignment="Left" Fill="{StaticResource TreeView.LineBrush}"/>
+                                    <Rectangle x:Name="HorzLine" Grid.Row="0" Grid.RowSpan="2" Height="1" Width="8" HorizontalAlignment="Left" Fill="{StaticResource TreeView.LineBrush}"/>
+                                    <Rectangle x:Name="ParentToChildLine" Grid.Row="1" Width="1" HorizontalAlignment="Left" Margin="13,6,0,0" Fill="{StaticResource TreeView.LineBrush}" Visibility="Collapsed"/>
+
+                                    <ToggleButton x:Name="Expander" Grid.Row="0" Grid.RowSpan="2" Style="{StaticResource TreeViewToggleStyle}"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                                  ClickMode="Press" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                    <Ellipse x:Name="LeafDot" Grid.Row="0" Grid.RowSpan="2" Width="5" Height="5" Fill="{StaticResource TreeView.LineBrush}" Visibility="Collapsed"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" 
+                                                  Margin="{TemplateBinding Padding}" SnapsToDevicePixels="True"/>
+                            </Grid>
+
+                            <Grid x:Name="ItemsHostGrid" Grid.Row="1" Visibility="Collapsed">
+                                <Rectangle x:Name="ItemsHostLine" Width="1" HorizontalAlignment="Left" Fill="{StaticResource TreeView.LineBrush}" SnapsToDevicePixels="True"/>
+                                <ItemsPresenter x:Name="ItemsHost" Margin="13,0,0,0"/>
+                            </Grid>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ItemsHostGrid" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ParentToChildLine" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="LeafDot" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="HorzLine" Property="Width" Value="12"/>
+                            </Trigger>
+
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Converter={StaticResource LineConverter}}" Value="0">
+                                <Setter TargetName="VertLineTop" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="VertLineBottom" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="ItemsHostLine" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="HorzLine" Property="Visibility" Value="Hidden"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Converter={StaticResource LineConverter}}" Value="2">
+                                <Setter TargetName="VertLineTop" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="VertLineBottom" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="ItemsHostLine" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="HorzLine" Property="Visibility" Value="Hidden"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Converter={StaticResource LineConverter}}" Value="3">
+                                <Setter TargetName="VertLineBottom" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="ItemsHostLine" Property="Visibility" Value="Hidden"/>
+                            </DataTrigger>
+
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="SelectionBorder" Property="Background" Value="{StaticResource Editor.Selected.BackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <DockPanel Background="{StaticResource Editor.Window.GrayBrush3}">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="5,0">
+            <TextBlock Text="Joint hierarchy" VerticalAlignment="Top" FontSize="16"/>
+            <TextBlock Text="{Binding SkeletonData.JointCount,StringFormat=' ({0} joints)'}" Opacity="0.7"
+                   VerticalAlignment="Top" FontSize="16" Foreground="Moccasin"/>
+        </StackPanel>
+        <TreeView ItemsSource="{Binding SkeletonData.RootJoint}" Margin="5"
+                  SelectedItemChanged="OnTreeView_SelectedItemChanged"
+                  Background="{StaticResource Editor.Window.GrayBrush2}"
+                  BorderThickness="0" x:Name="jointTreeView">
+            <d:TreeViewItem Header="Root_Node" IsExpanded="True">
+                <TreeViewItem Header="Spine" IsExpanded="True">
+                    <TreeViewItem Header="Left_Leg" IsExpanded="True">
+                        <TreeViewItem Header="Left_Knee" />
+                    </TreeViewItem>
+                    <TreeViewItem Header="Right_Leg" IsExpanded="True">
+                        <TreeViewItem Header="Right_Knee" IsSelected="True"/>
+                    </TreeViewItem>
+                </TreeViewItem>
+                <TreeViewItem Header="Right_Arm" IsExpanded="True">
+                    <TreeViewItem Header="Right_Elbow" />
+                </TreeViewItem>
+            </d:TreeViewItem>
+        </TreeView>
+    </DockPanel>
+
+</UserControl>

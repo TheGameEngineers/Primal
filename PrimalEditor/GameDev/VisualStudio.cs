@@ -308,7 +308,7 @@ static class VisualStudio
 
             _vsInstance.ExecuteCommand("File.SaveAll");
 
-            var cpp = files.FirstOrDefault(x => Path.GetExtension(x).Equals(".cpp", StringComparison.OrdinalIgnoreCase));
+            var cpp = files.FirstOrDefault(static x => Path.GetExtension(x).Equals(".cpp", StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrEmpty(cpp))
             {
                 _vsInstance.ItemOperations.OpenFile(cpp, EnvDTE.Constants.vsViewKindTextView).Visible = true;

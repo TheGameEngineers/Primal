@@ -28,7 +28,7 @@ public partial class AmbientLightView : UserControl
         {
             var vm = (sender as FrameworkElement).DataContext as MSAmbientLight;
             var textures = files
-                .Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Texture);
+                .Where(static x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Texture);
 
             var oldEnvMap = vm.EnvMap;
 

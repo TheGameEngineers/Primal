@@ -256,7 +256,7 @@ class UploadedAsset
             if (_uploadedAssets.TryGetValue(key, out var value))
             {
                 ++value.ReferenceCount;
-                value._referencedAssets.ForEach(x => ++x.ReferenceCount);
+                value._referencedAssets.ForEach(static x => ++x.ReferenceCount);
             }
             else
             {

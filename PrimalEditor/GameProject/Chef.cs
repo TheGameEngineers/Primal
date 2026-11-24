@@ -113,9 +113,9 @@ static class Chef
             var specularGuid = texture.IsDiffuseIBL ? texture.IBLPair.Guid : texture.Guid;
             var brdfLutGuid = DefaultAssets.BrdfIntegrationLut.Guid;
 
-            var diffuseIndex = SaveAssetData(contentPath, diffuseGuid, (info) => new Texture(info));
-            var specularIndex = SaveAssetData(contentPath, specularGuid, (info) => new Texture(info));
-            var brdfLutIndex = SaveAssetData(contentPath, brdfLutGuid, (info) => new Texture(info));
+            var diffuseIndex = SaveAssetData(contentPath, diffuseGuid, static info => new Texture(info));
+            var specularIndex = SaveAssetData(contentPath, specularGuid, static info => new Texture(info));
+            var brdfLutIndex = SaveAssetData(contentPath, brdfLutGuid, static info => new Texture(info));
 
             return (diffuseIndex, specularIndex, brdfLutIndex);
         }
@@ -414,7 +414,7 @@ static class Chef
         var geometryGuid = node.Element(nameof(Content.Geometry))?.Value ?? string.Empty;
         if (!Guid.TryParse(geometryGuid, out var guid) || guid == Guid.Empty) throw new InvalidDataException("Invalid geometry asset GUID");
 
-        writer.Write(Indexer.SaveAssetData(contentPath, guid, (info) => new Content.Geometry(info)));
+        writer.Write(Indexer.SaveAssetData(contentPath, guid, static info => new Content.Geometry(info)));
 
         var materials = node.Element("Materials")?.Elements(nameof(AppliedMaterial)) ?? [];
         writer.Write(materials.Count());
@@ -436,7 +436,7 @@ static class Chef
             {
                 var inputGuid = input.Value ?? string.Empty;
                 if (!Guid.TryParse(inputGuid, out var inputAssetGuid) || inputAssetGuid == Guid.Empty) throw new InvalidDataException("Invalid texture asset GUID");
-                writer.Write(Indexer.SaveAssetData(contentPath, inputAssetGuid, (info) => new Texture(info)));
+                writer.Write(Indexer.SaveAssetData(contentPath, inputAssetGuid, static info => new Texture(info)));
 
                 if (inputAssetGuid != Texture.Default.Guid && inputIndex < 8)
                 {
@@ -547,7 +547,7 @@ static class Chef
     /// </summary>
     private static XElement RemoveAllNamespaces(XElement element)
     => new(element.Name.LocalName, element.HasElements ? element.Elements().Select(RemoveAllNamespaces) : element.Value,
-        element.Attributes().Where(a => !a.IsNamespaceDeclaration).Select(a => new XAttribute(a.Name.LocalName, a.Value)));
+        element.Attributes().Where(static a => !a.IsNamespaceDeclaration).Select(static a => new XAttribute(a.Name.LocalName, a.Value)));
 
     private static EntityType GetEntityType(XElement entity)
     {

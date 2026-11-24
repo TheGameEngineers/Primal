@@ -498,8 +498,8 @@ abstract class MSLight<T> : MSEntity where T : Light
     protected override bool UpdateGameEntities(string propertyName)
     {
         var count = SelectedLights.Count;
-        var ids = SelectedLights.Select(x => x.LightId).ToArray();
-        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var ids = SelectedLights.Select(static x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(static x => LightSet.GetKey(x.LightSetKey)).ToArray();
         var index = 0;
 
         //NOTE: IsEnabled is handled in GameEntityView because of heterogenous selections.
@@ -559,12 +559,12 @@ abstract class MSLight<T> : MSEntity where T : Light
         }
         else
         {
-            LightSetKey = GetMixedValue(SelectedLights, new Func<Light, string>(x => x.LightSetKey));
-            Intensity = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Intensity));
-            ColorR = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScR));
-            ColorG = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScG));
-            ColorB = GetMixedValue(SelectedLights, new Func<Light, float>(x => x.Color.ScB));
-            LightType = (LightType?)GetMixedValue(SelectedLights, new Func<Light, int>(x => (int)x.Type));
+            LightSetKey = GetMixedValue(SelectedLights, new Func<Light, string>(static x => x.LightSetKey));
+            Intensity = GetMixedValue(SelectedLights, new Func<Light, float>(static x => x.Intensity));
+            ColorR = GetMixedValue(SelectedLights, new Func<Light, float>(static x => x.Color.ScR));
+            ColorG = GetMixedValue(SelectedLights, new Func<Light, float>(static x => x.Color.ScG));
+            ColorB = GetMixedValue(SelectedLights, new Func<Light, float>(static x => x.Color.ScB));
+            LightType = (LightType?)GetMixedValue(SelectedLights, new Func<Light, int>(static x => (int)x.Type));
         }
 
         return base.UpdateMSGameEntity();
@@ -575,9 +575,9 @@ abstract class MSLight<T> : MSEntity where T : Light
         base.UpdateEngine();
 
         var count = SelectedLights.Count;
-        var ids = SelectedLights.Select(x => x.LightId).ToArray();
-        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
-        var intensity = SelectedLights.Select(x => x.Intensity).ToArray();
+        var ids = SelectedLights.Select(static x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(static x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var intensity = SelectedLights.Select(static x => x.Intensity).ToArray();
         EngineAPI.SetLightIntensity(ids, lightSetKeys, intensity, count);
 
         var index = 0;
@@ -659,8 +659,8 @@ abstract class MSPointLight<T>(List<GameEntity> entities) : MSLight<T>(entities)
     protected override bool UpdateGameEntities(string propertyName)
     {
         var count = SelectedLights.Count;
-        var ids = SelectedLights.Select(x => x.LightId).ToArray();
-        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var ids = SelectedLights.Select(static x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(static x => LightSet.GetKey(x.LightSetKey)).ToArray();
         var index = 0;
 
         switch (propertyName)
@@ -711,10 +711,10 @@ abstract class MSPointLight<T>(List<GameEntity> entities) : MSLight<T>(entities)
         }
         else
         {
-            Range = GetMixedValue(SelectedLights, new Func<PointLight, float>(x => x.Range));
-            AttenuationA = GetMixedValue(SelectedLights, new Func<PointLight, float>(x => x.Attenuation.X));
-            AttenuationB = GetMixedValue(SelectedLights, new Func<PointLight, float>(x => x.Attenuation.Y));
-            AttenuationC = GetMixedValue(SelectedLights, new Func<PointLight, float>(x => x.Attenuation.Z));
+            Range = GetMixedValue(SelectedLights, new Func<PointLight, float>(static x => x.Range));
+            AttenuationA = GetMixedValue(SelectedLights, new Func<PointLight, float>(static x => x.Attenuation.X));
+            AttenuationB = GetMixedValue(SelectedLights, new Func<PointLight, float>(static x => x.Attenuation.Y));
+            AttenuationC = GetMixedValue(SelectedLights, new Func<PointLight, float>(static x => x.Attenuation.Z));
         }
 
         return base.UpdateMSGameEntity();
@@ -725,9 +725,9 @@ abstract class MSPointLight<T>(List<GameEntity> entities) : MSLight<T>(entities)
         base.UpdateEngine();
 
         var count = SelectedLights.Count;
-        var ids = SelectedLights.Select(x => x.LightId).ToArray();
-        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
-        var range = SelectedLights.Select(x => x.Range).ToArray();        
+        var ids = SelectedLights.Select(static x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(static x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var range = SelectedLights.Select(static x => x.Range).ToArray();
         EngineAPI.SetLightRange(ids, lightSetKeys, range, count);
 
         var index = 0;
@@ -753,7 +753,7 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, 0f, Penumbra ?? SelectedLights.Min(x => x.Penumbra));
+                value = float.Clamp(value.Value, 0f, Penumbra ?? SelectedLights.Min(static x => x.Penumbra));
             }
 
             if (!field.IsTheSameAs(value))
@@ -771,7 +771,7 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         {
             if (value.HasValue)
             {
-                value = float.Clamp(value.Value, Umbra ?? SelectedLights.Max(x => x.Umbra), 180f);
+                value = float.Clamp(value.Value, Umbra ?? SelectedLights.Max(static x => x.Umbra), 180f);
             }
 
             if (!field.IsTheSameAs(value))
@@ -785,8 +785,8 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
     protected override bool UpdateGameEntities(string propertyName)
     {
         var count = SelectedLights.Count;
-        var ids = SelectedLights.Select(x => x.LightId).ToArray();
-        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var ids = SelectedLights.Select(static x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(static x => LightSet.GetKey(x.LightSetKey)).ToArray();
         var index = 0;
 
         switch (propertyName)
@@ -828,8 +828,8 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         }
         else
         {
-            Umbra = GetMixedValue(SelectedLights, new Func<Spotlight, float>(x => x.Umbra));
-            Penumbra = GetMixedValue(SelectedLights, new Func<Spotlight, float>(x => x.Penumbra));
+            Umbra = GetMixedValue(SelectedLights, new Func<Spotlight, float>(static x => x.Umbra));
+            Penumbra = GetMixedValue(SelectedLights, new Func<Spotlight, float>(static x => x.Penumbra));
         }
 
         return base.UpdateMSGameEntity();
@@ -840,8 +840,8 @@ class MSSpotlight(List<GameEntity> entities) : MSPointLight<Spotlight>(entities)
         base.UpdateEngine();
 
         var count = SelectedLights.Count;
-        var ids = SelectedLights.Select(x => x.LightId).ToArray();
-        var lightSetKeys = SelectedLights.Select(x => LightSet.GetKey(x.LightSetKey)).ToArray();
+        var ids = SelectedLights.Select(static x => x.LightId).ToArray();
+        var lightSetKeys = SelectedLights.Select(static x => LightSet.GetKey(x.LightSetKey)).ToArray();
         var index = 0;
 
         var umbra = new float[count]; var penumbra = new float[count];

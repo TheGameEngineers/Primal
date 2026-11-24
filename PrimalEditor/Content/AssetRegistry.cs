@@ -17,13 +17,17 @@ static class AssetRegistry
     private static readonly Dictionary<string, AssetInfo> _assetsFileDictionary = [];
     private static readonly Dictionary<Guid, AssetInfo> _assetsGuidDictionary = [];
     private static readonly ObservableCollection<AssetInfo> _assets = [];
-    private static readonly ObservableCollection<AssetInfo> _textures = [];
+    private static readonly ObservableCollection<AssetInfo> _animations = [];
     private static readonly ObservableCollection<AssetInfo> _meshes = [];
+    private static readonly ObservableCollection<AssetInfo> _skeletons = [];
+    private static readonly ObservableCollection<AssetInfo> _textures = [];
     private static string _cachePath = string.Empty;
 
     public static ReadOnlyObservableCollection<AssetInfo> Assets { get; } = new(_assets);
-    public static ReadOnlyObservableCollection<AssetInfo> Textures { get; } = new(_textures);
+    public static ReadOnlyObservableCollection<AssetInfo> Animations { get; } = new(_animations);
     public static ReadOnlyObservableCollection<AssetInfo> Meshes { get; } = new(_meshes);
+    public static ReadOnlyObservableCollection<AssetInfo> Skeletons { get; } = new(_skeletons);
+    public static ReadOnlyObservableCollection<AssetInfo> Textures { get; } = new(_textures);
 
     private static void RegisterAllAssets(string path)
     {
@@ -43,17 +47,21 @@ static class AssetRegistry
 
     private static void OnAssetsChanged()
     {
-        _textures.Clear();
+        _animations.Clear();
         _meshes.Clear();
+        _skeletons.Clear();
+        _textures.Clear();
+
         foreach (var asset in _assets)
         {
-            if (asset.Type == AssetType.Texture)
+            switch (asset.Type)
             {
-                _textures.Add(asset);
-            }
-            else if (asset.Type == AssetType.Mesh)
-            {
-                _meshes.Add(asset);
+                case AssetType.Animation: _animations.Add(asset); break;
+                case AssetType.Audio: break;
+                case AssetType.Material: break;
+                case AssetType.Mesh: _meshes.Add(asset); break;
+                case AssetType.Skeleton: _skeletons.Add(asset); break;
+                case AssetType.Texture: _textures.Add(asset); break;
             }
         }
     }
@@ -217,7 +225,7 @@ static class AssetRegistry
                 RegisterAsset(e.FullPath);
             }
 
-            _assets.Where(x => !File.Exists(x.FullPath)).ToList().ForEach(x => UnregisterAsset(x.FullPath));
+            _assets.Where(static x => !File.Exists(x.FullPath)).ToList().ForEach(static x => UnregisterAsset(x.FullPath));
             OnAssetsChanged();
         }
     }
@@ -235,7 +243,7 @@ static class AssetRegistry
         lock (_lock)
         {
             RegisterAllAssets(contentFolder);
-            DefaultAssets.DefaultAssetsList.ForEach(x => RegisterAsset(x.FullPath, x));
+            DefaultAssets.DefaultAssetsList.ForEach(static x => RegisterAsset(x.FullPath, x));
         }
 
 

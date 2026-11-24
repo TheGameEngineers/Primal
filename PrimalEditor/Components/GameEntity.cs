@@ -30,14 +30,14 @@ class GameEntity : ViewModelBase
                 field = value;
                 if (field)
                 {
-                    _components.ToList().ForEach(x => x.Load());
+                    _components.ToList().ForEach(static x => x.Load());
                     EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
                     Debug.Assert(ID.IsValid(EntityId));
                 }
                 else if (ID.IsValid(EntityId))
                 {
                     EngineAPI.EntityAPI.RemoveGameEntity(EntityId);
-                    _components.ToList().ForEach(x => x.Unload());
+                    _components.ToList().ForEach(static x => x.Unload());
                     EntityId = ID.INVALID_ID;
                 }
                 OnPropertyChanged(nameof(IsActive));
@@ -238,7 +238,7 @@ abstract class MSEntity : ViewModelBase
 
     public T GetMSComponent<T>() where T : IMSComponent
     {
-        return (T)Components.FirstOrDefault(x => x.GetType() == typeof(T));
+        return (T)Components.FirstOrDefault(static x => x.GetType() == typeof(T));
     }
 
     private void MakeComponentList()
@@ -295,9 +295,9 @@ abstract class MSEntity : ViewModelBase
 
     protected virtual bool UpdateMSGameEntity()
     {
-        IsEnabled = GetMixedValue(SelectedEntities, new Func<GameEntity, bool>(x => x.IsEnabled));
-        Name = GetMixedValue(SelectedEntities, new Func<GameEntity, string>(x => x.Name));
-        IsActive = SelectedEntities.All(x => x.IsActive);
+        IsEnabled = GetMixedValue(SelectedEntities, new Func<GameEntity, bool>(static x => x.IsEnabled));
+        Name = GetMixedValue(SelectedEntities, new Func<GameEntity, string>(static x => x.Name));
+        IsActive = SelectedEntities.All(static x => x.IsActive);
 
         return true;
     }
@@ -351,13 +351,13 @@ abstract class MSEntity : ViewModelBase
             }
         }
 
-        UpdateEngine(gameEntities, entities => new MSGameEntity(entities));
-        UpdateEngine(dirLights, entities => new MSDirectionalLight(entities));
-        UpdateEngine(pointLights, entities => new MSPointLight(entities));
-        UpdateEngine(spotlights, entities => new MSSpotlight(entities));
-        UpdateEngine(ambientLights, entities => new MSAmbientLight(entities));
-        UpdateEngine(persCameras, entities => new MSPerspectiveCamera(entities));
-        UpdateEngine(orthoCameras, entities => new MSOrthographicCamera(entities));
+        UpdateEngine(gameEntities, static entities => new MSGameEntity(entities));
+        UpdateEngine(dirLights, static entities => new MSDirectionalLight(entities));
+        UpdateEngine(pointLights, static entities => new MSPointLight(entities));
+        UpdateEngine(spotlights, static entities => new MSSpotlight(entities));
+        UpdateEngine(ambientLights, static entities => new MSAmbientLight(entities));
+        UpdateEngine(persCameras, static entities => new MSPerspectiveCamera(entities));
+        UpdateEngine(orthoCameras, static entities => new MSOrthographicCamera(entities));
 
         CurrentSelection = currentSelection;
 

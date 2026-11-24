@@ -73,8 +73,8 @@ partial class GameEntityView : UserControl
         _isEnabled.Clear();
         _names.Clear();
 
-        _isEnabled.AddRange(vm.SelectedEntities.Select(x => (x, x.IsEnabled)));
-        _names.AddRange(vm.SelectedEntities.Select(x => (x, x.Name)));
+        _isEnabled.AddRange(vm.SelectedEntities.Select(static x => (x, x.IsEnabled)));
+        _names.AddRange(vm.SelectedEntities.Select(static x => (x, x.Name)));
     }
 
     private void SetUndoRedo()
@@ -116,7 +116,7 @@ partial class GameEntityView : UserControl
         return new(() =>
         {
             _disableUndoRedo = true;
-            oldValues.ForEach(x => x.Entity.Name = x.Name);
+            oldValues.ForEach(static x => x.Entity.Name = x.Name);
             MSEntity.Refresh();
             GetValues(MSEntity.CurrentSelection);
             _disableUndoRedo = false;
@@ -212,8 +212,8 @@ partial class GameEntityView : UserControl
             MSEntity.Refresh();
 
             Project.UndoRedo.Add(new UndoRedoAction(
-            () => ResetComponent(changedEntities, (entity, component) => entity.RemoveComponent(component)),
-            () => ResetComponent(changedEntities, (entity, component) => entity.AddComponent(component)),
+            () => ResetComponent(changedEntities, static (entity, component) => entity.RemoveComponent(component)),
+            () => ResetComponent(changedEntities, static (entity, component) => entity.AddComponent(component)),
             $"Add {componentType} component"));
         }
     }

@@ -53,7 +53,7 @@ sealed class MSScript : MSComponent<Script>
 
     protected override bool UpdateMSComponent()
     {
-        Name = MSEntity.GetMixedValue(SelectedComponents, new Func<Script, string>(x => x.Name));
+        Name = MSEntity.GetMixedValue(SelectedComponents, new Func<Script, string>(static x => x.Name));
         return true;
     }
 

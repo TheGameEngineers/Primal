@@ -171,10 +171,10 @@ class Scene : ViewModelBase
     public List<IdType> GetGeometryComponentIds()
     {
         var ids = GameEntities
-            .Where(entity => entity.IsEnabled && entity.IsActive)
-            .Select(entity => entity.GetComponent<Geometry>())
-            .Where(c => c != null)
-            .Select(c => c.GetComponentId())
+            .Where(static entity => entity.IsEnabled && entity.IsActive)
+            .Select(static entity => entity.GetComponent<Geometry>())
+            .Where(static c => c != null)
+            .Select(static c => c.GetComponentId())
             .ToList();
 
         Debug.Assert(ids.All(ID.IsValid));

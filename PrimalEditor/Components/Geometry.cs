@@ -93,7 +93,7 @@ class Geometry : Component
         }
     }
 
-    public List<AppliedMaterial> MaterialsList => GeometryWithMaterials?.LODs?.SelectMany(x => x.Meshes, (x, m) => m.Material)?.ToList() ?? [];
+    public List<AppliedMaterial> MaterialsList => GeometryWithMaterials?.LODs?.SelectMany(static x => x.Meshes, static (x, m) => m.Material)?.ToList() ?? [];
 
     public IdType ContentId => _geometry?.ContentId ?? ID.INVALID_ID;
     public GeometryMetadata Metadata => _geometry?.Metadata as GeometryMetadata;
@@ -138,8 +138,8 @@ class Geometry : Component
         Debug.Assert(assetInfo?.Type == AssetType.Mesh);
         Debug.Assert(assetInfo?.Guid == GeometryGuid);
 
-        _materials.ForEach(x => x.UploadToEngine());
-        Debug.Assert(_materials.All(x => ID.IsValid(x.ContentId)));
+        _materials.ForEach(static x => x.UploadToEngine());
+        Debug.Assert(_materials.All(static x => ID.IsValid(x.ContentId)));
 
         Load(assetInfo);
     }
@@ -153,7 +153,7 @@ class Geometry : Component
         }
 
         _materials = MaterialsList;
-        _materials.ForEach(x => x.UnloadFromEngine());
+        _materials.ForEach(static x => x.UnloadFromEngine());
         GeometryWithMaterials = null;
         GeometryGuid = _geometry.AssetInfo.Guid;
         UploadedAsset.RemoveFromScene(_geometry);
@@ -180,7 +180,7 @@ class Geometry : Component
         {
             EngineAPI.EntityAPI.UpdateComponent(Owner, ComponentType.Geometry);
 
-            oldMaterials.ForEach(x => x.UnloadFromEngine());
+            oldMaterials.ForEach(static x => x.UnloadFromEngine());
             UploadedAsset.RemoveFromScene(oldGeometry);
             return true;
         }
@@ -438,10 +438,10 @@ class AppliedMaterialProxy : ViewModelBase
 sealed class MSGeometry : MSComponent<Geometry>
 {
     public ICommand ResetCommand =>
-        new RelayCommand<object>(x => UpdateMSComponent(), x => AppliedMaterialProxy.IsDirty || AppliedMaterialProxy.IsNameDirty);
+        new RelayCommand<object>(x => UpdateMSComponent(), static x => AppliedMaterialProxy.IsDirty || AppliedMaterialProxy.IsNameDirty);
 
     public ICommand ApplyChangesCommand =>
-        new RelayCommand<object>(x => OnApplyChangesCommand(), x => AppliedMaterialProxy.IsDirty || AppliedMaterialProxy.IsNameDirty);
+        new RelayCommand<object>(x => OnApplyChangesCommand(), static x => AppliedMaterialProxy.IsDirty || AppliedMaterialProxy.IsNameDirty);
 
     public GeometryWithMaterials GeometryWithMaterials
     {
@@ -533,11 +533,11 @@ sealed class MSGeometry : MSComponent<Geometry>
             allMaterials.Add((geometry, newMaterials));
         }
 
-        var entities = geometries.Select(g => g.Owner).ToList();
+        var entities = geometries.Select(static g => g.Owner).ToList();
         var scene = geometries[0].Owner.ParentScene;
         var enableList = scene.DisableAndUpdate(entities);
 
-        allMaterials.ForEach(x => x.Geometry.SetMaterials(x.Materials));
+        allMaterials.ForEach(static x => x.Geometry.SetMaterials(x.Materials));
 
         scene.EnableAndUpdate(enableList);
     }
@@ -545,10 +545,10 @@ sealed class MSGeometry : MSComponent<Geometry>
     private void OnApplyChangesCommand()
     {
         var undoSelection = SelectedComponents
-            .Select(g => (Geometry: g, Materials: g.MaterialsList.Select(m => new AppliedMaterialProxy(m)).ToList()))
+            .Select(static g => (Geometry: g, Materials: g.MaterialsList.Select(static m => new AppliedMaterialProxy(m)).ToList()))
             .ToList();
 
-        var materialProxies = GeometryWithMaterials?.LODs?.SelectMany(x => x.Meshes, (x, m) => m.MaterialProxy)?.ToList();
+        var materialProxies = GeometryWithMaterials?.LODs?.SelectMany(static x => x.Meshes, static (x, m) => m.MaterialProxy)?.ToList();
         var isDirty = AppliedMaterialProxy.IsDirty;
         var isNameDirty = AppliedMaterialProxy.IsNameDirty;
 
@@ -557,7 +557,7 @@ sealed class MSGeometry : MSComponent<Geometry>
             {
                 AppliedMaterialProxy.IsDirty = isDirty;
                 AppliedMaterialProxy.IsNameDirty = isNameDirty;
-                undoSelection.ForEach(x => ApplyMaterialsToComponents([x.Geometry], x.Materials));
+                undoSelection.ForEach(static x => ApplyMaterialsToComponents([x.Geometry], x.Materials));
                 MSEntity.CurrentSelection?.GetMSComponent<MSGeometry>().Refresh();
             },
             () =>
@@ -578,7 +578,7 @@ sealed class MSGeometry : MSComponent<Geometry>
         var geometry = SelectedComponents.First();
         var geometryWithMaterials = geometry.GeometryWithMaterials;
         var materials = geometry.MaterialsList;
-        var proxies = materials.Select(m => new AppliedMaterialProxy(m)).ToList();
+        var proxies = materials.Select(static m => new AppliedMaterialProxy(m)).ToList();
         Debug.Assert(proxies.Count == materials.Count && proxies.Count > 0);
 
         foreach (var c in SelectedComponents.Skip(1))
@@ -595,7 +595,7 @@ sealed class MSGeometry : MSComponent<Geometry>
         var index = 0;
 
         geometryWithMaterials.LODs
-            .SelectMany(lod => lod.Meshes)
+            .SelectMany(static lod => lod.Meshes)
             .ToList().ForEach(mesh => mesh.MaterialProxy = proxies[index++]);
 
         return proxies;
@@ -616,7 +616,7 @@ sealed class MSGeometry : MSComponent<Geometry>
     {
         AppliedMaterialProxy.IsDirty = false;
         AppliedMaterialProxy.IsNameDirty = false;
-        var contentId = MSEntity.GetMixedValue(SelectedComponents, new Func<Geometry, IdType>(x => x.ContentId));
+        var contentId = MSEntity.GetMixedValue(SelectedComponents, new Func<Geometry, IdType>(static x => x.ContentId));
         if (contentId.HasValue)
         {
             if (ID.IsValid(contentId.Value))

@@ -80,6 +80,23 @@ public:
         return XMQuaternionMultiply(rotation, d);
     }
 
+    [[nodiscard]] static math::v3 get_euler_angles_from_quaternion(math::v4 q)
+    {
+        const f32 x{ q.x };
+        const f32 y{ q.y };
+        const f32 z{ q.z };
+        const f32 w{ q.w };
+
+        const f32 roll{ atan2(2.0f * (w * x + y * z), 1.0f - 2.0f * (x * x + y * y)) };
+        const f32 sin_pitch{ math::clamp(2.0f * (w * y - z * x), -1.0f, 1.0f) };
+        const f32 pitch{ asin(sin_pitch) };
+        const f32 yaw{ atan2(2.0f * (w * z + x * y), 1.0f - 2.0f * (y * y + z * z)) };
+
+        const math::v3 euler_angles{ roll * math::to_deg, pitch * math::to_deg, yaw * math::to_deg };
+
+        return euler_angles;
+    }
+
     [[nodiscard]] static math::v3 get_euler_angles_from_local_frame(const math::m3x3& m)
     {
         float pitch{ 0.f }, yaw{ 0.f }, roll{ 0.f };

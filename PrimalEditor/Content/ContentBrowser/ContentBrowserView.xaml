@@ -311,15 +311,16 @@
 
         <controls:ListViewEx ItemsSource="{Binding FolderContent}" Grid.Row="1" x:Name="folderListView"
                              ContextMenu="{StaticResource contextMenu}" IsTextSearchEnabled="True"
-                             TextSearch.TextPath="FileName">
+                             TextSearch.TextPath="FileName" Drop="OnListViewEx_Drop" BorderBrush="{x:Null}">
             <controls:ListViewEx.Style>
                 <Style TargetType="{x:Type controls:ListViewEx}">
                     <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}"/>
-                    <Setter Property="ListBox.BorderThickness" Value="0"/>
+                    <Setter Property="ListBox.BorderThickness" Value="1"/>
                     <Setter Property="AllowDrop" Value="{Binding Path=AllowImport, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}"/>
                     <Setter Property="View" Value="{StaticResource gridView}"/>
                     <Setter Property="SelectionMode" Value="{Binding Path=SelectionMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}"/>
                     <EventSetter Event="DragEnter" Handler="OnFolderContent_ListView_DragEnter"/>
+                    <EventSetter Event="DragLeave" Handler="OnFolderContent_ListView_DragLeave"/>
                     <EventSetter Event="SelectionChanged" Handler="OnFolderContent_ListView_SelectionChanged"/>
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnFolderContent_ListView_PreviewMouse_LBD"/>
                     <EventSetter Event="MouseMove" Handler="OnFolderContent_ListView_MouseMove"/>
@@ -338,87 +339,6 @@
                 </Style>
             </controls:ListViewEx.Style>
         </controls:ListViewEx>
-
-        <Border Visibility="Collapsed" d:Visibility="Visible" Background="Transparent"
-                x:Name="dropBorder" AllowDrop="{Binding Path=AllowDrop, ElementName=folderListView}" Grid.Row="1"
-                DragLeave="OnDropBorder_DragLeave" Drop="OnDropBorder_Drop">
-            <Grid>
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Border x:Name="filesDrop" Background="Transparent" Grid.Row="0"/>
-                    <Border x:Name="cfgDrop" Background="Transparent" Grid.Row="1"/>
-                </Grid>
-                <Border BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="2" CornerRadius="50" Background="#66000000"
-                        SnapsToDevicePixels="True" UseLayoutRounding="True" IsHitTestVisible="False">
-                    <Border Background="#cc000000" VerticalAlignment="Center" HorizontalAlignment="Center"
-                            CornerRadius="20" BorderBrush="{StaticResource Editor.OrangeBrush}" BorderThickness="2">
-                        <StackPanel>
-                            <Border CornerRadius="16,16,0,0" HorizontalAlignment="Center" Width="250" x:Name="filesBorder" Background="Transparent">
-                                <TextBlock x:Name="filesText" Text="Import Individual Files" FontFamily="Bahnschrift condensed" FontSize="24"
-                                       Foreground="{StaticResource Editor.FontBrush}" Margin="20" HorizontalAlignment="Center"/>
-                            </Border>
-                            <Border CornerRadius="0,0,16,16" HorizontalAlignment="Center" Width="250" x:Name="cfgBorder" Background="Transparent">
-                                <TextBlock x:Name="cfgText" Text="Configure Import Settings" FontFamily="Bahnschrift condensed" FontSize="24"
-                                       Foreground="{StaticResource Editor.FontBrush}" Margin="20" HorizontalAlignment="Center"/>
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                </Border>
-            </Grid>
-            <Border.Triggers>
-                <EventTrigger RoutedEvent="DragEnter" SourceName="filesDrop">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <ColorAnimation Storyboard.TargetName="filesBorder" Storyboard.TargetProperty="Background.Color"
-                                            From="Transparent" To="{StaticResource Editor.OrangeColor}" Duration="0:0:0.2"/>
-                            <DoubleAnimation Storyboard.TargetName="filesBorder" Storyboard.TargetProperty="Background.Opacity"
-                                             From="0" To="0.6" Duration="0:0:0.2"/>
-                            <ColorAnimation Storyboard.TargetName="filesText" Storyboard.TargetProperty="Foreground.Color"
-                                            From="{StaticResource Editor.FontColor}" To="White" Duration="0:0:0.2"/>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="DragLeave" SourceName="filesDrop">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <ColorAnimation Storyboard.TargetName="filesBorder" Storyboard.TargetProperty="Background.Color"
-                                            From="{StaticResource Editor.OrangeColor}" To="Transparent"  Duration="0:0:0.2"/>
-                            <DoubleAnimation Storyboard.TargetName="filesBorder" Storyboard.TargetProperty="Background.Opacity"
-                                             From="0.6" To="0" Duration="0:0:0.2"/>
-                            <ColorAnimation Storyboard.TargetName="filesText" Storyboard.TargetProperty="Foreground.Color"
-                                            From="White" To="{StaticResource Editor.FontColor}" Duration="0:0:0.2"/>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="DragEnter" SourceName="cfgDrop">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <ColorAnimation Storyboard.TargetName="cfgBorder" Storyboard.TargetProperty="Background.Color"
-                                            From="Transparent" To="{StaticResource Editor.OrangeColor}" Duration="0:0:0.2"/>
-                            <DoubleAnimation Storyboard.TargetName="cfgBorder" Storyboard.TargetProperty="Background.Opacity"
-                                             From="0" To="0.6" Duration="0:0:0.2"/>
-                            <ColorAnimation Storyboard.TargetName="cfgText" Storyboard.TargetProperty="Foreground.Color"
-                                            From="{StaticResource Editor.FontColor}" To="White" Duration="0:0:0.2"/>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="DragLeave" SourceName="cfgDrop">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <ColorAnimation Storyboard.TargetName="cfgBorder" Storyboard.TargetProperty="Background.Color"
-                                            From="{StaticResource Editor.OrangeColor}" To="Transparent"  Duration="0:0:0.2"/>
-                            <DoubleAnimation Storyboard.TargetName="cfgBorder" Storyboard.TargetProperty="Background.Opacity"
-                                             From="0.6" To="0" Duration="0:0:0.2"/>
-                            <ColorAnimation Storyboard.TargetName="cfgText" Storyboard.TargetProperty="Foreground.Color"
-                                            From="White" To="{StaticResource Editor.FontColor}" Duration="0:0:0.2"/>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </Border.Triggers>
-        </Border>
 
         <Border Background="{StaticResource Editor.Window.GrayBrush3}" VerticalAlignment="Top">
             <Border.Effect>

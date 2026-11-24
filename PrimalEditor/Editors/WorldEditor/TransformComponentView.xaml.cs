@@ -50,9 +50,9 @@ partial class TransformComponentView : UserControl
         }
         else
         {
-            _positions.AddRange(vm.SelectedComponents.Select(x => (x, x.Position)));
-            _rotations.AddRange(vm.SelectedComponents.Select(x => (x, x.Rotation)));
-            _scales.AddRange(vm.SelectedComponents.Select(x => (x, x.Scale)));
+            _positions.AddRange(vm.SelectedComponents.Select(static x => (x, x.Position)));
+            _rotations.AddRange(vm.SelectedComponents.Select(static x => (x, x.Rotation)));
+            _scales.AddRange(vm.SelectedComponents.Select(static x => (x, x.Scale)));
         }
     }
 
@@ -113,7 +113,7 @@ partial class TransformComponentView : UserControl
                 var v = item.Value;
                 x[index] = v.X; y[index] = v.Y; z[index] = v.Z; ++index;
             });
-            transform([.. oldValues.Select(x => x.Transform.Owner.EntityId)], x, y, z, count, 0);
+            transform([.. oldValues.Select(static x => x.Transform.Owner.EntityId)], x, y, z, count, 0);
             var currentSelection = MSEntity.CurrentSelection.GetMSComponent<MSTransform>();
             currentSelection.Refresh();
             GetValues(currentSelection);
@@ -148,19 +148,19 @@ partial class TransformComponentView : UserControl
             case nameof(MSTransform.PosX):
             case nameof(MSTransform.PosY):
             case nameof(MSTransform.PosZ):
-                AddUndoRedo(_positions, (x) => x.Transform.Position = x.Value, EngineAPI.EntityAPI.SetPosition, "Position changed");
+                AddUndoRedo(_positions, static x => x.Transform.Position = x.Value, EngineAPI.EntityAPI.SetPosition, "Position changed");
                 break;
 
             case nameof(MSTransform.RotX):
             case nameof(MSTransform.RotY):
             case nameof(MSTransform.RotZ):
-                AddUndoRedo(_rotations, (x) => x.Transform.Rotation = x.Value, EngineAPI.EntityAPI.SetRotation, "Rotation changed");
+                AddUndoRedo(_rotations, static x => x.Transform.Rotation = x.Value, EngineAPI.EntityAPI.SetRotation, "Rotation changed");
                 break;
 
             case nameof(MSTransform.ScaleX):
             case nameof(MSTransform.ScaleY):
             case nameof(MSTransform.ScaleZ):
-                AddUndoRedo(_scales, (x) => x.Transform.Scale = x.Value, EngineAPI.EntityAPI.SetScale, "Scale changed");
+                AddUndoRedo(_scales, static x => x.Transform.Scale = x.Value, EngineAPI.EntityAPI.SetScale, "Scale changed");
                 break;
         }
 

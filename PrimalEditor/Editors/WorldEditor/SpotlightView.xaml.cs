@@ -62,8 +62,8 @@ partial class SpotlightView : UserControl
         else
         {
             var lights = vm.SelectedEntities.Cast<Spotlight>();
-            _umbras.AddRange(lights.Select(x => (x, x.Umbra)));
-            _penumbras.AddRange(lights.Select(x => (x, x.Penumbra)));
+            _umbras.AddRange(lights.Select(static x => (x, x.Umbra)));
+            _penumbras.AddRange(lights.Select(static x => (x, x.Penumbra)));
         }
     }
 
@@ -118,11 +118,11 @@ partial class SpotlightView : UserControl
         switch (_propertyName)
         {
             case nameof(MSSpotlight.Umbra):
-                AddUndoRedo(_umbras, (x) => x.Light.Umbra = x.Value, (x) => x.Value, (x) => x.Light.Penumbra, "Light umbra changed");
+                AddUndoRedo(_umbras, static x => x.Light.Umbra = x.Value, static x => x.Value, static x => x.Light.Penumbra, "Light umbra changed");
                 break;
 
             case nameof(MSSpotlight.Penumbra):
-                AddUndoRedo(_penumbras, (x) => x.Light.Penumbra = x.Value, (x) => x.Light.Umbra, (x) => x.Value, "Light penumbra changed");
+                AddUndoRedo(_penumbras, static x => x.Light.Penumbra = x.Value, static x => x.Light.Umbra, static x => x.Value, "Light penumbra changed");
                 break;
         }
 

@@ -73,8 +73,8 @@ partial class PointLightView : UserControl
         else
         {
             var lights = vm.SelectedEntities.Cast<PointLight>();
-            _attenuations.AddRange(lights.Select(x => (x, x.Attenuation)));
-            _ranges.AddRange(lights.Select(x => (x, x.Range)));
+            _attenuations.AddRange(lights.Select(static x => (x, x.Attenuation)));
+            _ranges.AddRange(lights.Select(static x => (x, x.Range)));
         }
     }
 

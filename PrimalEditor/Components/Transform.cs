@@ -254,7 +254,7 @@ sealed class MSTransform : MSComponent<Transform>
     protected override bool UpdateComponents(string propertyName)
     {
         var count = SelectedComponents.Count;
-        var componentIds = SelectedComponents.Select(c => c.Owner.EntityId).ToArray();
+        var componentIds = SelectedComponents.Select(static c => c.Owner.EntityId).ToArray();
         Debug.Assert(count == componentIds.Length);
         float[] x = new float[count], y = new float[count], z = new float[count];
         var index = 0;
@@ -345,17 +345,17 @@ sealed class MSTransform : MSComponent<Transform>
             return true;
         }
 
-        PosX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Position.X));
-        PosY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Position.Y));
-        PosZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Position.Z));
+        PosX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Position.X));
+        PosY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Position.Y));
+        PosZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Position.Z));
 
-        RotX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Rotation.X));
-        RotY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Rotation.Y));
-        RotZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Rotation.Z));
+        RotX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Rotation.X));
+        RotY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Rotation.Y));
+        RotZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Rotation.Z));
 
-        ScaleX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Scale.X));
-        ScaleY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Scale.Y));
-        ScaleZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Scale.Z));
+        ScaleX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Scale.X));
+        ScaleY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Scale.Y));
+        ScaleZ = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(static x => x.Scale.Z));
 
         return true;
     }
@@ -363,7 +363,7 @@ sealed class MSTransform : MSComponent<Transform>
     public override void UpdateEngine()
     {
         var count = SelectedComponents.Count;
-        var componentIds = SelectedComponents.Select(c => c.Owner.EntityId).ToArray();
+        var componentIds = SelectedComponents.Select(static c => c.Owner.EntityId).ToArray();
         Debug.Assert(count == componentIds.Length);
         float[] px = new float[count], py = new float[count], pz = new float[count];
         float[] rx = new float[count], ry = new float[count], rz = new float[count];

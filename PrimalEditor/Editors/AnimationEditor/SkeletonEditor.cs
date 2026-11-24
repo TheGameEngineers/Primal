@@ -85,7 +85,18 @@ class SkeletonData
 
 class SkeletonEditor : ViewModelBase, IAssetEditor
 {
-    public AssetEditorState State => AssetEditorState.Done;
+    public AssetEditorState State
+    {
+        get;
+        private set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     private Guid _assetGuid;
     public Asset Asset => Skeleton;
@@ -125,6 +136,7 @@ class SkeletonEditor : ViewModelBase, IAssetEditor
             _assetGuid = info.Guid;
             Debug.Assert(info != null && File.Exists(info.FullPath));
             Debug.Assert(info.Type == AssetType.Skeleton);
+            State = AssetEditorState.Loading;
             Skeleton skeleton = null;
             await Task.Run(() => skeleton = new(info));
             Skeleton = skeleton;
@@ -135,5 +147,6 @@ class SkeletonEditor : ViewModelBase, IAssetEditor
             Debug.WriteLine(ex.Message);
             Debug.WriteLine($"Failed to set skeleton for skeleton editor. File: {info.FullPath}\n{ex.Message}");
         }
+        finally { State = AssetEditorState.Done; }
     }
 }

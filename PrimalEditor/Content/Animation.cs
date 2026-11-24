@@ -13,7 +13,8 @@ class Animation : Asset
 {
     private static int _nameCounter = 0;
     private byte[] _rawData = [];
-    private Guid _skeletonGuid;
+
+    public Guid SkeletonGuid { get; private set; }
 
     public string ClipName
     {
@@ -76,7 +77,7 @@ class Animation : Asset
         using var reader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read));
 
         ReadAssetFileHeader(reader);
-        _skeletonGuid = GuidExtensions.ReadFromBinary(reader);
+        SkeletonGuid = GuidExtensions.ReadFromBinary(reader);
         var dataLength = reader.ReadInt32();
         if (dataLength > 0 && reader.ReadBytes(dataLength) is { } rawData)
         {
@@ -95,14 +96,12 @@ class Animation : Asset
     public override IEnumerable<string> Save(string file)
     {
         Debug.Assert(_rawData.Length > 0);
+        var animationFileName = file;
         var savedFiles = new List<string>();
         if (_rawData.Length == 0) return savedFiles;
-        var path = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar;
-        var fileName = Path.GetFileNameWithoutExtension(file);
 
         try
         {
-            var animationFileName = ContentHelper.SanitizeFileName($"{path}{fileName}_{ClipName.Replace(' ', '_')}") + AssetFileExtension;
             Guid = TryGetAssetInfo(animationFileName) is { } info && info.Type == Type ? info.Guid : Guid.NewGuid();
             Hash = ContentHelper.ComputeHash(_rawData);
             var bmp = new BitmapImage();
@@ -115,7 +114,7 @@ class Animation : Asset
             using (var writer = new BinaryWriter(File.Open(animationFileName, FileMode.Create, FileAccess.Write)))
             {
                 WriteAssetFileHeader(writer);
-                _skeletonGuid.WriteToBinary(writer);
+                SkeletonGuid.WriteToBinary(writer);
                 writer.Write(_rawData.Length);
                 writer.Write(_rawData);
             }
@@ -213,6 +212,20 @@ class Animation : Asset
         }
     }
 
+    public bool SetSkeleton(Skeleton skeleton)
+    {
+        Debug.Assert(skeleton != null);
+        if (skeleton.Guid == SkeletonGuid) return true;
+
+        if (skeleton.JointHierarchy.Count == TranslationsPerJoint.Length)
+        {
+            SkeletonGuid = skeleton.Guid;
+            return true;
+        }
+
+        return false;
+    }
+
     public Animation() : base(AssetType.Animation) { }
 
     public Animation(AssetInfo assetInfo) : this()
@@ -226,7 +239,7 @@ class Animation : Asset
     {
         if (skeletonGuid == Guid.Empty) throw new InvalidDataException("Invalid skeleton GUID");
         Debug.Assert(data?.Length > 0);
-        _skeletonGuid = skeletonGuid;
+        SkeletonGuid = skeletonGuid;
         UnpackAnimationData(data);
     }
 }

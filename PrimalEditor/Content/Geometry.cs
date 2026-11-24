@@ -501,7 +501,7 @@ class Geometry : Asset
     private bool ImportFbx(string file)
     {
         Logger.Log(MessageType.Info, $"Importing FBX file {file}");
-        var tempPath = Application.Current.Dispatcher.Invoke(() => Project.Current.TempFolder);
+        var tempPath = Application.Current.Dispatcher.Invoke(static () => Project.Current.TempFolder);
         if (string.IsNullOrEmpty(tempPath)) return false;
 
         lock (_lock)
@@ -618,10 +618,10 @@ class Geometry : Asset
                     var hashes = new List<byte>();
                     foreach (var lod in lodGroup.LODs)
                     {
-                        hasMeshData = lod.Meshes.Any(m => m.VertexCount > 0);
+                        hasMeshData = lod.Meshes.Any(static m => m.VertexCount > 0);
                         LODToBinary(lod, writer, out var hash);
                         var files = TrySaveJointData(lod, meshFileName);
-                        var skeletonGuid = TryGetAssetInfo(files.FirstOrDefault())?.Guid ?? Guid.Empty;
+                        var skeletonGuid = TryGetAssetInfo(files?.FirstOrDefault() ?? string.Empty)?.Guid ?? Guid.Empty;
                         Debug.Assert(files.Count() < 2); // 0 or 1 skeleton per LOD
                         savedFiles.AddRange(files);
                         savedFiles.AddRange(TrySaveAnimationData(meshFileName, skeletonGuid));
@@ -665,10 +665,14 @@ class Geometry : Asset
     {
         if (_skeletons.TryGetValue(lod, out var rawData))
         {
+            var path = Path.GetDirectoryName(meshFileName) + Path.DirectorySeparatorChar;
+            var fileName = Path.GetFileNameWithoutExtension(meshFileName);
+
             try
             {
                 var skeleton = new Skeleton(rawData);
-                return skeleton.Save(meshFileName);
+                var skeletonFileName = ContentHelper.SanitizeFileName($"{path}{fileName}_joints") + AssetFileExtension;
+                return skeleton.Save(skeletonFileName);
             }
             catch (Exception ex)
             {
@@ -683,12 +687,16 @@ class Geometry : Asset
     private List<string> TrySaveAnimationData(string meshFileName, Guid skeletonGuid)
     {
         var savedFiles = new List<string>();
+        var path = Path.GetDirectoryName(meshFileName) + Path.DirectorySeparatorChar;
+        var fileName = Path.GetFileNameWithoutExtension(meshFileName);
+
         foreach (var rawData in _animationClips)
         {
             try
             {
                 var animation = new Animation(rawData, skeletonGuid);
-                savedFiles.AddRange(animation.Save(meshFileName));
+                var animationFileName = ContentHelper.SanitizeFileName($"{path}{fileName}_{animation.ClipName.Replace(' ', '_')}") + AssetFileExtension;
+                savedFiles.AddRange(animation.Save(animationFileName));
             }
             catch (Exception ex)
             {

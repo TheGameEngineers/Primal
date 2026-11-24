@@ -57,14 +57,12 @@ class Skeleton : Asset
     public override IEnumerable<string> Save(string file)
     {
         Debug.Assert(_rawData.Length > 0);
+        var skeletonFileName = file;
         var savedFiles = new List<string>();
         if (_rawData.Length == 0) return savedFiles;
-        var path = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar;
-        var fileName = Path.GetFileNameWithoutExtension(file);
 
         try
         {
-            var skeletonFileName = ContentHelper.SanitizeFileName($"{path}{fileName}_joints") + AssetFileExtension;
             Guid = TryGetAssetInfo(skeletonFileName) is { } info && info.Type == Type ? info.Guid : Guid.NewGuid();
             Hash = ContentHelper.ComputeHash(_rawData);
             var bmp = new BitmapImage();

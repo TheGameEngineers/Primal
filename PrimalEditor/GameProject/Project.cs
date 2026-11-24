@@ -145,10 +145,10 @@ class Project : ViewModelBase
                 () => _scenes.Insert(sceneIndex, x),
                 () => RemoveScene(x),
                 $"Remove {x.Name}"));
-        }, x => !x.IsActive);
+        }, static x => !x.IsActive);
 
-        UndoCommand = new RelayCommand<object>(x => UndoRedo.Undo(), x => UndoRedo.UndoList.Any());
-        RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
+        UndoCommand = new RelayCommand<object>(static x => UndoRedo.Undo(), static x => UndoRedo.UndoList.Any());
+        RedoCommand = new RelayCommand<object>(static x => UndoRedo.Redo(), static x => UndoRedo.RedoList.Any());
         SaveCommand = new RelayCommand<object>(x => Save(this));
 
         DebugStartCommand = new RelayCommand<object>(
@@ -223,7 +223,7 @@ class Project : ViewModelBase
 
     public void Unload()
     {
-        ActiveScene.GameEntities.ToList().ForEach(entity => entity.IsEnabled = false);
+        ActiveScene.GameEntities.ToList().ForEach(static entity => entity.IsEnabled = false);
         UpdateScene();
         ActiveScene.IsActive = false;
         MSEntity.Reset();
@@ -265,9 +265,9 @@ class Project : ViewModelBase
 
     public static void WarnIfNoScriptsToRun()
     {
-        Application.Current?.Dispatcher.BeginInvoke(() =>
+        Application.Current?.Dispatcher.BeginInvoke(static () =>
         {
-            if (Current?.ActiveScene.GameEntities.All(entity => entity.GetComponent<Script>() == null) == true)
+            if (Current?.ActiveScene.GameEntities.All(static entity => entity.GetComponent<Script>() == null) == true)
             {
                 Logger.Log(MessageType.Warning, "There are no scripts to run for the current scene.");
             }
@@ -474,7 +474,7 @@ class Project : ViewModelBase
             OnPropertyChanged(nameof(Scenes));
         }
 
-        ActiveScene = _scenes.FirstOrDefault(x => x.IsActive);
+        ActiveScene = _scenes.FirstOrDefault(static x => x.IsActive);
         Debug.Assert(ActiveScene != null);
         SetCommands();
 

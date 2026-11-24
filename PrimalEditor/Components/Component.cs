@@ -50,7 +50,7 @@ abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
     public MSComponent(MSEntity msEntity)
     {
         Debug.Assert(msEntity?.SelectedEntities?.Count > 0);
-        SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
+        SelectedComponents = [.. msEntity.SelectedEntities.Select(static entity => entity.GetComponent<T>())];
         PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
     }
 }

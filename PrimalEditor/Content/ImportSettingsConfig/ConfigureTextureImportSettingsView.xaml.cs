@@ -102,12 +102,12 @@ partial class ConfigureTextureImportSettingsView : UserControl
 
     private void OnMoveSelectionUp_Button_Click(object sender, RoutedEventArgs e)
     {
-        MoveSelection(sender, (target, selection) => target.MoveUp(selection));
+        MoveSelection(sender, static (target, selection) => target.MoveUp(selection));
     }
 
     private void OnMoveSelectionDown_Button_Click(object sender, RoutedEventArgs e)
     {
-        MoveSelection(sender, (target, selection) => target.MoveDown(selection));
+        MoveSelection(sender, static (target, selection) => target.MoveDown(selection));
 
     }
 

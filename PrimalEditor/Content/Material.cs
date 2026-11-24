@@ -278,7 +278,7 @@ class AppliedMaterial : Asset
     private byte[] _packedData = [];
     private byte[] _previousPackedData = [];
 
-    public override List<AssetInfo> GetReferencedAssets() => [.. Inputs.Where(x => x.Asset != null && x.Asset.Guid != Guid.Empty).Select(x => x.Asset)];
+    public override List<AssetInfo> GetReferencedAssets() => [.. Inputs.Where(static x => x.Asset != null && x.Asset.Guid != Guid.Empty).Select(static x => x.Asset)];
 
     private void UploadShaders()
     {
@@ -327,7 +327,7 @@ class AppliedMaterial : Asset
         lock (_lock)
         {
             // NOTE: this only uploads inputs if they haven't been uploaded before.
-            _inputs.ToList().ForEach(x => x.Load());
+            _inputs.ToList().ForEach(static x => x.Load());
 
             UploadShaders();
             _packedData = PackForEngine();
@@ -416,7 +416,7 @@ class AppliedMaterial : Asset
                     _packedMaterials.Remove(dataString);
                 }
 
-                _inputs.ToList().ForEach(x => x.Unload());
+                _inputs.ToList().ForEach(static x => x.Unload());
                 _previousPackedData = [];
                 _uploadedAsset = null;
             }

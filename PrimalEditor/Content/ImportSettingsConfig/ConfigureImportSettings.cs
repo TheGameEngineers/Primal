@@ -165,7 +165,7 @@ class GeometryImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigu
 
     public void AddFiles(IEnumerable<string> files, string destinationFolder)
     {
-        files.Except(_geometryProxies.Select(proxy => proxy.FileInfo.FullName))
+        files.Except(_geometryProxies.Select(static proxy => proxy.FileInfo.FullName))
             .ToList().ForEach(file => _geometryProxies.Add(new(file, destinationFolder)));
     }
     public void RemoveFile(GeometryProxy proxy) => _geometryProxies.Remove(proxy);
@@ -191,7 +191,7 @@ class TextureImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigur
 
     public void AddFiles(IEnumerable<string> files, string destinationFolder)
     {
-        files.Except(_textureProxies.Select(proxy => proxy.FileInfo.FullName))
+        files.Except(_textureProxies.Select(static proxy => proxy.FileInfo.FullName))
             .ToList().ForEach(file => _textureProxies.Add(new(file, destinationFolder)));
     }
     public void RemoveFile(TextureProxy proxy) => _textureProxies.Remove(proxy);
@@ -247,7 +247,7 @@ class AudioImportSettingsConfigurator : ViewModelBase, IImportSettingsConfigurat
 
     public void AddFiles(IEnumerable<string> files, string destinationFolder)
     {
-        files.Except(_audioProxies.Select(proxy => proxy.FileInfo.FullName))
+        files.Except(_audioProxies.Select(static proxy => proxy.FileInfo.FullName))
             .ToList().ForEach(file => _audioProxies.Add(new(file, destinationFolder)));
     }
     public void RemoveFile(AudioProxy proxy) => _audioProxies.Remove(proxy);
@@ -294,9 +294,9 @@ class ConfigureImportSettings : ViewModelBase
         Debug.Assert(Application.Current.Dispatcher.Invoke(() => destinationFolder.Contains(Project.Current.ContentPath)));
         LastDestinationFolder = destinationFolder;
 
-        var meshFiles = files.Where(file => ContentHelper.MeshFileExtensions.Contains(Path.GetExtension(file).ToLower()));
-        var imageFiles = files.Where(file => ContentHelper.ImageFileExtensions.Contains(Path.GetExtension(file).ToLower()));
-        var audioFiles = files.Where(file => ContentHelper.AudioFileExtensions.Contains(Path.GetExtension(file).ToLower()));
+        var meshFiles = files.Where(static file => ContentHelper.MeshFileExtensions.Contains(Path.GetExtension(file).ToLower()));
+        var imageFiles = files.Where(static file => ContentHelper.ImageFileExtensions.Contains(Path.GetExtension(file).ToLower()));
+        var audioFiles = files.Where(static file => ContentHelper.AudioFileExtensions.Contains(Path.GetExtension(file).ToLower()));
 
         GeometryImportSettingsConfigurator.AddFiles(meshFiles, destinationFolder);
         TextureImportSettingsConfigurator.AddFiles(imageFiles, destinationFolder);

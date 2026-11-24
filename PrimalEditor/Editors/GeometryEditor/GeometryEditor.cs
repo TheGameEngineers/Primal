@@ -228,10 +228,10 @@ class MeshRenderer : ViewModelBase
         // This is to unpack the packed normals:
         var intervals = 2.0f / ((1 << 16) - 1);
 
-        lodInfo ??= new() { Meshes = [.. lod.Meshes.Select(m => new MeshInfo() { Name = m.Name })] };
-        var lodData = lod.Meshes.Zip(lodInfo.Meshes, (Mesh, Info) => (Mesh, Info));
-        IndexCount = _totalIndexCount = lodData.Sum(item => item.Mesh.IndexCount);
-        VertexCount = _totalVertexCount = lodData.Sum(item => item.Mesh.VertexCount);
+        lodInfo ??= new() { Meshes = [.. lod.Meshes.Select(static m => new MeshInfo() { Name = m.Name })] };
+        var lodData = lod.Meshes.Zip(lodInfo.Meshes, static (Mesh, Info) => (Mesh, Info));
+        IndexCount = _totalIndexCount = lodData.Sum(static item => item.Mesh.IndexCount);
+        VertexCount = _totalVertexCount = lodData.Sum(static item => item.Mesh.VertexCount);
 
         foreach (var item in lodData)
         {
@@ -357,7 +357,7 @@ class MeshRenderer : ViewModelBase
                 VertexCount = vertextData.Positions.Count;
                 IndexCount = vertextData.Indices.Count;
             }
-            else if (Meshes.All(m => !m.IsIsolated))
+            else if (Meshes.All(static m => !m.IsIsolated))
             {
                 VertexCount = _totalVertexCount;
                 IndexCount = _totalIndexCount;
@@ -509,13 +509,13 @@ class GeometryEditor : ViewModelBase, IAssetEditor
             entity.GetComponent<Components.Geometry>() is Components.Geometry selectedGeometry &&
             selectedGeometry.GeometryGuid == info.Guid)
         {
-            materials = [.. selectedGeometry.MaterialsList.Select(mtl => mtl.Clone())];
+            materials = [.. selectedGeometry.MaterialsList.Select(static mtl => mtl.Clone())];
         }
         else if (Project.Current.ActiveScene.GameEntities
-            .Select(e => e.GetComponent<Components.Geometry>())
+            .Select(static e => e.GetComponent<Components.Geometry>())
             .FirstOrDefault(g => g?.GeometryGuid == info.Guid) is Components.Geometry someGeometry)
         {
-            materials = [.. someGeometry.MaterialsList.Select(mtl => mtl.Clone())];
+            materials = [.. someGeometry.MaterialsList.Select(static mtl => mtl.Clone())];
         }
 
         if (materials.Count > 0)
@@ -539,7 +539,7 @@ class GeometryEditor : ViewModelBase, IAssetEditor
             _assetGuid = asset.Guid;
             Geometry = geometry;
             GeometryMetadata = Project.Current.ActiveScene.GameEntities
-                .Select(e => e.GetComponent<Components.Geometry>())
+                .Select(static e => e.GetComponent<Components.Geometry>())
                 .FirstOrDefault(g => g?.GeometryGuid == _assetGuid)?.Metadata ?? geometry.GetMetadata();
             var numLods = geometry.GetLODGroup().LODs.Count;
             if (LODIndex >= numLods)
@@ -557,22 +557,21 @@ class GeometryEditor : ViewModelBase, IAssetEditor
     {
         try
         {
-            _assetGuid = info.Guid;
             Debug.Assert(info != null && File.Exists(info.FullPath));
+            _assetGuid = info.Guid;
             var geometry = new Content.Geometry();
-            await Task.Run(() =>
-            {
-                geometry.Load(info.FullPath);
-            });
+            State = AssetEditorState.Loading;
 
+            await Task.Run(() => geometry.Load(info.FullPath));
             SetAsset(geometry);
             SetGeometryComponent(info);
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            Debug.WriteLine($"Failed to set geometry for use in geometry editor. File: {info.FullPath}\n{ex.Message}");
+            Logger.Log(MessageType.Error, $"Failed to set geometry for use in geometry editor. File: {info.FullPath}\n{ex.Message}");
         }
+        finally { State = AssetEditorState.Done; }
     }
 
     public void Unload()

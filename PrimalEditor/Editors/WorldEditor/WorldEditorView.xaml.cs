@@ -49,7 +49,7 @@ partial class WorldEditorView : UserControl
         InitializeComponent();
         Application.Current.Activated += OnRequestStop;
         Application.Current.Deactivated += OnRequestStop;
-        Application.Current.MainWindow.StateChanged += OnRequestStop;
+        Application.Current.MainWindow?.StateChanged += OnRequestStop;
 
         Project.SceneUpdated += OnSceneUpdated;
         DataContextChanged += OnWorldEditorDataContextChanged;

@@ -23,7 +23,7 @@ partial class AppliedMaterialProxyView : UserControl
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-            var file = files?.Where(x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Texture).FirstOrDefault();
+            var file = files?.Where(static x => Path.GetExtension(x).ToLower() == Asset.AssetFileExtension && Asset.TryGetAssetInfo(x)?.Type == AssetType.Texture).FirstOrDefault();
             if (!string.IsNullOrEmpty(file?.Trim()) && sender is FrameworkElement { DataContext: InputProxy input })
             {
                 if (Asset.TryGetAssetInfo(file) is { } assetInfo)

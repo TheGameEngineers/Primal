@@ -1,0 +1,119 @@
+﻿<!--
+    Copyright (c) Arash Khatami
+    Distributed under the MIT license. See the LICENSE file in the project root for more information.
+-->
+<UserControl x:Class="PrimalEditor.Editors.AnimationCurveView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrimalEditor.Editors"
+             mc:Ignorable="d" x:Name="Root"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <local:PointsToGeometryConverter x:Key="PointsToGeometryConverter" />
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource Editor.Window.GrayBrush2}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="56" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="30" />
+            </Grid.RowDefinitions>
+
+            <!-- Y-Axis Strip -->
+            <local:YAxisElement x:Name="YAxisVisual" Grid.Row="0" Grid.Column="0" ClipToBounds="True" />
+
+            <!-- Main Interactive Plot Area -->
+            <Grid x:Name="PlotHost" Grid.Row="0" Grid.Column="1" Background="Transparent" ClipToBounds="True"
+                  MouseLeftButtonDown="OnPlotMouseLeftButtonDown"
+                  MouseRightButtonDown="OnPlotMouseRightButtonDown"
+                  MouseMove="OnPlotMouseMove"
+                  MouseRightButtonUp="OnPlotMouseRightButtonUp"
+                  LostMouseCapture="OnPlotLostMouseCapture"
+                  MouseWheel="OnPlotMouseWheel"
+                  SizeChanged="OnPlotSizeChanged"
+                  Cursor="pack://application:,,,/PrimalEditor;component/Resources/AnimationEditor/Crosshair.cur">
+
+                <!-- Grid Lines -->
+                <local:PlotGridElement x:Name="GridVisual" GridBrush="{StaticResource Editor.Window.GrayBrush3}"/>
+
+                <!-- Series Lines (Declarative XAML ItemsControl + Path) -->
+                <ItemsControl ItemsSource="{Binding SeriesSource, ElementName=Root}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas IsItemsHost="True" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Path Stroke="{Binding Stroke}" StrokeThickness="{Binding StrokeThickness}"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource PointsToGeometryConverter}">
+                                        <Binding Path="Points" />
+                                        <Binding Path="PointsRevision" />
+                                        <Binding Path="DataToScreenTransform" ElementName="Root" Mode="OneTime"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Crosshair Lines -->
+                <local:CrosshairElement x:Name="CrosshairVisual" ClipToBounds="True" IsHitTestVisible="False">
+                    <local:CrosshairElement.Style>
+                        <Style TargetType="{x:Type local:CrosshairElement}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=PlotHost}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </local:CrosshairElement.Style>
+                </local:CrosshairElement>
+
+                <TextBlock x:Name="MouseCoordinates" d:Text="350, 12.34" Foreground="Moccasin" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="10" IsHitTestVisible="False" Opacity="0.7"
+                           Visibility="{Binding Path=Visibility, ElementName=CrosshairVisual}"/>
+
+                <!-- Legend Overlay -->
+                <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Padding="8,5" IsHitTestVisible="False"
+                        Background="{StaticResource Editor.Window.GrayBrush3}" CornerRadius="4"
+                        BorderBrush="{StaticResource Editor.Window.GrayBrush4}" BorderThickness="1">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Style.Triggers>
+                                <Trigger Property="DataContext" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </Trigger>
+                                <DataTrigger Binding="{Binding SeriesSource.Count, ElementName=Root}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ItemsControl ItemsSource="{Binding SeriesSource, ElementName=Root}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <Rectangle Width="14" Height="3" Fill="{Binding Stroke}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding Name}" FontSize="11" Foreground="{StaticResource Editor.FontBrush}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+            </Grid>
+            
+            <!-- X-Axis Strip -->
+            <local:XAxisElement x:Name="XAxisVisual" Grid.Row="1" Grid.Column="1" ClipToBounds="True" />
+            <Border BorderBrush="DimGray" BorderThickness="1" Grid.Row="0" Grid.Column="1" Margin="-1,0,0,-1" IsHitTestVisible="False"/>
+        </Grid>
+    </Border>
+</UserControl>

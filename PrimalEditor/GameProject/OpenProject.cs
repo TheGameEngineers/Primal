@@ -45,7 +45,7 @@ class OpenProject
     {
         if (File.Exists(_projectDataPath))
         {
-            var projects = Serializer.FromFile<ProjectDataList>(_projectDataPath).Projects.OrderByDescending(x => x.Date);
+            var projects = Serializer.FromFile<ProjectDataList>(_projectDataPath).Projects.OrderByDescending(static x => x.Date);
             _projects.Clear();
             foreach (var project in projects)
             {
@@ -61,7 +61,7 @@ class OpenProject
 
     private static void WriteProjectData()
     {
-        var projects = _projects.OrderBy(x => x.Date).ToList();
+        var projects = _projects.OrderBy(static x => x.Date).ToList();
         Serializer.ToFile(new ProjectDataList() { Projects = projects }, _projectDataPath);
     }
 

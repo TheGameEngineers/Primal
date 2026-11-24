@@ -84,9 +84,9 @@ partial class LightView : UserControl
         else
         {
             var lights = vm.SelectedEntities.Cast<Light>();
-            _lightSetKeys.AddRange(lights.Select(x => (x, x.LightSetKey)));
-            _colors.AddRange(lights.Select(x => (x, x.Color)));
-            _intensities.AddRange(lights.Select(x => (x, x.Intensity)));
+            _lightSetKeys.AddRange(lights.Select(static x => (x, x.LightSetKey)));
+            _colors.AddRange(lights.Select(static x => (x, x.Color)));
+            _intensities.AddRange(lights.Select(static x => (x, x.Intensity)));
         }
     }
 
@@ -96,7 +96,7 @@ partial class LightView : UserControl
         return new(() =>
         {
             _disableUndoRedo = true;
-            oldValues.ForEach(x => x.Light.LightSetKey = x.LightSetKey);
+            oldValues.ForEach(static x => x.Light.LightSetKey = x.LightSetKey);
             MSEntity.Refresh();
             GetValues(MSEntity.CurrentSelection);
             lightSetComboBox.SelectedItem = DataContext?.GetType().GetProperty(nameof(MSLight.LightSetKey))?.GetValue(DataContext) as string;

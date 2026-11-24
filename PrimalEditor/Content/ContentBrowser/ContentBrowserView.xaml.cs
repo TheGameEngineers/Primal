@@ -127,6 +127,7 @@ partial class ContentBrowserView : UserControl, IDisposable
     private Point _clickPosition;
     private bool _capturedLeft;
     private bool _startDrag;
+    private bool _isFolderContentDragOver;
 
     public SelectionMode SelectionMode
     {
@@ -335,7 +336,9 @@ _addCurrentDirectory:
         {
             switch (info.Type)
             {
-                case AssetType.Animation: break;
+                case AssetType.Animation: 
+                    editor = OpenEditorPanel<AnimationEditorView>(info, "Animation Editor", false);
+                    break;
                 case AssetType.Audio: break;
                 case AssetType.Material: break;
                 case AssetType.Mesh:
@@ -399,7 +402,7 @@ _addCurrentDirectory:
         return newEditor;
     }
 
-    private void OnDropBorder_Drop(object sender, DragEventArgs e)
+    private void OnListViewEx_Drop(object sender, DragEventArgs e)
     {
         var vm = DataContext as ContentBrowser;
         if (Directory.Exists(vm.SelectedFolder) && e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -407,21 +410,13 @@ _addCurrentDirectory:
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files?.Length > 0)
             {
-                if (e.OriginalSource == filesDrop)
-                {
-                    new ConfigureImportSettings(files, vm.SelectedFolder).Import();
-                    e.Handled = true;
-                }
-                else if (e.OriginalSource == cfgDrop)
-                {
-                    OpenImportSettingsConfigurator(files, vm.SelectedFolder);
-                    e.Handled = true;
-                }
+                OpenImportSettingsConfigurator(files, vm.SelectedFolder);
+                e.Handled = true;
             }
         }
 
         e.Effects = DragDropEffects.None;
-        OnDropBorder_DragLeave(sender, e);
+        SetFolderContentDragHighlight(false);
     }
 
     private static void OpenImportSettingsConfigurator(string[] files, string selectedFolder, bool forceOpen = false)
@@ -561,7 +556,7 @@ _addCurrentDirectory:
             // our file system watcher to make a new entry in Content Browser.
             while (waitCounter < 30 && !TryEdit(folderListView, folder))
             {
-                await Task.Run(() => Thread.Sleep(100));
+                await Task.Run(static () => Thread.Sleep(100));
                 ++waitCounter;
             }
         }
@@ -586,30 +581,34 @@ _addCurrentDirectory:
 
     private void OnFolderContent_ListView_DragEnter(object sender, DragEventArgs e)
     {
-        if (!_startDrag)
-        {
-            dropBorder.Opacity = 0;
-            dropBorder.Visibility = Visibility.Visible;
-            var fadeIn = new DoubleAnimation(0, 1, new Duration(TimeSpan.FromMilliseconds(100)));
-            dropBorder.BeginAnimation(OpacityProperty, fadeIn);
-        }
+        if (_startDrag || _isFolderContentDragOver)
+            return;
+
+        SetFolderContentDragHighlight(true);
     }
 
-    private void OnDropBorder_DragLeave(object sender, DragEventArgs e)
+    private void OnFolderContent_ListView_DragLeave(object sender, DragEventArgs e)
     {
-        if (sender == dropBorder && e?.Effects != DragDropEffects.None)
+        var point = e.GetPosition(folderListView);
+        var bounds = new Rect(0, 0, folderListView.ActualWidth, folderListView.ActualHeight);
+        if (bounds.Contains(point))
+            return;
+
+        SetFolderContentDragHighlight(false);
+    }
+
+    private void SetFolderContentDragHighlight(bool isHighlighted)
+    {
+        _isFolderContentDragOver = isHighlighted;
+
+        if (folderListView.BorderBrush is not SolidColorBrush brush || brush.Color != Colors.Moccasin)
         {
-            var point = e.GetPosition(dropBorder);
-            var result = VisualTreeHelper.HitTest(dropBorder, point);
-            if (result != null)
-            {
-                return;
-            }
+            brush = new SolidColorBrush(Colors.Moccasin);
+            folderListView.BorderBrush = brush;
         }
 
-        var fadeOut = new DoubleAnimation(1, 0, new Duration(TimeSpan.FromMilliseconds(100)));
-        fadeOut.Completed += (_, _) => dropBorder.Visibility = Visibility.Collapsed;
-        dropBorder.BeginAnimation(OpacityProperty, fadeOut);
+        var animation = new DoubleAnimation { To = isHighlighted ? 0.7 : 0, Duration = TimeSpan.FromMilliseconds(100) };
+        brush.BeginAnimation(Brush.OpacityProperty, animation);
     }
 
     private void OnOpenImportSettingsConfigurator_Button_Click(object sender, RoutedEventArgs e)
